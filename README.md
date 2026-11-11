@@ -26,161 +26,170 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 **The goal is simple:** bring the developer experience of modern frontend frameworks to Java.
 
-## Core Philosophy
+## Project Status
 
-- **Java-first:** Build frontend applications using Java.
-- **Reactive by design:** Fine-grained reactivity powered by Signals.
-- **Component-driven:** Build interfaces through reusable and composable components.
-- **Performance-oriented:** Efficient rendering, optimized builds and minimal unnecessary DOM updates.
-- **Developer experience:** Modern tooling, CLI, debugging and development workflows.
-- **Modular architecture:** Use only the capabilities your application needs.
-- **Web standards:** Work directly with JavaScript, DOM and native browser APIs.
+**Foundation milestone implemented.**
+
+The repository now contains a working vertical slice:
+
+```text
+Java source
+  → Maven build
+  → TeaVM 0.16.0
+  → app.js
+  → browser
+  → DOM rendering
+  → click interaction
+```
+
+This chain is covered by automated JVM unit tests and a Chromium end-to-end test.
+It is a **foundation**, not a usable application framework yet: there is no
+reactivity, component system, routing, SSR or tooling.
+
+| Capability | Status |
+|---|---|
+| Maven multi-module build, Maven Wrapper, centralized versions | Implemented |
+| Java 25 → JavaScript compilation with TeaVM 0.16.0 | Implemented and validated |
+| Immutable view model (elements, text, fragments, attributes, events) | Implemented and tested |
+| Platform-neutral DOM contracts and first-mount renderer | Implemented and tested |
+| Browser DOM adapter (TeaVM JSO) | Implemented and tested in Chromium |
+| Interactive browser example | Implemented |
+| Signals, computed values, effects | Planned (Phase 2) |
+| Components, lifecycle, inputs/outputs/slots | Planned (Phase 3) |
+| Routing, DI, HTTP, forms, state management | Planned (Phase 4) |
+| CLI, DevTools, compiler abstraction | Planned |
+| SSR, SSG, hydration | Planned |
+
+The authoritative implemented-versus-planned breakdown is
+[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
+
+## Quick Start
+
+### Requirements
+
+- **JDK 25** (`JAVA_HOME` must point to it).
+- Network access on the first build to download Maven dependencies.
+- Maven itself is not required: the Maven Wrapper is included.
+
+```bash
+java -version   # must report 25.x
+```
+
+### Build and test
+
+```bash
+# Compile all modules, run JVM unit tests, compile to JavaScript
+./mvnw clean verify
+```
+
+The browser bundle is written to `examples/counter/target/webapp/`:
+
+```text
+examples/counter/target/webapp/
+├── app.js
+├── app.js.map
+└── index.html
+```
+
+### Run the example
+
+Serve the generated directory over HTTP and open it in a browser:
+
+```bash
+python3 -m http.server 8080 -d examples/counter/target/webapp
+```
+
+Then open <http://localhost:8080>. Clicking **Increment** updates the counter.
+
+### Browser end-to-end test
+
+The Playwright test is opt-in because it downloads Chromium on first use:
+
+```bash
+./mvnw -Pe2e -pl examples/counter -am verify
+```
+
+On Windows, use `mvnw.cmd` instead of `./mvnw`.
+
+## Modules
+
+Only modules justified by the current milestone exist. Planned modules are not
+created as empty placeholders.
+
+| Module | Responsibility | Status |
+|---|---|---|
+| `dejaview-core` | Immutable view model: `View`, `ElementView`, `TextView`, `FragmentView`, attributes, event bindings, `Views` factories. No browser or TeaVM imports. | Implemented |
+| `dejaview-dom` | Platform-neutral DOM contracts, first-mount `DomRenderer`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
+| `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
+
+Dependency direction:
+
+```text
+examples/counter → dejaview-dom → dejaview-core
+```
+
+The target architecture keeps the core independent of browser APIs and places
+platform-specific code in dedicated modules. The long-term module map
+(`dejaview-reactivity`, `dejaview-renderer`, `dejaview-router`,
+`dejaview-ssr`, ...) remains a design proposal; see
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+### Repository layout
+
+```text
+dejaview/
+├── dejaview-core/          # Framework core (pure Java)
+├── dejaview-dom/           # DOM contracts, renderer, browser adapter
+├── examples/
+│   └── counter/            # Java → JavaScript browser example
+├── docs/
+│   ├── ARCHITECTURE.md     # Long-term architecture specification
+│   ├── COMPILER.md         # TeaVM feasibility report and constraints
+│   ├── IMPLEMENTATION_STATUS.md
+│   └── ADR/                # Architectural Decision Records
+├── .mvn/
+├── mvnw
+├── mvnw.cmd
+└── pom.xml
+```
 
 ## Technology Stack
 
 | Technology | Purpose |
 |---|---|
-| Java | Primary development language |
+| Java 25 | Primary development language |
 | Apache Maven | Build system and dependency management |
-| TeaVM | Initial Java-to-JavaScript compiler |
+| TeaVM 0.16.0 | Initial Java-to-JavaScript compiler |
 | JavaScript | Browser execution target |
 | HTML / CSS | Interface structure and styling |
 | DOM / Web APIs | Browser integration |
 
 JavaScript is the framework's **only planned browser compilation target**.
+WebAssembly is explicitly out of scope.
 
-DejaView does not aim to introduce an alternative browser execution environment. Instead, it prioritizes direct integration with the existing web platform.
+## How It Works Today
 
-## Architecture
+The implemented flow is deliberately small:
 
-DejaView is designed as a modular framework with clearly separated responsibilities.
+1. `CounterApp` builds an immutable view tree with `Views` factories.
+2. `DejaView.mount(view, "app")` resolves the container and asks `DomRenderer`
+   to append the tree.
+3. `DomRenderer` works only against `DomDocument` / `DomElement` / `DomNode`
+   contracts, so it is tested on the JVM with a fake DOM.
+4. In the browser, `BrowserDomElement` implements those contracts using TeaVM
+   JSO (`HTMLDocument`, `HTMLElement`, `Node`, `EventListener`).
+5. A click listener registered on the button increments a plain `int` and calls
+   `Dom.byId("count").setText(...)`.
 
-```text
-                  DEJAVIEW
-                      |
-          +-----------+-----------+
-          |                       |
-       CORE                    TOOLING
-          |                       |
-    +-----+------+          +-----+------+
-    |            |          |            |
- REACTIVITY   COMPONENTS   CLI        DEVTOOLS
-    |            |          |            |
-    +------+-----+          +------------+
-           |
-       RENDERER
-           |
-     PLATFORM LAYER
-           |
-     +-----+------+
-     |            |
-    DOM         SERVER
-     |            |
-    CSR          SSR
-                  |
-                SSG
-           |
-       COMPILER
-           |
-         TEAVM
-           |
-       JAVASCRIPT
-```
+Step 5 is an intentional first-milestone shortcut, recorded in
+[ADR-0007](docs/ADR/0007-first-milestone-scope.md). Replacing manual DOM access
+with reactivity is the next milestone.
 
-### Main Modules
+## Conceptual API (Not Implemented)
 
-| Module | Responsibility |
-|---|---|
-| `dejaview-core` | Core abstractions and framework foundation |
-| `dejaview-reactivity` | Signals, Computed and Effects |
-| `dejaview-renderer` | Rendering engine |
-| `dejaview-dom` | Browser DOM integration |
-| `dejaview-compiler` | Compilation pipeline |
-| `dejaview-router` | Application routing |
-| `dejaview-di` | Dependency Injection |
-| `dejaview-http` | HTTP client |
-| `dejaview-forms` | Reactive forms and validation |
-| `dejaview-server` | Server-side platform support |
-| `dejaview-ssr` | Server-Side Rendering |
-| `dejaview-ssg` | Static Site Generation |
-| `dejaview-hydration` | Client-side hydration |
-| `dejaview-spring-boot` | Spring Boot integration |
-| `dejaview-cli` | Command-line interface |
-| `dejaview-devtools` | Development and debugging tools |
-| `dejaview-testing` | Testing utilities |
-
-The module structure is a proposed architecture and may evolve during development.
-
-## Planned Features
-
-### Component System
-
-- Reusable components.
-- Declarative UI.
-- Component composition.
-- Inputs and outputs.
-- Slots.
-- Lifecycle hooks.
-- Dynamic components.
-- Conditional and list rendering.
-
-### Reactivity Engine
-
-- Signals.
-- Computed values.
-- Effects.
-- Automatic dependency tracking.
-- Fine-grained updates.
-- Batching and scheduling.
-- Effect cleanup.
-
-### Rendering
-
-- Client-Side Rendering (CSR).
-- Server-Side Rendering (SSR).
-- Static Site Generation (SSG).
-- Hydration.
-- Streaming SSR.
-- Selective hydration.
-- Islands architecture.
-
-### Application Framework
-
-- Dependency Injection.
-- Client-side routing.
-- Route guards.
-- Lazy loading.
-- HTTP client.
-- Reactive forms.
-- Validation.
-- State management.
-- Internationalization.
-
-### Developer Tooling
-
-- DejaView CLI.
-- Development server.
-- Hot Reload.
-- Production builds.
-- Build optimization.
-- Component inspector.
-- Signal inspector.
-- Rendering profiler.
-- Testing utilities.
-
-### Ecosystem
-
-- Spring Boot integration.
-- Component libraries.
-- Plugin system.
-- Third-party integrations.
-- Community extensions.
-
-> These capabilities are part of the project roadmap and should not be considered implemented until officially released.
-
-## Example
-
-The following example illustrates the intended component API. It is a conceptual API and is not yet a guaranteed working implementation.
+The following snippet illustrates the intended long-term developer experience.
+**It is a design sketch, not a working API.** No `@Component`, `Signal`, or
+reactive `View` rendering exists in the codebase today.
 
 ```java
 @Component
@@ -209,158 +218,11 @@ The intended developer experience focuses on:
 - Reactive state management.
 - Automatic interface updates.
 
-## Project Status
-
-**Early architecture and planning stage.**
-
-DejaView is currently being designed. Its architecture, public APIs, module boundaries and implementation roadmap are subject to change.
-
-There is no stable release yet.
-
-### Roadmap
-
-| Phase | Description | Status |
-|---|---|---|
-| 1 | Foundation and JavaScript runtime | Planned |
-| 2 | Reactivity Engine | Planned |
-| 3 | Component System | Planned |
-| 4 | Application Framework | Planned |
-| 5 | Compiler and Tooling | Planned |
-| 6 | SSR and SSG | Planned |
-| 7 | Advanced Features | Planned |
-| 8 | Ecosystem | Planned |
-
-The first development milestone is to compile a Java application into JavaScript, initialize the DejaView runtime and render an interactive component in the browser.
-
-## Project Structure
-
-```text
-dejaview/
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── COMPILER.md
-│   ├── RENDERING.md
-│   ├── REACTIVITY.md
-│   ├── COMPONENTS.md
-│   └── ADR/
-│
-├── dejaview-core/
-│   └── pom.xml
-├── dejaview-reactivity/
-│   └── pom.xml
-├── dejaview-renderer/
-│   └── pom.xml
-├── dejaview-dom/
-│   └── pom.xml
-├── dejaview-compiler/
-│   └── pom.xml
-├── dejaview-router/
-│   └── pom.xml
-├── dejaview-http/
-│   └── pom.xml
-├── dejaview-forms/
-│   └── pom.xml
-├── dejaview-di/
-│   └── pom.xml
-├── dejaview-server/
-│   └── pom.xml
-├── dejaview-ssr/
-│   └── pom.xml
-├── dejaview-ssg/
-│   └── pom.xml
-├── dejaview-hydration/
-│   └── pom.xml
-├── dejaview-spring-boot/
-│   └── pom.xml
-├── dejaview-cli/
-│   └── pom.xml
-├── dejaview-devtools/
-│   └── pom.xml
-├── dejaview-testing/
-│   └── pom.xml
-│
-├── examples/
-├── benchmarks/
-│
-├── .mvn/
-├── mvnw
-├── mvnw.cmd
-├── pom.xml
-├── .gitignore
-├── README.md
-└── LICENSE
-```
-
-The project uses a **Maven multi-module architecture**, with a root POM managing shared configuration, dependencies and build plugins.
-
-## Building the Project
-
-DejaView uses [Apache Maven](https://maven.apache.org/) as its build system and dependency management tool.
-
-The project includes Maven Wrapper to ensure a consistent Maven version across development environments.
-
-### Requirements
-
-- JDK 25 or compatible version defined by the project.
-- Maven Wrapper (included in the repository).
-
-### Build Commands
-
-```bash
-# Compile all modules
-./mvnw clean compile
-
-# Run tests
-./mvnw test
-
-# Package all modules
-./mvnw clean package
-
-# Install artifacts into the local Maven repository
-./mvnw clean install
-
-# Build a specific module and its required dependencies
-./mvnw -pl dejaview-core -am package
-
-# Skip tests
-./mvnw clean package -DskipTests
-```
-
-On Windows, use `mvnw.cmd` instead of `./mvnw`.
-
-### Maven Architecture
-
-The root `pom.xml` is responsible for:
-
-- Declaring all framework modules.
-- Centralizing dependency versions through `dependencyManagement`.
-- Managing plugin versions through `pluginManagement`.
-- Defining shared Java compiler settings.
-- Configuring common build properties.
-- Maintaining consistent project metadata.
-
-Individual modules declare only their own dependencies and specific build requirements.
-
-## Documentation
-
-Technical documentation will be maintained in the `docs/` directory.
-
-| Document | Description |
-|---|---|
-| `ARCHITECTURE.md` | Overall framework architecture |
-| `COMPILER.md` | Java compilation and build pipeline |
-| `RENDERING.md` | Rendering strategies and hydration |
-| `REACTIVITY.md` | Reactive engine internals |
-| `COMPONENTS.md` | Component system and lifecycle |
-| `ADR/` | Architectural Decision Records |
-
 ## Design Principles
-
-DejaView is built around a few fundamental decisions:
 
 1. Java is the primary language for application development.
 2. JavaScript is the only browser compilation target.
-3. The Core must remain independent of browser-specific APIs.
+3. The core must remain independent of browser-specific APIs.
 4. Reactivity should be granular rather than relying on unnecessary full-tree updates.
 5. Components should be composable and independently manageable.
 6. Rendering strategies should share a consistent component model.
@@ -368,13 +230,92 @@ DejaView is built around a few fundamental decisions:
 8. Public APIs should remain consistent across framework modules.
 9. Maven is the standard build and dependency management system.
 
+## Roadmap
+
+| Phase | Description | Status |
+|---|---|---|
+| 1 | Foundation and JavaScript runtime | Foundation implemented (first-mount rendering) |
+| 2 | Reactivity Engine | Planned — next milestone |
+| 3 | Component System | Planned |
+| 4 | Application Framework | Planned |
+| 5 | Compiler and Tooling | Planned |
+| 6 | SSR and SSG | Planned |
+| 7 | Advanced Features | Planned |
+| 8 | Ecosystem | Planned |
+
+### Next milestone: Phase 2 — Reactivity
+
+The recommended next vertical slice replaces manual DOM updates with a minimal,
+tested reactivity core:
+
+1. `Signal<T>` with `get`, `set`, `update`.
+2. `Computed<T>` with lazy evaluation and caching.
+3. `Effect` with automatic dependency tracking and disposal.
+4. A platform-independent scheduler/batching boundary.
+5. JVM tests for dependency graphs, cycles and cleanup.
+6. A browser E2E test where a signal update changes the counter without manual
+   DOM access.
+
+The renderer subscribes to effects and performs targeted updates, keeping
+`dejaview-core` free of browser APIs. Details are in
+[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
+
+## Build Commands
+
+```bash
+# Full build: compile, unit tests, TeaVM output, artifact checks
+./mvnw clean verify
+
+# Run JVM unit tests only
+./mvnw test
+
+# Build one module and its dependencies
+./mvnw -pl dejaview-core -am package
+
+# Skip tests
+./mvnw clean package -DskipTests
+
+# Opt-in browser end-to-end test
+./mvnw -Pe2e -pl examples/counter -am verify
+```
+
+The root `pom.xml` declares the modules, centralizes dependency and plugin
+versions, configures the Java compiler and enforces build prerequisites.
+Individual modules declare only their own dependencies and build requirements.
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Long-term architecture specification |
+| [`docs/COMPILER.md`](docs/COMPILER.md) | TeaVM feasibility, validated matrix and constraints |
+| [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) | Implemented vs planned, limitations, next milestone |
+| [`docs/ADR/`](docs/ADR/README.md) | Architectural Decision Records |
+
+Significant decisions are recorded as ADRs rather than changed silently.
+
+## Known Limitations
+
+- No reactivity: the example updates the DOM manually after a click.
+- First mount only: no diffing, patching, unmounting or hydration.
+- No component abstraction, routing, DI, HTTP client, forms or state management.
+- Browser E2E coverage is Chromium only.
+- Only the JDK/TeaVM APIs exercised by the current code are validated.
+- The example emits readable, non-minified JavaScript; production optimization
+  is not benchmarked yet.
+
+See [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) for the
+complete list.
+
 ## Contributing
 
 DejaView is in its early development stage.
 
-Contribution guidelines, development setup, coding standards and issue templates will be published as the project matures.
+Contribution guidelines, development setup, coding standards and issue templates
+will be published as the project matures.
 
-Before contributing to architectural components, please review the documentation and the corresponding Architectural Decision Records.
+Before contributing to architectural components, please review the documentation
+and the corresponding Architectural Decision Records.
 
 ## License
 

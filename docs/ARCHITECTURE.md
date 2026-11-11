@@ -4,13 +4,24 @@
 >
 > A Java-first frontend framework.
 
-**Status:** Architecture Proposal  
+**Status:** Architecture Proposal (long-term target)  
 **Version:** 0.1.0  
 **Language:** Java  
 **Compiler:** TeaVM  
 **Compilation Target:** JavaScript  
 **Rendering:** CSR, SSR, SSG  
 **License:** TBD
+
+> **Implementation note (2026-11-11).** This document describes the long-term
+> target architecture. The current repository implements only the foundation
+> described in [ADR-0003](ADR/0003-initial-module-boundaries.md) and
+> [ADR-0007](ADR/0007-first-milestone-scope.md): `dejaview-core` (immutable view
+> model), `dejaview-dom` (DOM contracts, first-mount renderer, TeaVM JSO adapter)
+> and `examples/counter`. TeaVM 0.16.0 with Java 25 has been validated; see
+> [`COMPILER.md`](COMPILER.md). The authoritative implemented-versus-planned
+> list is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Modules and
+> capabilities described below but absent from that list are proposals, not
+> implemented features.
 
 ---
 
@@ -213,6 +224,13 @@ Responsabilidades:
 
 O compilador deverá abstrair os detalhes do TeaVM para permitir substituição futura da tecnologia. A versão adotada deverá ser validada quanto ao suporte a Java 25, incluindo bytecode, recursos da linguagem, bibliotecas utilizadas e geração de JavaScript. Não se deve presumir que todo recurso do JDK 25 seja compatível com o ambiente browser.
 
+**Estado validado:** TeaVM **0.16.0** compila bytecode Java 25 (class file major
+version 69) e gera JavaScript executável em Chromium. A versão 0.12.0 foi
+rejeitada por não suportar esse bytecode. A matriz de compatibilidade, as
+restrições de classlib e a configuração Maven validada estão em
+[`COMPILER.md`](COMPILER.md). A abstração de compilador ainda **não** foi
+implementada; o TeaVM está configurado diretamente no POM do exemplo.
+
 ## 3.3. JavaScript Runtime
 
 JavaScript será o único target de compilação para execução no navegador.
@@ -247,6 +265,10 @@ dejaview analyze
 ```
 
 O processo de build deverá suportar otimizações, geração de bundles, resolução de dependências e preparação dos recursos necessários para execução no navegador.
+
+> Os comandos `dejaview build` acima descrevem a CLI planejada (Phase 5). No
+> estado atual, o build é executado com Maven: `./mvnw clean verify` gera
+> `examples/counter/target/webapp/`.
 
 # 4. Rendering Engine
 
@@ -1038,7 +1060,10 @@ A integração deverá ser disponibilizada como módulo separado.
 
 # 23. Project Structure
 
-Estrutura inicial proposta para o monorepo:
+## 23.1. Estrutura implementada
+
+Estrutura atual do repositório, limitada aos módulos justificados pelo primeiro
+milestone:
 
 ```text
 dejaview/
@@ -1046,10 +1071,31 @@ dejaview/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── COMPILER.md
-│   ├── RENDERING.md
-│   ├── REACTIVITY.md
-│   ├── COMPONENTS.md
+│   ├── IMPLEMENTATION_STATUS.md
 │   └── ADR/
+│
+├── dejaview-core/
+├── dejaview-dom/
+├── examples/
+│   └── counter/
+├── .mvn/
+│
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+└── README.md
+```
+
+Direção de dependências: `examples/counter` → `dejaview-dom` →
+`dejaview-core`. O `dejaview-core` não importa APIs de navegador nem TeaVM.
+
+## 23.2. Estrutura alvo (proposta)
+
+Estrutura de longo prazo proposta para o monorepo. Módulos ainda não criados são
+planejamento, não funcionalidade disponível:
+
+```text
+dejaview/
 │
 ├── dejaview-core/
 ├── dejaview-reactivity/
@@ -1072,16 +1118,10 @@ dejaview/
 │
 ├── examples/
 ├── benchmarks/
-├── .mvn/
-│
-├── mvnw
-├── mvnw.cmd
-├── pom.xml
-├── README.md
-└── LICENSE
+└── docs/
 ```
 
-A estrutura poderá evoluir conforme as responsabilidades dos módulos forem consolidadas. O repositório utilizará Apache Maven em arquitetura multi-module, com um `pom.xml` raiz, um `pom.xml` por módulo e Maven Wrapper (`mvnw`/`mvnw.cmd`).
+A estrutura poderá evoluir conforme as responsabilidades dos módulos forem consolidadas. O repositório utiliza Apache Maven em arquitetura multi-module, com um `pom.xml` raiz, um `pom.xml` por módulo e Maven Wrapper (`mvnw`/`mvnw.cmd`). Módulos vazios não são criados antes de existir uma responsabilidade concreta.
 
 # 24. Browser Support
 
@@ -1104,16 +1144,22 @@ O desenvolvimento deverá ocorrer incrementalmente.
 
 ## Phase 1 — Foundation
 
-- [ ] Definir arquitetura do Core.
-- [ ] Configurar monorepo Maven multi-module.
-- [ ] Integrar TeaVM.
-- [ ] Implementar compilação Java → JavaScript.
-- [ ] Criar primeiro runtime.
-- [ ] Implementar DOM adapter.
-- [ ] Renderizar primeiro componente.
-- [ ] Implementar event handling.
+- [x] Definir arquitetura do Core.
+- [x] Configurar monorepo Maven multi-module.
+- [x] Integrar TeaVM 0.16.0.
+- [x] Implementar compilação Java → JavaScript.
+- [x] Criar primeiro runtime mínimo (`DejaView.mount` + `DomRenderer`).
+- [x] Implementar DOM adapter.
+- [x] Renderizar primeira árvore de views (primeiro mount; sistema de componentes é Phase 3).
+- [x] Implementar event handling básico (listeners de click).
 
 **Objetivo:** executar uma aplicação Java no navegador utilizando DejaView.
+
+**Estado:** o primeiro milestone foi implementado e é validado por testes JVM e
+por um teste E2E em Chromium. O escopo exato — primeiro mount apenas, sem
+diffing, reatividade ou hidratação — está em
+[ADR-0007](ADR/0007-first-milestone-scope.md) e
+[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 ## Phase 2 — Reactivity Engine
 
@@ -1211,17 +1257,21 @@ O desenvolvimento deverá ocorrer incrementalmente.
 
 Toda decisão arquitetural relevante deverá ser documentada.
 
-Exemplos:
+ADRs aceitos:
 
-- ADR-001: TeaVM como compilador inicial.
-- ADR-002: JavaScript como único target de compilação.
-- ADR-003: Signals como sistema de reatividade.
-- ADR-004: Separação entre Core e Platform.
-- ADR-005: Estratégia de renderização.
-- ADR-006: Component API.
-- ADR-007: Dependency Injection.
-- ADR-008: Hydration Architecture.
-- ADR-009: Build System.
+| ADR | Título | Status |
+|---|---|---|
+| [0001](ADR/0001-teavm-as-initial-compiler.md) | TeaVM como compilador inicial | Accepted |
+| [0002](ADR/0002-javascript-only-browser-target.md) | JavaScript como único target de navegador | Accepted |
+| [0003](ADR/0003-initial-module-boundaries.md) | Fronteiras iniciais dos módulos | Accepted |
+| [0004](ADR/0004-dom-interoperability.md) | Estratégia de interoperabilidade com o DOM | Accepted |
+| [0005](ADR/0005-build-system-and-versions.md) | Build system, versões e metadados | Accepted |
+| [0006](ADR/0006-browser-e2e-testing.md) | Testes E2E de navegador com Playwright Java | Accepted |
+| [0007](ADR/0007-first-milestone-scope.md) | Escopo do primeiro milestone: apenas primeiro mount | Accepted |
+
+Decisões futuras (Signals, Component API, Dependency Injection, Hydration,
+estratégia de renderização, etc.) ainda não possuem ADR e permanecem propostas
+até serem registradas.
 
 Cada ADR deverá registrar:
 
