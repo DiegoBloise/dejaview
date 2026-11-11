@@ -18,12 +18,15 @@ import java.util.function.Supplier;
  * that depends on a computed may rerun even if the recomputed value turns out
  * to be equal. This is documented in ADR-0009.</p>
  *
- * <p>Computed values are not thread-safe and do not have an explicit disposal
- * lifecycle yet.</p>
+ * <p>A computed can be disposed directly or through a {@link ReactiveScope}.
+ * After disposal, {@link #get()} throws and the computed no longer observes its
+ * dependencies.</p>
+ *
+ * <p>Computed values are not thread-safe.</p>
  *
  * @param <T> value type; {@code null} results are not allowed
  */
-public final class Computed<T> extends ReactiveObserver {
+public final class Computed<T> extends ReactiveObserver implements AutoCloseable {
 
     private final Supplier<T> computation;
     private final ReactiveSource source = new ReactiveSource();
@@ -32,6 +35,7 @@ public final class Computed<T> extends ReactiveObserver {
     private T value;
     private boolean dirty = true;
     private boolean computing;
+    private boolean disposed;
 
     /**
      * Creates a lazy computed value. The supplier is not called yet.
@@ -48,9 +52,13 @@ public final class Computed<T> extends ReactiveObserver {
      * dependency on it.
      *
      * @throws NullPointerException if the supplier returns {@code null}
-     * @throws IllegalStateException if a circular dependency is detected
+     * @throws IllegalStateException if the computed is disposed or a circular
+     *         dependency is detected
      */
     public T get() {
+        if (disposed) {
+            throw new IllegalStateException("Computed value is disposed");
+        }
         if (computing) {
             throw new IllegalStateException("Circular computed dependency");
         }
@@ -61,8 +69,39 @@ public final class Computed<T> extends ReactiveObserver {
         return value;
     }
 
+    /**
+     * Stops observing dependencies and releases the cached value. Calling this
+     * method more than once has no additional effect.
+     */
+    public void dispose() {
+        if (disposed) {
+            return;
+        }
+        if (computing) {
+            throw new IllegalStateException("Cannot dispose a computed while it is computing");
+        }
+        disposed = true;
+        clearDependencies();
+        value = null;
+    }
+
+    /**
+     * Returns whether this computed has been disposed.
+     */
+    public boolean isDisposed() {
+        return disposed;
+    }
+
+    @Override
+    public void close() {
+        dispose();
+    }
+
     @Override
     void addDependency(ReactiveSource source) {
+        if (disposed) {
+            return;
+        }
         if (dependencies.add(source)) {
             source.addObserver(this);
         }
@@ -75,7 +114,7 @@ public final class Computed<T> extends ReactiveObserver {
 
     @Override
     void invalidate() {
-        if (dirty) {
+        if (disposed || dirty) {
             return;
         }
         if (computing) {
