@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 2 — Reactivity (first slice)  
+**Milestone:** Phase 2 — Reactivity (signals, effects, computed)  
 **Last updated:** 2026-11-11
 
 This document separates what is implemented and tested from what is designed
@@ -25,6 +25,9 @@ treated as available.
 | `Signal<T>` (`get`, `set`, `update`, equality no-op) | `dejaview-reactivity` | JUnit tests |
 | Synchronous `Effect` with dependency tracking and disposal | `dejaview-reactivity` | JUnit tests |
 | Dependency re-collection across effect runs | `dejaview-reactivity` | JUnit tests |
+| Lazy `Computed<T>` with cache and push-based invalidation | `dejaview-reactivity` | JUnit tests |
+| Computed dependency re-collection and computed-on-computed graphs | `dejaview-reactivity` | JUnit tests |
+| Circular computed dependency detection | `dejaview-reactivity` | JUnit tests |
 | Reactive counter update in the browser | example | Playwright E2E |
 | Platform-neutral DOM contracts | `dejaview-dom` | JUnit tests via fake DOM |
 | First-mount renderer | `dejaview-dom` | JUnit tests |
@@ -62,9 +65,9 @@ reruns and updates the DOM text.
 
 | Area | Status | Notes |
 |---|---|---|
-| `Computed` values | Planned (Phase 2) | No lazy derived values yet |
 | Batching / scheduler | Planned (Phase 2) | Effects run synchronously per change |
-| Effect ownership / scopes | Planned (Phase 2) | Effects are disposed manually |
+| Effect/computed ownership / scopes | Planned (Phase 2) | Effects are disposed manually; computeds have no `dispose()` |
+| Equality short-circuit for computed values | Planned (Phase 2) | Invalidated computeds always notify dependents |
 | Renderer-owned reactive bindings | Planned (Phase 2) | Example still calls `Dom.byId` inside its effect |
 | Component system / lifecycle | Planned (Phase 3) | No `@Component` yet |
 | Inputs, outputs, slots | Planned (Phase 3) | |
@@ -88,30 +91,39 @@ reruns and updates the DOM text.
 
 ## Known limitations
 
-1. **Minimal reactivity only.** `Signal` and `Effect` exist, but there is no
-   `Computed`, batching, scheduler or automatic effect ownership. Effects run
+1. **Minimal reactivity only.** `Signal`, `Effect` and `Computed` exist, but
+   there is no batching, scheduler or automatic ownership. Effects run
    synchronously on every changed value.
-2. **Direct DOM access in the example.** The effect calls
+2. **Computed over-execution.** Invalidation is push-based and evaluation is
+   pull-based. A computed marks itself dirty and notifies its observers as soon
+   as a dependency changes; if an effect reads the computed and the recomputed
+   value turns out to be equal, the effect still reruns. Equality
+   short-circuiting is future work (ADR-0009).
+3. **No computed disposal.** `Computed` has no `dispose()` and no owner tree, so
+   a long-lived computed keeps its dependency registrations. `Effect` still
+   requires manual `dispose()`.
+4. **Direct DOM access in the example.** The effect calls
    `Dom.byId("count").setText(...)`. This is a bridge until the renderer owns
    reactive bindings, not the intended long-term API.
-3. **Reentrant updates are rejected.** An effect cannot write to a signal it
-   depends on, and an effect invalidated while running throws. Batching and
-   cycle handling are future work.
-4. **Effects are not thread-safe.** They target the single-threaded browser
-   runtime and single-threaded JVM tests.
-5. **First mount only.** `DomRenderer` appends a view tree to a container. It
+5. **Reentrant updates are rejected.** An effect cannot write to a signal it
+   depends on, and an observer invalidated while running throws. Batching and
+   scheduled cycle handling are future work. Computed cycles are detected and
+   fail with `IllegalStateException`.
+6. **Reactive primitives are not thread-safe.** They target the single-threaded
+   browser runtime and single-threaded JVM tests.
+7. **First mount only.** `DomRenderer` appends a view tree to a container. It
    does not diff, patch, unmount or hydrate.
-6. **No component abstraction.** `Views` factories are a convenience layer over
+8. **No component abstraction.** `Views` factories are a convenience layer over
    immutable records, not a component system.
-7. **Single example.** Only the counter example exists.
-8. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
-   not part of the automated matrix yet.
-9. **JVM/browser API parity.** Only APIs exercised by the current code are
-   validated against TeaVM's class library.
-10. **No production build profile.** The example uses readable, non-minified
+9. **Single example.** Only the counter example exists.
+10. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
+    not part of the automated matrix yet.
+11. **JVM/browser API parity.** Only APIs exercised by the current code are
+    validated against TeaVM's class library.
+12. **No production build profile.** The example uses readable, non-minified
     output for inspection. Minification and advanced optimization are not yet
     benchmarked.
-11. **E2E requires network on first run.** Playwright downloads Chromium into
+13. **E2E requires network on first run.** Playwright downloads Chromium into
     the user's cache. The profile is opt-in for that reason.
 
 ---
@@ -133,14 +145,15 @@ reruns and updates the DOM text.
 **Finish Phase 2 — Reactivity Engine.**
 
 The first slice is implemented and tested: `Signal<T>`, synchronous `Effect`,
-dependency tracking, dependency re-collection and disposal. The remaining work
-is:
+lazy `Computed<T>`, dependency tracking, dependency re-collection, cycle
+detection and effect disposal. The remaining work is:
 
-1. `Computed<T>` with lazy evaluation, caching and invalidation.
-2. A platform-independent scheduler/batching boundary.
-3. Ownership/scopes so effects are disposed with their component.
+1. A platform-independent scheduler/batching boundary.
+2. Ownership/scopes so effects and computeds are disposed with their component.
+3. Equality short-circuiting so dependents do not rerun when a computed value is
+   unchanged.
 4. Renderer-owned reactive bindings, removing `Dom.byId` from application code.
-5. JVM unit tests for dependency graphs, cycles, batching and cleanup.
+5. JVM unit tests for batching and cleanup.
 6. A browser E2E test where a signal update reaches the DOM through a renderer
    binding rather than a manual lookup.
 

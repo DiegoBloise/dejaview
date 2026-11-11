@@ -10,6 +10,7 @@
 | [0006](0006-browser-e2e-testing.md) | Browser end-to-end testing with Playwright Java | Accepted |
 | [0007](0007-first-milestone-scope.md) | First milestone scope: first-mount rendering only | Accepted |
 | [0008](0008-synchronous-signals-and-effects.md) | Synchronous signals and effects for the first reactivity slice | Accepted |
+| [0009](0009-lazy-computed-values.md) | Lazy, cached computed values with push-based invalidation | Accepted |
 
 New ADRs use the same structure: context, decision, consequences, alternatives
 and revisit triggers. Superseded decisions keep their record and are linked from
