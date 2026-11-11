@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.dejaview</groupId>
+        <artifactId>dejaview-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dejaview-dom</artifactId>
+    <name>DejaView DOM</name>
+    <description>Browser DOM adapter and renderer for DejaView.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-core</artifactId>
+        </dependency>
+
+        <!--
+          TeaVM must be present on the project class path for browser modules.
+          These artifacts are compile-time only: the JDK remains the source of
+          java.* APIs on the JVM, and the browser runtime is supplied by TeaVM.
+        -->
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-classlib</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.teavm</groupId>
+            <artifactId>teavm-jso-apis</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
