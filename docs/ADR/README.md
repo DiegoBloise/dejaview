@@ -1,0 +1,15 @@
+# Architectural Decision Records
+
+| ADR | Title | Status |
+|---|---|---|
+| [0001](0001-teavm-as-initial-compiler.md) | TeaVM as the initial Java-to-JavaScript compiler | Accepted |
+| [0002](0002-javascript-only-browser-target.md) | JavaScript is the only browser target | Accepted |
+| [0003](0003-initial-module-boundaries.md) | Initial module boundaries | Accepted |
+| [0004](0004-dom-interoperability.md) | DOM interoperability strategy | Accepted |
+| [0005](0005-build-system-and-versions.md) | Build system, versions and metadata | Accepted |
+| [0006](0006-browser-e2e-testing.md) | Browser end-to-end testing with Playwright Java | Accepted |
+| [0007](0007-first-milestone-scope.md) | First milestone scope: first-mount rendering only | Accepted |
+
+New ADRs use the same structure: context, decision, consequences, alternatives
+and revisit triggers. Superseded decisions keep their record and are linked from
+the replacement ADR.
