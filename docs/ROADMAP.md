@@ -91,24 +91,26 @@ The roadmap is organized into 22 sequential sprints.
 
 **Objective:** Establish the development environment and validate the feasibility of the Java-to-JavaScript compilation pipeline.
 
+**Status (2026-11-11):** Completed.
+
 ### Implementation
 
-- [ ] Create the root Maven project.
-- [ ] Configure Maven Wrapper.
-- [ ] Configure Maven Multi-Module architecture.
-- [ ] Configure `dependencyManagement`.
-- [ ] Configure `pluginManagement`.
-- [ ] Configure Java 25 compilation.
-- [ ] Configure encoding and compiler parameters.
-- [ ] Establish common project conventions.
-- [ ] Configure JUnit 5.
-- [ ] Configure test execution through Maven.
-- [ ] Create initial CI pipeline.
-- [ ] Create the initial ADR structure.
-- [ ] Evaluate TeaVM compatibility with Java 25 bytecode.
-- [ ] Evaluate required Java APIs and their TeaVM compatibility.
-- [ ] Validate JavaScript generation.
-- [ ] Document compiler limitations and unsupported APIs.
+- [x] Create the root Maven project.
+- [x] Configure Maven Wrapper.
+- [x] Configure Maven Multi-Module architecture.
+- [x] Configure `dependencyManagement`.
+- [x] Configure `pluginManagement`.
+- [x] Configure Java 25 compilation.
+- [x] Configure encoding and compiler parameters.
+- [x] Establish common project conventions.
+- [x] Configure JUnit 5.
+- [x] Configure test execution through Maven.
+- [x] Create initial CI pipeline.
+- [x] Create the initial ADR structure.
+- [x] Evaluate TeaVM compatibility with Java 25 bytecode.
+- [x] Evaluate required Java APIs and their TeaVM compatibility.
+- [x] Validate JavaScript generation.
+- [x] Document compiler limitations and unsupported APIs.
 
 ### Deliverables
 
@@ -120,12 +122,12 @@ The roadmap is organized into 22 sequential sprints.
 
 ### Tests
 
-- [ ] Root project builds successfully.
-- [ ] A sample module compiles.
-- [ ] JUnit tests execute successfully.
-- [ ] Maven Wrapper works in a clean environment.
-- [ ] A minimal Java application compiles into JavaScript.
-- [ ] Generated JavaScript executes in a supported browser.
+- [x] Root project builds successfully.
+- [x] A sample module compiles.
+- [x] JUnit tests execute successfully.
+- [x] Maven Wrapper works in a clean environment.
+- [x] A minimal Java application compiles into JavaScript.
+- [x] Generated JavaScript executes in a supported browser.
 
 ### Acceptance Criteria
 
@@ -139,19 +141,26 @@ The project must have a reproducible Java 25 build and a validated Java-to-JavaS
 
 **Objective:** Create the initial browser runtime and establish communication between compiled Java code and the browser.
 
+**Status (2026-11-11):** In progress. Implemented: runtime entry point
+(`DejaView`), application initialization, JavaScript interop abstractions, the
+framework/browser API boundary (`Dom*` contracts plus the TeaVM adapter), DOM
+access, element creation, element selection, child insertion and browser event
+registration. Pending: runtime configuration, environment detection, node
+removal, event listener removal and runtime shutdown/cleanup.
+
 ### Implementation
 
-- [ ] Create the runtime entry point.
-- [ ] Implement application initialization.
+- [x] Create the runtime entry point.
+- [x] Implement application initialization.
 - [ ] Implement runtime configuration.
 - [ ] Implement browser environment detection.
-- [ ] Establish JavaScript interop abstractions.
-- [ ] Establish the boundary between framework code and browser APIs.
-- [ ] Implement basic DOM access.
-- [ ] Implement element creation.
-- [ ] Implement element selection.
+- [x] Establish JavaScript interop abstractions.
+- [x] Establish the boundary between framework code and browser APIs.
+- [x] Implement basic DOM access.
+- [x] Implement element creation.
+- [x] Implement element selection.
 - [ ] Implement basic DOM insertion and removal.
-- [ ] Implement browser event registration.
+- [x] Implement browser event registration.
 - [ ] Implement runtime shutdown and cleanup.
 
 ### Deliverables
@@ -163,10 +172,10 @@ The project must have a reproducible Java 25 build and a validated Java-to-JavaS
 
 ### Tests
 
-- [ ] Runtime initializes successfully.
+- [x] Runtime initializes successfully.
 - [ ] Runtime initialization occurs only once per application instance.
-- [ ] Java code can access the browser DOM.
-- [ ] Java code can create and insert DOM elements.
+- [x] Java code can access the browser DOM.
+- [x] Java code can create and insert DOM elements.
 - [ ] Java code can register and remove browser events.
 - [ ] Runtime cleanup releases registered resources.
 
@@ -180,17 +189,23 @@ A Java application compiled to JavaScript must initialize DejaView and manipulat
 
 **Objective:** Implement the framework's foundational abstractions without coupling the core to the browser.
 
+**Status (2026-11-11):** In progress. Implemented: module boundaries,
+platform-independent rendering contracts (immutable view model) and platform
+adapter contracts (`Dom*` interfaces). Pending: application context, framework
+configuration, lifecycle contracts, core disposal abstractions, framework
+exceptions, utility abstractions and logging abstractions.
+
 ### Implementation
 
-- [ ] Establish core module boundaries.
+- [x] Establish core module boundaries.
 - [ ] Implement application context.
 - [ ] Implement framework configuration.
 - [ ] Implement common lifecycle contracts.
 - [ ] Implement resource disposal abstractions.
 - [ ] Implement framework exceptions.
 - [ ] Implement internal utility abstractions.
-- [ ] Define platform-independent rendering contracts.
-- [ ] Define platform adapter contracts.
+- [x] Define platform-independent rendering contracts.
+- [x] Define platform adapter contracts.
 - [ ] Establish common logging abstractions.
 
 ### Deliverables
@@ -202,9 +217,9 @@ A Java application compiled to JavaScript must initialize DejaView and manipulat
 
 ### Tests
 
-- [ ] Core tests execute without browser dependencies.
-- [ ] Core can be instantiated independently.
-- [ ] Platform adapters can be substituted.
+- [x] Core tests execute without browser dependencies.
+- [x] Core can be instantiated independently.
+- [x] Platform adapters can be substituted.
 - [ ] Resource disposal behaves consistently.
 - [ ] Exceptions preserve useful diagnostic information.
 
@@ -220,19 +235,21 @@ The framework core must be independent of DOM and browser-specific implementatio
 
 **Objective:** Implement the foundation of DejaView's fine-grained reactivity engine.
 
+**Status (2026-11-11):** Completed.
+
 ### Implementation
 
-- [ ] Implement `Signal<T>`.
-- [ ] Implement signal creation.
-- [ ] Implement `get()`.
-- [ ] Implement `set()`.
-- [ ] Implement `update()`.
-- [ ] Implement equality comparison.
-- [ ] Implement subscriber registration.
-- [ ] Implement subscriber notification.
-- [ ] Implement dependency tracking.
-- [ ] Implement dependency cleanup.
-- [ ] Implement automatic dependency collection.
+- [x] Implement `Signal<T>`.
+- [x] Implement signal creation.
+- [x] Implement `get()`.
+- [x] Implement `set()`.
+- [x] Implement `update()`.
+- [x] Implement equality comparison.
+- [x] Implement subscriber registration.
+- [x] Implement subscriber notification.
+- [x] Implement dependency tracking.
+- [x] Implement dependency cleanup.
+- [x] Implement automatic dependency collection.
 
 ### Deliverables
 
@@ -242,13 +259,13 @@ The framework core must be independent of DOM and browser-specific implementatio
 
 ### Tests
 
-- [ ] Signal stores and retrieves values.
-- [ ] Subscribers are notified after changes.
-- [ ] Equal values do not trigger unnecessary notifications when configured to use equality suppression.
-- [ ] Multiple subscribers work correctly.
-- [ ] Dependencies are tracked automatically.
-- [ ] Removed dependencies stop receiving notifications.
-- [ ] Nested reactive computations behave correctly.
+- [x] Signal stores and retrieves values.
+- [x] Subscribers are notified after changes.
+- [x] Equal values do not trigger unnecessary notifications when configured to use equality suppression.
+- [x] Multiple subscribers work correctly.
+- [x] Dependencies are tracked automatically.
+- [x] Removed dependencies stop receiving notifications.
+- [x] Nested reactive computations behave correctly.
 
 ### Acceptance Criteria
 
@@ -260,21 +277,23 @@ A change in a Signal must notify only its relevant subscribers.
 
 **Objective:** Complete the primary reactive execution model.
 
+**Status (2026-11-11):** Completed.
+
 ### Implementation
 
-- [ ] Implement `Computed<T>`.
-- [ ] Implement lazy computed evaluation.
-- [ ] Implement computed invalidation.
-- [ ] Implement `Effect`.
-- [ ] Implement automatic dependency tracking for effects.
-- [ ] Implement effect cleanup.
-- [ ] Implement batching.
-- [ ] Implement reactive scheduling.
-- [ ] Implement execution ordering.
-- [ ] Implement cycle detection.
-- [ ] Implement protection against infinite reactive loops.
-- [ ] Implement disposal of reactive scopes.
-- [ ] Implement error propagation.
+- [x] Implement `Computed<T>`.
+- [x] Implement lazy computed evaluation.
+- [x] Implement computed invalidation.
+- [x] Implement `Effect`.
+- [x] Implement automatic dependency tracking for effects.
+- [x] Implement effect cleanup.
+- [x] Implement batching.
+- [x] Implement reactive scheduling.
+- [x] Implement execution ordering.
+- [x] Implement cycle detection.
+- [x] Implement protection against infinite reactive loops.
+- [x] Implement disposal of reactive scopes.
+- [x] Implement error propagation.
 
 ### Deliverables
 
@@ -284,15 +303,15 @@ A change in a Signal must notify only its relevant subscribers.
 
 ### Tests
 
-- [ ] Computed values update after dependency changes.
-- [ ] Computed values avoid unnecessary recalculation.
-- [ ] Effects execute when dependencies change.
-- [ ] Effects execute cleanup before re-execution.
-- [ ] Batching prevents redundant executions.
-- [ ] Circular dependencies are detected.
-- [ ] Infinite update loops are prevented.
-- [ ] Disposed effects no longer execute.
-- [ ] Exceptions do not corrupt the reactive graph.
+- [x] Computed values update after dependency changes.
+- [x] Computed values avoid unnecessary recalculation.
+- [x] Effects execute when dependencies change.
+- [x] Effects execute cleanup before re-execution.
+- [x] Batching prevents redundant executions.
+- [x] Circular dependencies are detected.
+- [x] Infinite update loops are prevented.
+- [x] Disposed effects no longer execute.
+- [x] Exceptions do not corrupt the reactive graph.
 
 ### Acceptance Criteria
 
@@ -304,19 +323,26 @@ The reactive engine must support Signals, Computed values and Effects with predi
 
 **Objective:** Establish the rendering engine independently of the concrete platform.
 
+**Status (2026-11-11):** In progress. Implemented: render node types (`View`,
+`ElementView`, `TextView`, `FragmentView`), platform renderer contracts
+(`DomDocument`, `DomElement`, `DomNode`) and an initial DOM renderer integration
+that mounts a view tree. The renderer currently lives in `dejaview-dom`; there is
+no separate `dejaview-renderer` module, render tree, reconciliation contract or
+renderer lifecycle yet.
+
 ### Implementation
 
 - [ ] Define rendering interfaces.
-- [ ] Define render nodes.
-- [ ] Define element nodes.
-- [ ] Define text nodes.
-- [ ] Define fragment nodes.
+- [x] Define render nodes.
+- [x] Define element nodes.
+- [x] Define text nodes.
+- [x] Define fragment nodes.
 - [ ] Define component nodes.
 - [ ] Implement render tree creation.
 - [ ] Implement tree reconciliation contracts.
 - [ ] Define renderer lifecycle.
-- [ ] Define platform renderer interfaces.
-- [ ] Implement initial DOM renderer integration.
+- [x] Define platform renderer interfaces.
+- [x] Implement initial DOM renderer integration.
 
 ### Deliverables
 
@@ -327,13 +353,13 @@ The reactive engine must support Signals, Computed values and Effects with predi
 
 ### Tests
 
-- [ ] Render nodes are created correctly.
-- [ ] Text nodes are represented correctly.
-- [ ] Element nodes preserve their properties.
-- [ ] Fragments contain multiple children.
-- [ ] Renderer can mount a basic tree.
+- [x] Render nodes are created correctly.
+- [x] Text nodes are represented correctly.
+- [x] Element nodes preserve their properties.
+- [x] Fragments contain multiple children.
+- [x] Renderer can mount a basic tree.
 - [ ] Renderer can dispose a mounted tree.
-- [ ] Core rendering contracts work independently of DOM.
+- [x] Core rendering contracts work independently of DOM.
 
 ### Acceptance Criteria
 
@@ -345,15 +371,21 @@ The rendering engine must be able to represent and render a basic component tree
 
 **Objective:** Connect the rendering engine to the reactive system.
 
+**Status (2026-11-11):** In progress. Implemented: DOM element creation, text
+rendering, initial attribute/class application and child insertion during first
+mount. Reactive bindings, updates, removal/replacement and DOM cleanup are
+pending. The counter example still updates text through a manual `Dom.byId`
+effect.
+
 ### Implementation
 
-- [ ] Implement DOM element creation.
-- [ ] Implement text rendering.
+- [x] Implement DOM element creation.
+- [x] Implement text rendering.
 - [ ] Implement attribute updates.
 - [ ] Implement property updates.
 - [ ] Implement class updates.
 - [ ] Implement style updates.
-- [ ] Implement child insertion.
+- [x] Implement child insertion.
 - [ ] Implement child removal.
 - [ ] Implement node replacement.
 - [ ] Implement reactive text bindings.
@@ -370,7 +402,7 @@ The rendering engine must be able to represent and render a basic component tree
 
 ### Tests
 
-- [ ] Java application renders HTML elements.
+- [x] Java application renders HTML elements.
 - [ ] Text changes update the existing DOM node.
 - [ ] Reactive attributes update correctly.
 - [ ] Removed elements are detached.
@@ -1372,7 +1404,7 @@ their acceptance criteria. The authoritative implemented-versus-planned list is
 | 02 | Core Abstractions | In Progress — module boundaries and rendering contracts exist; application context, lifecycle contracts, exceptions and logging pending |
 | 03 | Signals and Reactive Primitives | Completed |
 | 04 | Computed, Effects and Scheduling | Completed |
-| 05 | Rendering Engine Foundation | In Progress — immutable view model and first-mount DOM renderer exist; renderer contracts/module, render tree and disposal pending |
+| 05 | Rendering Engine Foundation | In Progress — immutable view model, platform contracts and first-mount DOM renderer exist; renderer module, render tree, reconciliation and disposal pending |
 | 06 | DOM Rendering and Reactive Updates | In Progress — element creation, text and initial attributes exist; reactive bindings and update pipeline pending |
 | 07 | Component Model and Composition | Not Started |
 | 08 | Inputs, Outputs, Templates and Lifecycle | Not Started |
