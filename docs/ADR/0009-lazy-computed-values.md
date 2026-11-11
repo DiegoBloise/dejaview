@@ -85,3 +85,7 @@ shown in the architecture document is still a proposal.
 When adding batching/scheduling, ownership/scopes, equality short-circuiting or
 renderer-owned bindings. The push-invalidation/lazy-evaluation split and the
 absence of computed disposal are the main triggers.
+
+**Update (2026-11-11):** `Computed` disposal and scope ownership were added in
+[ADR-0010](0010-batching-scheduling-and-scopes.md). Equality short-circuiting
+remains future work.

@@ -16,10 +16,11 @@
 > target architecture. The current repository implements the foundation described
 > in [ADR-0003](ADR/0003-initial-module-boundaries.md) and
 > [ADR-0007](ADR/0007-first-milestone-scope.md), plus the reactivity slices from
-> [ADR-0008](ADR/0008-synchronous-signals-and-effects.md) and
-> [ADR-0009](ADR/0009-lazy-computed-values.md):
+> [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
+> [ADR-0009](ADR/0009-lazy-computed-values.md) and
+> [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md):
 > `dejaview-core` (immutable view model), `dejaview-reactivity` (`Signal`,
-> synchronous `Effect` and lazy `Computed`), `dejaview-dom` (DOM contracts,
+> `Effect`, `Computed`, batching and scopes), `dejaview-dom` (DOM contracts,
 > first-mount renderer, TeaVM JSO adapter) and `examples/counter`. TeaVM 0.16.0
 > with Java 25 has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
@@ -500,14 +501,17 @@ Um dos principais diferenciais técnicos do DejaView será o sistema de reativid
 
 > **Estado implementado (2026-11-11):** existe o módulo `dejaview-reactivity` com
 > `Signal<T>` (`get`, `set`, `update`), `Effect` síncrono com dependency
-> tracking, re-coleta de dependências e `dispose()`, e `Computed<T>` lazy com
-> cache, invalidação push-based, re-coleta de dependências e detecção de ciclos.
-> Batching, scheduler, ownership e equality short-circuit para computeds ainda
-> não existem. A API atual é `new Signal<>(valor)`, `new Effect(() -> ...)` e
-> `new Computed<>(() -> ...)`, não as factories `signal(...)`, `effect(...)` e
-> `computed(...)` mostradas abaixo. Ver
-> [ADR-0008](ADR/0008-synchronous-signals-and-effects.md) e
-> [ADR-0009](ADR/0009-lazy-computed-values.md).
+> tracking, re-coleta de dependências, `dispose()`, cleanup por execução e
+> agendamento FIFO, `Computed<T>` lazy com cache, invalidação push-based,
+> re-coleta de dependências, detecção de ciclos e `dispose()`, batching explícito
+> via `Reactive.batch(...)`, e `ReactiveScope` para ownership e descarte em grupo.
+> Ainda não há short-circuit por igualdade em computeds nem ordenação topológica
+> explícita do grafo. A API atual é `new Signal<>(valor)`, `new Effect(() -> ...)`,
+> `new Computed<>(() -> ...)`, `Reactive.batch(...)` e `new ReactiveScope()`, não
+> as factories `signal(...)`, `effect(...)` e `computed(...)` mostradas abaixo.
+> Ver [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
+> [ADR-0009](ADR/0009-lazy-computed-values.md) e
+> [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md).
 
 ## 6.1. Signals
 
@@ -537,10 +541,12 @@ Computed<Integer> doubled =
 invalidação é push-based. Quando uma dependência muda, o computed é marcado como
 dirty e seus observadores são notificados; o novo valor só é calculado no
 próximo `get()`. Dependências são re-coletadas a cada recomputação, e ciclos são
-detectados com `IllegalStateException`. Ainda não há `dispose()`, owner tree nem
+detectados com `IllegalStateException`. Um computed pode ser descartado com
+`dispose()` ou por um `ReactiveScope`; depois disso, `get()` falha. Ainda não há
 short-circuit por igualdade — efeitos dependentes podem rerun mesmo quando o
 valor recalculado é igual. Ver
-[ADR-0009](ADR/0009-lazy-computed-values.md).
+[ADR-0009](ADR/0009-lazy-computed-values.md) e
+[ADR-0010](ADR/0010-batching-scheduling-and-scopes.md).
 
 ## 6.3. Effects
 
@@ -551,6 +557,15 @@ effect(() -> {
     System.out.println(count.get());
 });
 ```
+
+**Estado atual:** effects executam imediatamente na construção e são agendados
+quando uma dependência muda. Fora de um batch, a fila é esvaziada de imediato;
+dentro de `Reactive.batch(...)`, execuções são adiadas e deduplicadas. Effects
+oferecem `dispose()`, podem ser agendados em um `ReactiveScope` e aceitam
+callbacks de cleanup via `Reactive.onCleanup(...)`, executados antes da próxima
+execução e no descarte. Ver
+[ADR-0008](ADR/0008-synchronous-signals-and-effects.md) e
+[ADR-0010](ADR/0010-batching-scheduling-and-scopes.md).
 
 ## 6.4. Requisitos da engine reativa
 
@@ -565,6 +580,12 @@ effect(() -> {
 - Circular dependency detection.
 - Memory leak prevention.
 - Error propagation.
+
+**Cobertura atual:** dependency tracking, dependency re-collection, fine-grained
+updates, batching explícito, agendamento FIFO síncrono, computed values, effect
+cleanup, detecção de ciclos, descarte de escopos e propagação de erros estão
+implementados e testados. Ordenação topológica explícita do grafo e
+short-circuit por igualdade em computeds continuam pendentes.
 
 ## 6.5. Change Detection
 
@@ -1193,23 +1214,25 @@ diffing, reatividade ou hidratação — está em
 - [x] Implementar Effect.
 - [x] Dependency tracking.
 - [ ] Dependency graph (ordenação topológica).
-- [ ] Batching.
-- [ ] Scheduling.
-- [x] Cleanup (`dispose` para effects).
+- [x] Batching.
+- [x] Scheduling.
+- [x] Cleanup (`dispose` para effects, computeds e scopes).
 - [x] Circular dependency detection (computeds).
 - [x] Testes de reatividade.
 
 **Objetivo:** atualizar interfaces automaticamente sem renderizações desnecessárias.
 
-**Estado:** `Signal`, `Effect` e `Computed` estão implementados e testados.
-Effects executam de forma síncrona a cada mudança; computeds são lazy, cacheados
-e invalidados por push. Ainda não há batching, scheduler, ownership automático,
-`dispose()` de computeds nem short-circuit por igualdade. O exemplo usa um
-`Effect` que resolve o nó via `Dom.byId`; bindings reativos gerenciados pelo
-renderer são o próximo passo. Detalhes em
-[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
-[ADR-0008](ADR/0008-synchronous-signals-and-effects.md) e
-[ADR-0009](ADR/0009-lazy-computed-values.md).
+**Estado:** `Signal`, `Effect`, `Computed`, batching, agendamento FIFO síncrono e
+`ReactiveScope` estão implementados e testados. Effects executam de forma
+síncrona fora de batches e são deduplicados dentro de `Reactive.batch(...)`;
+computeds são lazy, cacheados e invalidados por push; loops reativos são
+detectados por um limite de execuções. Ainda não há short-circuit por igualdade
+nem ordenação topológica explícita. O exemplo usa um `Effect` que resolve o nó
+via `Dom.byId`; bindings reativos gerenciados pelo renderer são o próximo passo.
+Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
+[ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
+[ADR-0009](ADR/0009-lazy-computed-values.md) e
+[ADR-0010](ADR/0010-batching-scheduling-and-scopes.md).
 
 ## Phase 3 — Component System
 
@@ -1306,6 +1329,7 @@ ADRs aceitos:
 | [0007](ADR/0007-first-milestone-scope.md) | Escopo do primeiro milestone: apenas primeiro mount | Accepted |
 | [0008](ADR/0008-synchronous-signals-and-effects.md) | Signals e effects síncronos na primeira fatia reativa | Accepted |
 | [0009](ADR/0009-lazy-computed-values.md) | Computed lazy, cacheado e invalidado por push | Accepted |
+| [0010](ADR/0010-batching-scheduling-and-scopes.md) | Batching, agendamento síncrono e escopos reativos | Accepted |
 
 Decisões futuras (Component API, Dependency Injection, Hydration, estratégia de
 renderização, etc.) ainda não possuem ADR e permanecem propostas até serem

@@ -60,7 +60,8 @@ routing, SSR or tooling.
 | Interactive browser example | Implemented |
 | `Signal` and synchronous `Effect` with dependency tracking | Implemented and tested |
 | Lazy `Computed` with cache, invalidation and cycle detection | Implemented and tested |
-| Batching, scheduling, effect ownership, renderer bindings | Planned (rest of Phase 2) |
+| Batching, FIFO scheduling, cleanup and `ReactiveScope` disposal | Implemented and tested |
+| Equality short-circuit, topological ordering, renderer bindings | Planned (rest of Phase 2 / Sprint 06) |
 | Components, lifecycle, inputs/outputs/slots | Planned (Phase 3) |
 | Routing, DI, HTTP, forms, state management | Planned (Phase 4) |
 | CLI, DevTools, compiler abstraction | Planned |
@@ -125,7 +126,7 @@ created as empty placeholders.
 | Module | Responsibility | Status |
 |---|---|---|
 | `dejaview-core` | Immutable view model: `View`, `ElementView`, `TextView`, `FragmentView`, attributes, event bindings, `Views` factories. No browser or TeaVM imports. | Implemented |
-| `dejaview-reactivity` | Platform-independent `Signal<T>`, synchronous `Effect` and lazy `Computed<T>` with automatic dependency tracking. No browser or TeaVM imports. | Implemented |
+| `dejaview-reactivity` | Platform-independent `Signal<T>`, `Effect`, lazy `Computed<T>`, explicit batching, FIFO scheduling and `ReactiveScope` ownership. No browser or TeaVM imports. | Implemented |
 | `dejaview-dom` | Platform-neutral DOM contracts, first-mount `DomRenderer`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
 
@@ -249,7 +250,7 @@ The intended developer experience focuses on:
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Foundation and JavaScript runtime | Foundation implemented (first-mount rendering) |
-| 2 | Reactivity Engine | In progress — `Signal`, `Effect` and `Computed` implemented; batching, scheduling and renderer bindings pending |
+| 2 | Reactivity Engine | In progress — `Signal`, `Effect`, `Computed`, batching, scheduling and scopes implemented; renderer bindings pending |
 | 3 | Component System | Planned |
 | 4 | Application Framework | Planned |
 | 5 | Compiler and Tooling | Planned |
@@ -259,23 +260,26 @@ The intended developer experience focuses on:
 
 ### Next milestone: finish Phase 2 — Reactivity
 
-The first reactivity slice is implemented: `Signal<T>` (`get`, `set`, `update`),
-a synchronous `Effect` with automatic dependency tracking and disposal, and a
-lazy `Computed<T>` with caching, invalidation and cycle detection. The counter
-example updates through an effect instead of mutating the DOM in the click
-handler.
+The reactivity primitives are implemented: `Signal<T>` (`get`, `set`, `update`),
+`Effect` with automatic dependency tracking and disposal, lazy `Computed<T>`
+with caching, invalidation and cycle detection, explicit batching
+(`Reactive.batch`), synchronous FIFO scheduling, cleanup callbacks
+(`Reactive.onCleanup`) and `ReactiveScope` ownership. The counter example
+updates through an effect instead of mutating the DOM in the click handler.
 
 The remaining Phase 2 work is:
 
-1. A platform-independent scheduler/batching boundary.
-2. Ownership/scopes so effects and computeds can be disposed with their component.
+1. Equality short-circuiting so dependents do not rerun when a computed value is
+   unchanged.
+2. Optional topological ordering for glitch-free computed propagation.
 3. Renderer-owned reactive bindings, removing `Dom.byId` from application code.
-4. Tests for dependency graphs, batching and cleanup.
-5. A browser E2E test where a signal update reaches the DOM through a renderer
+4. A browser E2E test where a signal update reaches the DOM through a renderer
    binding rather than a manual lookup.
 
-Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)
-and [ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md).
+Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
+[ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md),
+[ADR-0009](docs/ADR/0009-lazy-computed-values.md) and
+[ADR-0010](docs/ADR/0010-batching-scheduling-and-scopes.md).
 
 ## Build Commands
 
@@ -313,10 +317,14 @@ Significant decisions are recorded as ADRs rather than changed silently.
 
 ## Known Limitations
 
-- Minimal reactivity: `Signal`, `Effect` and `Computed` exist, but there is no
-  batching, scheduler, ownership tree or computed disposal lifecycle.
+- Reactivity is synchronous and single-threaded: batching is explicit via
+  `Reactive.batch`, and there is no microtask or time-based scheduler.
 - Computed invalidation is push-based while evaluation is lazy, so dependents
   may rerun even when the recomputed value is unchanged.
+- Effects run in invalidation order; there is no topological dependency ordering
+  or glitch-free propagation yet.
+- Ownership is explicit through `ReactiveScope`; components do not own scopes
+  automatically.
 - The example's effect still resolves the DOM node with `Dom.byId("count")`;
   renderer-owned reactive bindings do not exist yet.
 - First mount only: no diffing, patching, unmounting or hydration.
