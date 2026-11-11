@@ -9,6 +9,7 @@
 | [0005](0005-build-system-and-versions.md) | Build system, versions and metadata | Accepted |
 | [0006](0006-browser-e2e-testing.md) | Browser end-to-end testing with Playwright Java | Accepted |
 | [0007](0007-first-milestone-scope.md) | First milestone scope: first-mount rendering only | Accepted |
+| [0008](0008-synchronous-signals-and-effects.md) | Synchronous signals and effects for the first reactivity slice | Accepted |
 
 New ADRs use the same structure: context, decision, consequences, alternatives
 and revisit triggers. Superseded decisions keep their record and are linked from

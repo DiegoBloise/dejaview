@@ -193,8 +193,9 @@ TeaVM types currently appear in:
 - the `provided` dependencies of browser modules;
 - the `dejaview-dom` browser adapter.
 
-The core and renderer are compiler-agnostic. Replacing TeaVM would require a new
-platform adapter and build configuration, not a rewrite of the view model.
+The core, the reactivity module and the renderer are compiler-agnostic. Replacing
+TeaVM would require a new platform adapter and build configuration, not a
+rewrite of the view model or the reactivity primitives.
 
 ---
 

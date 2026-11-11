@@ -13,13 +13,16 @@
 **License:** TBD
 
 > **Implementation note (2026-11-11).** This document describes the long-term
-> target architecture. The current repository implements only the foundation
-> described in [ADR-0003](ADR/0003-initial-module-boundaries.md) and
-> [ADR-0007](ADR/0007-first-milestone-scope.md): `dejaview-core` (immutable view
-> model), `dejaview-dom` (DOM contracts, first-mount renderer, TeaVM JSO adapter)
-> and `examples/counter`. TeaVM 0.16.0 with Java 25 has been validated; see
-> [`COMPILER.md`](COMPILER.md). The authoritative implemented-versus-planned
-> list is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Modules and
+> target architecture. The current repository implements the foundation described
+> in [ADR-0003](ADR/0003-initial-module-boundaries.md) and
+> [ADR-0007](ADR/0007-first-milestone-scope.md), plus the first reactivity slice
+> from [ADR-0008](ADR/0008-synchronous-signals-and-effects.md):
+> `dejaview-core` (immutable view model), `dejaview-reactivity` (`Signal` and
+> synchronous `Effect`), `dejaview-dom` (DOM contracts, first-mount renderer,
+> TeaVM JSO adapter) and `examples/counter`. TeaVM 0.16.0 with Java 25 has been
+> validated; see [`COMPILER.md`](COMPILER.md). The authoritative
+> implemented-versus-planned list is
+> [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Modules and
 > capabilities described below but absent from that list are proposals, not
 > implemented features.
 
@@ -493,6 +496,14 @@ A API deverá ser tipada e permitir composição de elementos sem depender de st
 # 6. Reactivity System
 
 Um dos principais diferenciais técnicos do DejaView será o sistema de reatividade.
+
+> **Estado implementado (2026-11-11):** existe o módulo `dejaview-reactivity` com
+> `Signal<T>` (`get`, `set`, `update`) e `Effect` síncrono com dependency
+> tracking, re-coleta de dependências e `dispose()`. `Computed`, batching,
+> scheduler, ownership e detecção de ciclos ainda não existem. A API atual é
+> `new Signal<>(valor)` / `new Effect(() -> ...)`, não as factories `signal(...)`
+> / `effect(...)` mostradas abaixo. Ver
+> [ADR-0008](ADR/0008-synchronous-signals-and-effects.md).
 
 ## 6.1. Signals
 
@@ -1163,17 +1174,24 @@ diffing, reatividade ou hidratação — está em
 
 ## Phase 2 — Reactivity Engine
 
-- [ ] Implementar Signal.
+- [x] Implementar Signal.
 - [ ] Implementar Computed.
-- [ ] Implementar Effect.
-- [ ] Dependency tracking.
-- [ ] Dependency graph.
+- [x] Implementar Effect.
+- [x] Dependency tracking.
+- [ ] Dependency graph (ordenação topológica).
 - [ ] Batching.
 - [ ] Scheduling.
-- [ ] Cleanup.
-- [ ] Testes de reatividade.
+- [x] Cleanup (`dispose`).
+- [x] Testes de reatividade.
 
 **Objetivo:** atualizar interfaces automaticamente sem renderizações desnecessárias.
+
+**Estado:** a primeira fatia está implementada e testada. Effects executam de
+forma síncrona a cada mudança; ainda não há `Computed`, batching, scheduler nem
+ownership automático. O exemplo usa um `Effect` que resolve o nó via
+`Dom.byId`; bindings reativos gerenciados pelo renderer são o próximo passo.
+Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) e
+[ADR-0008](ADR/0008-synchronous-signals-and-effects.md).
 
 ## Phase 3 — Component System
 
@@ -1268,10 +1286,11 @@ ADRs aceitos:
 | [0005](ADR/0005-build-system-and-versions.md) | Build system, versões e metadados | Accepted |
 | [0006](ADR/0006-browser-e2e-testing.md) | Testes E2E de navegador com Playwright Java | Accepted |
 | [0007](ADR/0007-first-milestone-scope.md) | Escopo do primeiro milestone: apenas primeiro mount | Accepted |
+| [0008](ADR/0008-synchronous-signals-and-effects.md) | Signals e effects síncronos na primeira fatia reativa | Accepted |
 
-Decisões futuras (Signals, Component API, Dependency Injection, Hydration,
-estratégia de renderização, etc.) ainda não possuem ADR e permanecem propostas
-até serem registradas.
+Decisões futuras (Component API, Dependency Injection, Hydration, estratégia de
+renderização, etc.) ainda não possuem ADR e permanecem propostas até serem
+registradas.
 
 Cada ADR deverá registrar:
 

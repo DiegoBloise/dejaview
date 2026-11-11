@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Foundation milestone implemented.**
+**Foundation milestone implemented; Phase 2 in progress.**
 
 The repository now contains a working vertical slice:
 
@@ -39,12 +39,16 @@ Java source
   → app.js
   → browser
   → DOM rendering
-  → click interaction
+  → click
+  → Signal update
+  → Effect rerun
+  → DOM text update
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end test.
-It is a **foundation**, not a usable application framework yet: there is no
-reactivity, component system, routing, SSR or tooling.
+It is a **foundation**, not a usable application framework yet: there is a
+minimal reactivity core (signals and effects), but no component system,
+routing, SSR or tooling.
 
 | Capability | Status |
 |---|---|
@@ -54,7 +58,8 @@ reactivity, component system, routing, SSR or tooling.
 | Platform-neutral DOM contracts and first-mount renderer | Implemented and tested |
 | Browser DOM adapter (TeaVM JSO) | Implemented and tested in Chromium |
 | Interactive browser example | Implemented |
-| Signals, computed values, effects | Planned (Phase 2) |
+| `Signal` and synchronous `Effect` with dependency tracking | Implemented and tested |
+| `Computed`, batching, scheduling, effect ownership | Planned (rest of Phase 2) |
 | Components, lifecycle, inputs/outputs/slots | Planned (Phase 3) |
 | Routing, DI, HTTP, forms, state management | Planned (Phase 4) |
 | CLI, DevTools, compiler abstraction | Planned |
@@ -119,6 +124,7 @@ created as empty placeholders.
 | Module | Responsibility | Status |
 |---|---|---|
 | `dejaview-core` | Immutable view model: `View`, `ElementView`, `TextView`, `FragmentView`, attributes, event bindings, `Views` factories. No browser or TeaVM imports. | Implemented |
+| `dejaview-reactivity` | Platform-independent `Signal<T>` and synchronous `Effect` with automatic dependency tracking and disposal. No browser or TeaVM imports. | Implemented |
 | `dejaview-dom` | Platform-neutral DOM contracts, first-mount `DomRenderer`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
 
@@ -126,19 +132,24 @@ Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-core
+                 → dejaview-reactivity
 ```
 
+`dejaview-reactivity` is independent of both the view model and the DOM. The
+renderer will consume it in a later slice to replace the example's direct DOM
+binding.
+
 The target architecture keeps the core independent of browser APIs and places
-platform-specific code in dedicated modules. The long-term module map
-(`dejaview-reactivity`, `dejaview-renderer`, `dejaview-router`,
-`dejaview-ssr`, ...) remains a design proposal; see
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+platform-specific code in dedicated modules. The remaining long-term module map
+(`dejaview-renderer`, `dejaview-router`, `dejaview-ssr`, ...) is still a design
+proposal; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ### Repository layout
 
 ```text
 dejaview/
 ├── dejaview-core/          # Framework core (pure Java)
+├── dejaview-reactivity/    # Signals and effects (pure Java)
 ├── dejaview-dom/           # DOM contracts, renderer, browser adapter
 ├── examples/
 │   └── counter/            # Java → JavaScript browser example
@@ -178,18 +189,20 @@ The implemented flow is deliberately small:
    contracts, so it is tested on the JVM with a fake DOM.
 4. In the browser, `BrowserDomElement` implements those contracts using TeaVM
    JSO (`HTMLDocument`, `HTMLElement`, `Node`, `EventListener`).
-5. A click listener registered on the button increments a plain `int` and calls
-   `Dom.byId("count").setText(...)`.
+5. The count is a `Signal<Integer>`. An `Effect` reads it and updates the text
+   node; the click handler only calls `count.update(...)`.
 
-Step 5 is an intentional first-milestone shortcut, recorded in
-[ADR-0007](docs/ADR/0007-first-milestone-scope.md). Replacing manual DOM access
-with reactivity is the next milestone.
+The effect currently resolves the text node with `Dom.byId("count")`. That is a
+temporary bridge until the renderer owns reactive text bindings. It is recorded
+in [ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md); the earlier
+manual update shortcut is in [ADR-0007](docs/ADR/0007-first-milestone-scope.md).
 
 ## Conceptual API (Not Implemented)
 
 The following snippet illustrates the intended long-term developer experience.
-**It is a design sketch, not a working API.** No `@Component`, `Signal`, or
-reactive `View` rendering exists in the codebase today.
+**It is a design sketch, not a working API.** `Signal` and `Effect` exist as
+plain Java classes, but `@Component`, the `signal(...)` factory and reactive
+`View` rendering do not.
 
 ```java
 @Component
@@ -235,7 +248,7 @@ The intended developer experience focuses on:
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Foundation and JavaScript runtime | Foundation implemented (first-mount rendering) |
-| 2 | Reactivity Engine | Planned — next milestone |
+| 2 | Reactivity Engine | In progress — `Signal` + `Effect` implemented; `Computed`, batching and renderer bindings pending |
 | 3 | Component System | Planned |
 | 4 | Application Framework | Planned |
 | 5 | Compiler and Tooling | Planned |
@@ -243,22 +256,25 @@ The intended developer experience focuses on:
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Phase 2 — Reactivity
+### Next milestone: finish Phase 2 — Reactivity
 
-The recommended next vertical slice replaces manual DOM updates with a minimal,
-tested reactivity core:
+The first reactivity slice is implemented: `Signal<T>` (`get`, `set`, `update`)
+and a synchronous `Effect` with automatic dependency tracking, dependency
+re-collection and disposal. The counter example now updates through an effect
+instead of mutating the DOM in the click handler.
 
-1. `Signal<T>` with `get`, `set`, `update`.
-2. `Computed<T>` with lazy evaluation and caching.
-3. `Effect` with automatic dependency tracking and disposal.
-4. A platform-independent scheduler/batching boundary.
-5. JVM tests for dependency graphs, cycles and cleanup.
-6. A browser E2E test where a signal update changes the counter without manual
-   DOM access.
+The remaining Phase 2 work is:
 
-The renderer subscribes to effects and performs targeted updates, keeping
-`dejaview-core` free of browser APIs. Details are in
-[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
+1. `Computed<T>` with lazy evaluation, caching and invalidation.
+2. A platform-independent scheduler/batching boundary.
+3. Ownership/scopes so effects can be disposed with their component.
+4. Renderer-owned reactive bindings, removing `Dom.byId` from application code.
+5. Tests for dependency graphs, cycles, batching and cleanup.
+6. A browser E2E test where a signal update reaches the DOM through a renderer
+   binding rather than a manual lookup.
+
+Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)
+and [ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md).
 
 ## Build Commands
 
@@ -296,7 +312,10 @@ Significant decisions are recorded as ADRs rather than changed silently.
 
 ## Known Limitations
 
-- No reactivity: the example updates the DOM manually after a click.
+- Minimal reactivity: `Signal` and synchronous `Effect` exist, but there is no
+  `Computed`, batching, scheduler or automatic effect ownership.
+- The example's effect still resolves the DOM node with `Dom.byId("count")`;
+  renderer-owned reactive bindings do not exist yet.
 - First mount only: no diffing, patching, unmounting or hydration.
 - No component abstraction, routing, DI, HTTP client, forms or state management.
 - Browser E2E coverage is Chromium only.
