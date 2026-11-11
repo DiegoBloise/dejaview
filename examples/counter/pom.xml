@@ -18,6 +18,11 @@
     <dependencies>
         <dependency>
             <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-reactivity</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.dejaview</groupId>
             <artifactId>dejaview-dom</artifactId>
         </dependency>
 

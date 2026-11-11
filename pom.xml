@@ -15,6 +15,7 @@
 
     <modules>
         <module>dejaview-core</module>
+        <module>dejaview-reactivity</module>
         <module>dejaview-dom</module>
         <module>examples/counter</module>
     </modules>
@@ -57,6 +58,11 @@
             <dependency>
                 <groupId>io.dejaview</groupId>
                 <artifactId>dejaview-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dejaview</groupId>
+                <artifactId>dejaview-reactivity</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
