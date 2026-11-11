@@ -5,21 +5,21 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A side effect that reruns when any signal it reads changes.
+ * A side effect that reruns when any signal or computed value it reads changes.
  *
  * <p>The body runs immediately on construction and again, synchronously,
- * whenever a tracked signal receives a different value. Dependencies are
- * re-collected on every run, so conditional reads are supported.</p>
+ * whenever a tracked source is invalidated. Dependencies are re-collected on
+ * every run, so conditional reads are supported.</p>
  *
  * <p>An effect stays registered until {@link #dispose()} is called. There is no
  * automatic owner tree or lifecycle scope yet.</p>
  *
  * <p>Effects are not thread-safe and must be disposed when no longer needed.</p>
  */
-public final class Effect implements AutoCloseable {
+public final class Effect extends ReactiveObserver implements AutoCloseable {
 
     private final Runnable body;
-    private final Set<Signal<?>> dependencies = new LinkedHashSet<>();
+    private final Set<ReactiveSource> dependencies = new LinkedHashSet<>();
 
     private boolean disposed;
     private boolean running;
@@ -58,19 +58,22 @@ public final class Effect implements AutoCloseable {
         dispose();
     }
 
-    void addDependency(Signal<?> signal) {
+    @Override
+    void addDependency(ReactiveSource source) {
         if (disposed) {
             return;
         }
-        if (dependencies.add(signal)) {
-            signal.addObserver(this);
+        if (dependencies.add(source)) {
+            source.addObserver(this);
         }
     }
 
-    boolean dependsOn(Signal<?> signal) {
-        return dependencies.contains(signal);
+    @Override
+    boolean dependsOn(ReactiveSource source) {
+        return dependencies.contains(source);
     }
 
+    @Override
     void invalidate() {
         if (disposed) {
             return;
@@ -96,8 +99,8 @@ public final class Effect implements AutoCloseable {
     }
 
     private void clearDependencies() {
-        for (Signal<?> signal : dependencies) {
-            signal.removeObserver(this);
+        for (ReactiveSource source : dependencies) {
+            source.removeObserver(this);
         }
         dependencies.clear();
     }

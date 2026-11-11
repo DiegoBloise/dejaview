@@ -1,35 +1,47 @@
 package io.dejaview.reactivity;
 
+import java.util.function.Supplier;
+
 /**
- * Tracks which effect is currently reading signals.
+ * Tracks which observer is currently reading reactive sources.
  *
- * <p>The context is a simple stack: nested effects temporarily replace the
- * current effect and restore the previous one when they finish.</p>
+ * <p>The context is a simple stack: nested observers temporarily replace the
+ * current one and restore the previous one when they finish.</p>
  */
 final class ReactiveContext {
 
-    private static Effect currentEffect;
+    private static ReactiveObserver currentObserver;
 
     private ReactiveContext() {
     }
 
-    static void track(Signal<?> signal) {
-        if (currentEffect != null) {
-            currentEffect.addDependency(signal);
+    static void track(ReactiveSource source) {
+        if (currentObserver != null) {
+            currentObserver.addDependency(source);
         }
     }
 
-    static Effect currentEffect() {
-        return currentEffect;
+    static ReactiveObserver currentObserver() {
+        return currentObserver;
     }
 
-    static void run(Effect effect, Runnable body) {
-        Effect previous = currentEffect;
-        currentEffect = effect;
+    static void run(ReactiveObserver observer, Runnable body) {
+        ReactiveObserver previous = currentObserver;
+        currentObserver = observer;
         try {
             body.run();
         } finally {
-            currentEffect = previous;
+            currentObserver = previous;
+        }
+    }
+
+    static <T> T call(ReactiveObserver observer, Supplier<T> body) {
+        ReactiveObserver previous = currentObserver;
+        currentObserver = observer;
+        try {
+            return body.get();
+        } finally {
+            currentObserver = previous;
         }
     }
 }
