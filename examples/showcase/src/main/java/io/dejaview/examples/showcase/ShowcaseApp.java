@@ -5,6 +5,10 @@ import io.dejaview.core.View;
 import io.dejaview.core.Views;
 import io.dejaview.dom.DejaView;
 import io.dejaview.reactivity.Signal;
+import io.dejaview.router.Route;
+import io.dejaview.router.Router;
+import io.dejaview.router.RouterHistory;
+import io.dejaview.router.RouterOutlet;
 
 /**
  * Entry point for the DejaView showcase and playground.
@@ -37,6 +41,9 @@ public final class ShowcaseApp {
                 break;
             case "list":
                 mountList("app");
+                break;
+            case "router":
+                mountRouter("app");
                 break;
             case "counter":
             default:
@@ -114,6 +121,31 @@ public final class ShowcaseApp {
         DejaView.mount(
                 Views.componentFactory(KeyedListDemo::new),
                 hostId);
+    }
+
+    /** Nested routing with browser history, parameters and back/forward. */
+    public static void mountRouter(String hostId) {
+        java.util.concurrent.atomic.AtomicReference<Router> ref = new java.util.concurrent.atomic.AtomicReference<>();
+        Router router = Router.builder()
+                .routes(
+                        Route.path("/users/:id")
+                                .component(() -> new RouterUserScreen(ref.get()))
+                                .metadata("screen", "user")
+                                .build(),
+                        Route.path("/about")
+                                .component(() -> new RouterAboutScreen(ref.get()))
+                                .metadata("screen", "about")
+                                .build(),
+                        // Catch-all home: the example also works when served from
+                        // an arbitrary static path such as /index.html.
+                        Route.path("**")
+                                .component(() -> new RouterHomeScreen(ref.get()))
+                                .metadata("screen", "home")
+                                .build())
+                .history(RouterHistory.browser())
+                .build();
+        ref.set(router);
+        DejaView.mount(Views.componentFactory(() -> new RouterShell(router)), hostId);
     }
 
     /** Class-based counter, identical in shape to the examples/counter app. */
@@ -244,6 +276,89 @@ public final class ShowcaseApp {
             java.util.List<String> current = new java.util.ArrayList<>(order.get());
             current.add(0, current.remove(current.size() - 1));
             order.set(java.util.List.copyOf(current));
+        }
+    }
+
+    /** Shell for the router example: mounts the outlet once. */
+    private static final class RouterShell extends AbstractComponent {
+
+        private final Router router;
+
+        RouterShell(Router router) {
+            this.router = router;
+        }
+
+        @Override
+        public View render() {
+            return Views.div(
+                    Views.h1("Router"),
+                    Views.componentFactory(() -> new RouterOutlet(router)))
+                    .classes("example");
+        }
+    }
+
+    /** Fallback screen (catch-all route). Linked from all other screens. */
+    private static final class RouterHomeScreen extends AbstractComponent {
+
+        private final Router router;
+
+        RouterHomeScreen(Router router) {
+            this.router = router;
+        }
+
+        @Override
+        public View render() {
+            return Views.div(
+                    Views.h2("Home").id("router-home"),
+                    Views.button("Open user 42")
+                            .id("router-open-user")
+                            .onClick(() -> router.navigate("/users/42")),
+                    Views.button("About")
+                            .id("router-open-about")
+                            .onClick(() -> router.navigate("/about")));
+        }
+    }
+
+    /** Parameterized screen; the outlet pushes {@code id} as an input. */
+    private static final class RouterUserScreen extends AbstractComponent {
+
+        private final Router router;
+
+        RouterUserScreen(Router router) {
+            this.router = router;
+        }
+
+        @Override
+        public View render() {
+            String id = input("id", String.class);
+            return Views.div(
+                    Views.h2("User profile").id("router-user"),
+                    Views.p("User id: " + id).id("router-user-id"),
+                    Views.button("Home")
+                            .id("router-home-btn")
+                            .onClick(() -> router.navigate("/")),
+                    Views.button("About")
+                            .id("router-user-about")
+                            .onClick(() -> router.navigate("/about")));
+        }
+    }
+
+    /** Static screen to demonstrate navigation between named routes. */
+    private static final class RouterAboutScreen extends AbstractComponent {
+
+        private final Router router;
+
+        RouterAboutScreen(Router router) {
+            this.router = router;
+        }
+
+        @Override
+        public View render() {
+            return Views.div(
+                    Views.h2("About").id("router-about"),
+                    Views.button("Home")
+                            .id("router-about-home")
+                            .onClick(() -> router.navigate("/")));
         }
     }
 }

@@ -58,6 +58,44 @@ class ShowcaseBrowserIT {
     }
 
     @Test
+    void routerExampleNavigatesAndRestoresHistory() throws IOException {
+        try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions().setHeadless(true));
+            try (BrowserContext context = browser.newContext();
+                 Page page = context.newPage()) {
+                List<String> pageErrors = new CopyOnWriteArrayList<>();
+                page.onPageError(pageErrors::add);
+
+                page.navigate(server.url() + "/?example=router");
+
+                assertEquals("Home", page.textContent("h2#router-home"));
+
+                page.click("#router-open-user");
+                assertEquals("User profile", page.textContent("h2#router-user"));
+                assertEquals("User id: 42", page.textContent("#router-user-id"));
+                assertTrue(page.url().endsWith("/users/42"));
+
+                page.click("#router-user-about");
+                assertEquals("About", page.textContent("h2#router-about"));
+
+                page.goBack();
+                assertEquals("User id: 42", page.textContent("#router-user-id"));
+
+                page.goBack();
+                assertEquals("Home", page.textContent("h2#router-home"));
+
+                page.goForward();
+                assertEquals("User id: 42", page.textContent("#router-user-id"));
+
+                assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
+            } finally {
+                browser.close();
+            }
+        }
+    }
+
+    @Test
     void greetingExampleUpdatesGreeting() throws IOException {
         try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(
