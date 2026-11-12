@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 2 — Reactivity and rendering foundations  
+**Milestone:** Phase 3 — Component system  
 **Last updated:** 2026-11-12
 
 This document separates what is implemented and tested from what is designed
@@ -29,6 +29,9 @@ treated as available.
 | Internal argument checks | `dejaview-core` | JUnit tests |
 | Element, text and fragment nodes | `dejaview-core` | JUnit tests |
 | Component view node (`ComponentView`) | `dejaview-core` | JUnit tests |
+| Component contract (`render`, `name`, `close`) | `dejaview-core` | JUnit tests |
+| Component resource ownership (`AbstractComponent`) | `dejaview-core` | JUnit tests |
+| Functional and class-based component factories | `dejaview-core` | JUnit tests |
 | Attribute and event bindings | `dejaview-core` | JUnit tests |
 | `Signal<T>` (`get`, `set`, `update`, equality no-op) | `dejaview-reactivity` | JUnit tests |
 | Synchronous `Effect` with dependency tracking and disposal | `dejaview-reactivity` | JUnit tests |
@@ -53,7 +56,9 @@ treated as available.
 | Runtime start/shutdown with mounted-tree disposal | `dejaview-dom` | JUnit tests |
 | Explicit render tree (`RenderNode` variants) | `dejaview-dom` | JUnit tests via fake DOM |
 | Renderer and reconciliation contracts | `dejaview-dom` | JUnit tests |
+| One component instance per mounted node | `dejaview-dom` | JUnit tests via fake DOM |
 | Component rendering and disposal | `dejaview-dom` | JUnit tests via fake DOM |
+| Nested components and independent instance state | `dejaview-dom` | JUnit tests via fake DOM |
 | Component-scoped reactive rendering | `dejaview-dom` | JUnit tests via fake DOM |
 | In-place text, attribute and property updates | `dejaview-dom` | JUnit tests via fake DOM |
 | Class and style attribute updates | `dejaview-dom` | JUnit tests via fake DOM |
@@ -87,10 +92,12 @@ Java source
   → DOM text and attribute update
 ```
 
-The example is `examples/counter`. It renders a heading, a counter, a button and
-a tagline. Clicking the button updates a `Signal<Integer>`; the mounted tree's
-effect reruns, reconciles the component view and updates the existing text node
-and the counter's `data-count` attribute.
+The example is `examples/counter`. `CounterApp` mounts a class-based
+`CounterComponent` through `Views.componentFactory(...)`. The component owns a
+`Signal<Integer>` and renders a heading, a counter, a button and a tagline.
+Clicking the button updates the signal; the mounted tree's effect reruns,
+reconciles the component and updates the existing text node and the counter's
+`data-count` attribute without recreating the component instance.
 
 ---
 
@@ -103,9 +110,11 @@ and the counter's `data-count` attribute.
 | Keyed list reconciliation | Planned | Positional matching preserves nodes for unchanged positions, but moving or reordering children can recreate them |
 | Styling library compatibility suite | Planned (Sprint 23) | Elements already emit plain `class`/`style` attributes; Bootstrap, Tailwind and daisyUI are not covered by automated tests yet |
 | Fine-grained binding nodes | Not planned yet | Reactive updates are component-scoped: a signal read while rendering reruns the component and reconciles its subtree |
-| Automatic ownership tree | Planned (Sprint 07) | `ReactiveScope` is explicit; components do not own scopes yet |
-| Component system / lifecycle | Planned (Sprint 07) | No `@Component` yet |
-| Inputs, outputs, slots | Planned (Phase 3) | |
+| Automatic reactive-scope ownership | Planned | Components own disposable resources via `AbstractComponent`, but do not create or own a `ReactiveScope` automatically |
+| Component annotations (`@Component`, `@Input`, `@Output`) | Planned (Sprint 08) | Components are declared in Java code, not through annotations |
+| Inputs, outputs, slots | Planned (Sprint 08) | Components receive dependencies through constructors or closures |
+| Lifecycle hooks (`onInit`, `onMount`, `onUpdate`, `onDestroy`) | Planned (Sprint 08) | Only disposal (`close()`) exists |
+| Dynamic component swapping | Planned (Sprint 08) | A component node keeps its instance while its position is reused, regardless of the new component type |
 | Hydration | Planned (Phase 6) | |
 | Routing | Planned (Phase 4) | |
 | Dependency injection | Planned (Phase 4) | |
@@ -138,7 +147,9 @@ and the counter's `data-count` attribute.
    (FIFO). Glitch-free topological propagation of computed values is future
    work.
 4. **Ownership is explicit.** `ReactiveScope` disposes effects, computeds and
-   child scopes together, but components do not own scopes automatically yet.
+   child scopes together. Components own disposable resources through
+   `AbstractComponent`, but they do not create or own a `ReactiveScope`
+   automatically.
 5. **Reactive updates are component-scoped.** Signals read while rendering rerun
    the mounted effect and reconcile the component subtree. Fine-grained
    `BoundText`/`BoundAttribute` nodes are not part of the model yet.
@@ -151,9 +162,10 @@ and the counter's `data-count` attribute.
 8. **Positional reconciliation only.** `DomTreeReconciler` preserves nodes at
    matching positions, but moving or reordering children can recreate them.
    There is no keyed diff, public unmount API or hydration.
-9. **No component abstraction.** `ComponentView` is a reactive rendering
-   boundary; `Views` factories are a convenience layer over immutable records.
-   There is no component system yet.
+9. **Component identity is positional.** A mounted component keeps its instance
+   while its position is reused; there is no keyed identity, typed identity or
+   state migration when the component type changes. Inputs, outputs and lifecycle
+   hooks are not implemented yet.
 10. **Single example.** Only the counter example exists.
 11. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
     not part of the automated matrix yet.
@@ -181,15 +193,14 @@ and the counter's `data-count` attribute.
 
 ## Next milestone recommendation
 
-**Sprint 07 — Component Model and Composition.**
+**Sprint 08 — Inputs, Outputs, Templates and Lifecycle.**
 
-Sprint 06 is implemented and tested: the renderer owns a reactive effect,
-reconciles text, attributes, properties, class/style attributes, events and
-children in place, and disposes effects and listeners with the mounted tree. The
-counter example no longer touches the DOM directly. The remaining reactivity
-refinements are equality short-circuiting and optional topological ordering;
-they are not blockers for the component model.
+Sprint 07 is implemented and tested: `Component` defines rendering, metadata and
+disposal; `ComponentView` creates one component instance per mounted node;
+`AbstractComponent` owns disposable resources; and components compose and nest
+with isolated state. The counter example is now a class-based component.
 
-Sprint 07 should build component lifecycle, ownership and composition on top of
-`ComponentView`. Fine-grained binding nodes and keyed list reconciliation remain
-future work and should not be added before a concrete need appears.
+Sprint 08 should add typed inputs and outputs, explicit lifecycle callbacks and
+the declarative template helpers (`when`, `each`) described in the roadmap.
+Fine-grained binding nodes and keyed list reconciliation remain future work and
+should not be added before a concrete need appears.

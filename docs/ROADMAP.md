@@ -448,17 +448,17 @@ Changing a Signal must update the corresponding DOM output without requiring a c
 
 ### Implementation
 
-- [ ] Define component contracts.
-- [ ] Implement component instantiation.
-- [ ] Implement component rendering.
-- [ ] Implement component composition.
-- [ ] Implement component trees.
-- [ ] Implement nested components.
-- [ ] Implement component state ownership.
-- [ ] Implement component disposal.
-- [ ] Define component metadata.
-- [ ] Define declarative component APIs.
-- [ ] Establish component naming and conventions.
+- [x] Define component contracts.
+- [x] Implement component instantiation.
+- [x] Implement component rendering.
+- [x] Implement component composition.
+- [x] Implement component trees.
+- [x] Implement nested components.
+- [x] Implement component state ownership.
+- [x] Implement component disposal.
+- [x] Define component metadata.
+- [x] Define declarative component APIs.
+- [x] Establish component naming and conventions.
 
 ### Deliverables
 
@@ -468,12 +468,12 @@ Changing a Signal must update the corresponding DOM output without requiring a c
 
 ### Tests
 
-- [ ] Components instantiate successfully.
-- [ ] Components render correctly.
-- [ ] Nested components render in the correct hierarchy.
-- [ ] Component disposal releases resources.
-- [ ] Component state remains isolated where expected.
-- [ ] Multiple instances of the same component work independently.
+- [x] Components instantiate successfully.
+- [x] Components render correctly.
+- [x] Nested components render in the correct hierarchy.
+- [x] Component disposal releases resources.
+- [x] Component state remains isolated where expected.
+- [x] Multiple instances of the same component work independently.
 
 ### Acceptance Criteria
 
@@ -1421,9 +1421,8 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-11):** Sprint 04 is complete. Sprints 01, 02, 05 and
-06 have partial foundations in the repository but do not yet satisfy all of
-their acceptance criteria. The authoritative implemented-versus-planned list is
+**Current status (2026-11-12):** Sprints 00 through 07 are complete. The
+authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Sprint | Feature | Status |
@@ -1435,7 +1434,7 @@ their acceptance criteria. The authoritative implemented-versus-planned list is
 | 04 | Computed, Effects and Scheduling | Completed |
 | 05 | Rendering Engine Foundation | Completed |
 | 06 | DOM Rendering and Reactive Updates | Completed |
-| 07 | Component Model and Composition | Not Started |
+| 07 | Component Model and Composition | Completed |
 | 08 | Inputs, Outputs, Templates and Lifecycle | Not Started |
 | 09 | Dependency Injection | Not Started |
 | 10 | Router | Not Started |

@@ -12,20 +12,21 @@
 **Rendering:** CSR, SSR, SSG  
 **License:** TBD
 
-> **Implementation note (2026-11-11).** This document describes the long-term
+> **Implementation note (2026-11-12).** This document describes the long-term
 > target architecture. The current repository implements the foundation described
 > in [ADR-0003](ADR/0003-initial-module-boundaries.md) and
-> [ADR-0007](ADR/0007-first-milestone-scope.md), plus the reactivity slices from
+> [ADR-0007](ADR/0007-first-milestone-scope.md), the reactivity slices from
 > [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
 > [ADR-0009](ADR/0009-lazy-computed-values.md) and
-> [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md):
+> [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md), and the component model
+> from [ADR-0014](ADR/0014-component-model-and-ownership.md):
 > `dejaview-core` (immutable view model including `ComponentView` and
-> `Property`, framework configuration, application context, resource registry,
-> logging and lifecycle contracts), `dejaview-reactivity` (`Signal`, `Effect`,
-> `Computed`, batching and scopes), `dejaview-dom` (DOM contracts, render tree,
-> reactive renderer, positional reconciler, TeaVM JSO adapter) and
-> `examples/counter`. TeaVM 0.16.0 with Java 25 has been validated; see
-> [`COMPILER.md`](COMPILER.md). The
+> `Property`, `Component`, `AbstractComponent`, framework configuration,
+> application context, resource registry, logging and lifecycle contracts),
+> `dejaview-reactivity` (`Signal`, `Effect`, `Computed`, batching and scopes),
+> `dejaview-dom` (DOM contracts, render tree, reactive renderer, positional
+> reconciler, TeaVM JSO adapter) and `examples/counter`. TeaVM 0.16.0 with Java 25
+> has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
 > [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Modules and
 > capabilities described below but absent from that list are proposals, not
@@ -440,6 +441,14 @@ public class UserCard {
     }
 }
 ```
+
+> **Estado atual (Sprint 07).** O contrato implementado é
+> `Component` (`render()`, `name()` e `close()`) com `AbstractComponent` para
+> propriedade de recursos e `ComponentView` com uma factory por nó montado.
+> Componentes funcionais usam `Views.component(...)`; componentes de classe usam
+> `Views.componentFactory(...)`. Anotações (`@Component`, `@Input`, `@Output`),
+> inputs/outputs tipados e lifecycle hooks explícitos ainda são propostas.
+> Ver [ADR-0014](ADR/0014-component-model-and-ownership.md).
 
 ## 5.2. Component Composition
 
@@ -1252,15 +1261,27 @@ Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
 ## Phase 3 — Component System
 
 - [ ] Component annotations.
-- [ ] Component lifecycle.
+- [x] Component lifecycle (disposal; inputs/outputs e callbacks explícitos na Sprint 08).
 - [ ] Inputs e Outputs.
-- [ ] Component composition.
+- [x] Component composition.
 - [ ] Slots.
 - [ ] Conditional rendering.
 - [ ] List rendering.
 - [ ] Context API.
 
 **Objetivo:** construir aplicações utilizando componentes independentes.
+
+**Estado:** o modelo de componentes da Sprint 07 está implementado e testado.
+`Component` define `render()`, `name()` e `close()`; `AbstractComponent` concentra
+a propriedade de recursos via `ResourceRegistry`; e `ComponentView` mantém uma
+factory que cria exatamente uma instância por nó montado. Componentes podem ser
+funcionais (`Views.component(...)`) ou baseados em classe
+(`Views.componentFactory(...)`), aninhar-se livremente e ter estado isolado por
+instância. A identidade é posicional: a instância sobrevive a re-renders na mesma
+posição e é fechada quando o nó é removido. Inputs, outputs, anotações, slots e
+callbacks de ciclo de vida explícitos ainda não existem. Detalhes em
+[ADR-0014](ADR/0014-component-model-and-ownership.md) e
+[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 ## Phase 4 — Application Framework
 
@@ -1348,9 +1369,10 @@ ADRs aceitos:
 | [0011](ADR/0011-core-application-abstractions.md) | Abstrações de aplicação no core | Accepted |
 | [0012](ADR/0012-render-tree-and-renderer-placement.md) | Árvore de renderização e localização do renderer | Accepted |
 | [0013](ADR/0013-reactive-rendering-and-reconciliation.md) | Renderização reativa e reconciliação posicional | Accepted |
+| [0014](ADR/0014-component-model-and-ownership.md) | Modelo de componentes e propriedade de recursos | Accepted |
 
-Decisões futuras (Component API, Dependency Injection, Hydration, estratégia de
-renderização, etc.) ainda não possuem ADR e permanecem propostas até serem
+Decisões futuras (Inputs e Outputs, Dependency Injection, Hydration, estratégia
+de renderização, etc.) ainda não possuem ADR e permanecem propostas até serem
 registradas.
 
 Cada ADR deverá registrar:
