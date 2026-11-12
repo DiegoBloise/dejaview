@@ -72,9 +72,9 @@ treated as available.
 | Click event handling | example | Playwright E2E |
 | Generated browser bundle | example | `target/webapp/app.js` |
 | Source maps | example | `app.js.map` |
-| Browser E2E test | example | `-Pe2e` Failsafe test |
+| Browser E2E test | `examples/counter`, `examples/showcase` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, docs, status) | `website/` | Static site served over HTTP; sibling playground iframe |
-| Interactive playground with pre-compiled examples | `website/playground/` | Static HTML/CSS/JS + CodeMirror; examples execute real TeaVM bundles |
+| Interactive playground with pre-compiled examples | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 
 ### End-to-end proof
