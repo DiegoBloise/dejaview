@@ -3,76 +3,75 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DejaView Playground — Interactive Examples</title>
-    <link rel="stylesheet" href="css/playground.css">
-    <script src="https://unpkg.com/codemirror@6.0.0/lib/codemirror.js" defer></script>
-    <script src="https://unpkg.com/codemirror@6.0.0/mode/clike/clike.js" defer></script>
-    <script src="js/playground.js" defer></script>
+    <meta name="description" content="Interactive DejaView playground — real Java components compiled by TeaVM, executed live in your browser." />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>DejaView Playground</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    <link rel="stylesheet" href="css/playground.css" />
 </head>
 <body>
+<a class="skip-link" href="#workspace">Skip to editor</a>
 
-<header class="site-header">
-    <h1>DejaView Playground</h1>
-    <p class="sub-title">Java. Reimagined for the Web. — Interactive Examples</p>
+<header class="pg-header">
+    <a class="brand" href="/website/" aria-label="Back to DejaView home">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <rect x="4" y="4" width="56" height="56" rx="13" fill="none" stroke="#8b7cf8" stroke-width="3" opacity="0.45"/>
+            <rect x="11.5" y="11.5" width="41" height="41" rx="8" fill="none" stroke="#22d3ee" stroke-width="3" opacity="0.7"/>
+            <path d="M18 41h11l4-13 5 17 4-9h9" fill="none" stroke="#f5f7fb" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-name">DejaView</span>
+    </a>
+    <p class="pg-title">Playground</p>
+    <span class="pill pill-info" title="The playground executes the same TeaVM bundle verified by the E2E suite">Pre-compiled execution</span>
 </header>
 
-<div class="playground-container">
+<main class="pg-main" id="workspace">
 
-    <aside class="sidebar">
+    <aside class="pg-sidebar" aria-label="Example picker">
         <h2>Examples</h2>
-        <ul class="example-list" id="example-list">
-            <li data-example="counter">Counter (implemented)</li>
-            <li data-example="greeting">Greeting (implemented)</li>
-            <li data-example="composition">Nested components (implemented)</li>
-            <li data-example="conditional">Conditional rendering (implemented)</li>
-            <li data-example="todo" class="planned">Todo (planned)</li>
-            <li data-example="router" class="planned">Router (planned)</li>
-            <li data-example="forms" class="planned">Forms (planned)</li>
-        </ul>
+        <ul class="example-list" id="example-list"></ul>
 
-        <div class="example-info" id="example-info">
-            <p>Select an example to see its Java code and run it.</p>
+        <div class="pg-note">
+            <p><strong>How this works.</strong> Examples are written in Java against the real DejaView API, compiled to JavaScript with TeaVM at build time, and executed in the preview iframe exactly like a production deployment.</p>
+            <p class="pg-note-sub">In-browser editing and recompilation arrive with the development-server milestone (see <a href="/docs/ROADMAP.md">ROADMAP</a>). Until then the editor is an interactive viewer: you may edit freely — <strong>Run</strong> executes the last compiled build.</p>
         </div>
     </aside>
 
-    <section class="editor-pane">
-        <div class="toolbar">
-            <button id="btn-run" class="btn btn-primary" title="Run example">Run</button>
-            <button id="btn-copy" class="btn btn-secondary" title="Copy source">Copy</button>
-            <button id="btn-copy-all" class="btn btn-secondary" title="Copy full source">Copy All</button>
+    <section class="pg-workspace" aria-label="Editor and preview">
+        <div class="pg-toolbar">
+            <button id="btn-run" class="btn btn-primary" type="button">&#9654; Run example</button>
+            <button id="btn-copy" class="btn btn-ghost" type="button">Copy source</button>
+            <span class="toolbar-spacer"></span>
+            <span class="current-example" id="current-example">counter</span>
         </div>
 
-        <div class="code-editor" id="code-editor"></div>
+        <div class="pg-columns">
+            <div class="editor-wrap" role="group" aria-label="Java source editor">
+                <div class="editor-stack">
+                    <pre class="editor-highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
+                    <textarea id="editor-input" class="editor-input" spellcheck="false" autocorrect="off" autocapitalize="off" aria-label="Java source code" wrap="off"></textarea>
+                </div>
+            </div>
 
-        <div class="output-panel" id="output-panel">
-            <p>Output will appear here after running.</p>
-        </div>
-
-        <div class="preview-frame" id="preview-frame" style="display:none;">
-            <iframe id="preview-iframe" width="100%" height="100%" frameborder="0"></iframe>
+            <div class="preview-wrap">
+                <div class="preview-head">
+                    <h3>Preview</h3>
+                    <p class="preview-status" id="preview-status" role="status" aria-live="polite">Select an example and press Run.</p>
+                </div>
+                <div class="preview-body">
+                    <iframe id="preview-iframe" class="preview-iframe" title="DejaView example preview" src="about:blank"></iframe>
+                    <div class="conceptual-banner" id="conceptual-banner" hidden>
+                        <p class="conceptual-title">Conceptual preview</p>
+                        <p>This capability is <strong>not implemented yet</strong>. The source above is an illustrative sketch of a planned API, shown to document where the framework is heading — it does not compile or run. See <a href="/docs/ROADMAP.md">docs/ROADMAP.md</a>.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
-</div>
 
-<script>
-    // CodeMirror 6 API
-    document.addEventListener('DOMContentLoaded', function () {
-        var editor = CodeMirror(document.getElementById('code-editor'), {
-            lineNumbers: true,
-            theme: 'default'
-        });
+</main>
 
-        window.dejaviewPlayground = {
-            editor: editor,
-            setSource: function (source) {
-                editor.setValue(source);
-            },
-            getSource: function () {
-                return editor.getValue();
-            }
-        };
-    });
-</script>
-
+<script src="../js/highlight.js" defer></script>
+<script src="js/playground.js" defer></script>
 </body>
 </html>

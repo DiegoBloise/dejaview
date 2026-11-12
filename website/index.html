@@ -3,131 +3,268 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DejaView — Official Website</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <meta name="description" content="DejaView is a Java-first frontend framework compiled to JavaScript. Build reactive web UIs in pure Java 25 — no rewrites, no proprietary CSS pipeline." />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>DejaView — Java. Reimagined for the Web.</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <header class="site-header">
-    <h1>DejaView</h1>
-    <p class="sub-title">Java. Reimagined for the Web.</p>
+    <a class="brand" href="/website/" aria-label="DejaView home">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <rect x="4" y="4" width="56" height="56" rx="13" fill="none" stroke="#8b7cf8" stroke-width="3" opacity="0.45"/>
+            <rect x="11.5" y="11.5" width="41" height="41" rx="8" fill="none" stroke="#22d3ee" stroke-width="3" opacity="0.7"/>
+            <path d="M18 41h11l4-13 5 17 4-9h9" fill="none" stroke="#f5f7fb" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-name">DejaView</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#status">Status</a>
+        <a href="#getting-started">Get started</a>
+        <a href="#docs">Docs</a>
+        <a class="nav-cta" href="/website/playground/">Playground</a>
+    </nav>
 </header>
 
-<section class="hero">
-    <div class="hero-content">
-        <h2>DejaView — A Java frontend framework compiled to JavaScript</h2>
-        <p>Bring modern web development capabilities to Java using a dedicated frontend runtime, component-based architecture and a reactive rendering engine.</p>
-    </div>
-</section>
+<main id="main">
 
-<section class="about">
-    <h2>Philosophy</h2>
-    <ul>
-        <li><strong>Java is primary.</strong> The entire stack targets JDK 25; no alternative language or compilation target.</li>
-        <li><strong>JavaScript only browser target.</strong> WebAssembly is out of scope.</li>
-        <li><strong>Framework stays DOM-free.</strong> `dejaview-core` contains no browser APIs; `dejaview-dom` provides platform-neutral DOM contracts.</li>
-        <li><strong>Component model first.</strong> `Component`, `AbstractComponent`, `ComponentView`, `RenderNode` give reusable, composable UI units.</li>
-        <li><strong>Reactivity is granular.</strong> Signals, effects and computed values drive updates without full-tree re-renders.</li>
-    </ul>
-</section>
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-inner container">
+            <div class="hero-copy">
+                <p class="eyebrow"><span class="dot" aria-hidden="true"></span> Java 25 &rarr; JavaScript &middot; TeaVM 0.16.0</p>
+                <h1 id="hero-title">Java.<br /><span class="gradient-text">Reimagined for the Web.</span></h1>
+                <p class="hero-sub">A frontend framework that treats Java as the primary language — signals, components and a reactive renderer, compiled to plain HTML and JavaScript you can deploy anywhere.</p>
+                <div class="hero-actions">
+                    <a class="btn btn-primary" href="/website/playground/">Try the playground</a>
+                    <a class="btn btn-ghost" href="#getting-started">Get started &rarr;</a>
+                </div>
+                <ul class="hero-proof" aria-label="Project facts">
+                    <li>JUnit-tested modules</li>
+                    <li>Chromium E2E via Playwright</li>
+                    <li>Zero CDN dependencies</li>
+                </ul>
+            </div>
+            <figure class="hero-code" aria-label="Example DejaView component">
+                <div class="code-window">
+                    <div class="code-window-bar" aria-hidden="true">
+                        <span class="win-dot"></span><span class="win-dot"></span><span class="win-dot"></span>
+                        <span class="code-window-title">Counter.java</span>
+                    </div>
+                    <pre><code data-highlight-java>public final class Counter extends AbstractComponent {
+    private final Signal&lt;Integer&gt; count = new Signal&lt;&gt;(0);
 
-<section class="features">
-    <h2>Feature Highlights</h2>
-    <div class="feature-grid">
-        <article class="feature-card">
-            <h3>Runtime Bootstrap</h3>
-            <p>TeaVM 0.16.0 compiles Java → JavaScript at build time; the browser bundle runs in the same environment as native JS.</p>
-        </article>
-        <article class="feature-card">
-            <h3>Core Abstractions</h3>
-            <p>Immutable view model (`View`, `ElementView`, `TextView`, ...), attributes, properties, event bindings.</p>
-        </article>
-        <article class="feature-card">
-            <h3>Reactivity Engine</h3>
-            <p>Signals, Effects, Computed, batching, FIFO scheduling, cleanup on dispose.</p>
-        </article>
-        <article class="feature-card">
-            <h3>Renderer & Reconciliation</h3>
-            <p>Explicit render tree via sealed `RenderNode` variants; positional reconciliation preserves nodes.</p>
-        </article>
-        <article class="feature-card">
-            <h3>Component System</h3>
-            <p>`Component`, `AbstractComponent`, `ComponentView`, lifecycle hooks, resource ownership.</p>
-        </article>
-        <article class="feature-card">
-            <h3>Styling Compatibility</h3>
-            <p>Plain `class`/`style` attributes; works with Bootstrap, Tailwind CSS, daisyUI without a proprietary pipeline.</p>
-        </article>
-    </div>
-</section>
+    @Override
+    public View render() {
+        return Views.div(
+            Views.h1("Counter"),
+            Views.p("Count: " + count.get()).id("count"),
+            Views.button("Increment")
+                .onClick(() -&gt; count.update(v -&gt; v + 1))
+        ).classes("example");
+    }
+}</code></pre>
+                </div>
+                <figcaption>Real API — this exact component runs in the playground.</figcaption>
+            </figure>
+        </div>
+    </section>
 
-<section class="getting-started">
-    <h2>Getting Started</h2>
-    <ol>
-        <li><strong>Install Maven Wrapper + Java 25.</strong></li>
-        <li><strong>Build:</strong> `./mvnw clean verify` (all modules).</li>
-        <li><strong>Run example:</strong> `./mvnw -Pe2e -pl examples/counter -am verify` (Chromium E2E).</li>
-        <li><strong>Serve the static site:</strong> `python3 -m http.server 8080 -d website/`.</li>
-    </ol>
-</section>
+    <!-- Features -->
+    <section id="features" class="section container" aria-labelledby="features-title">
+        <div class="section-head">
+            <p class="eyebrow">What&rsquo;s inside</p>
+            <h2 id="features-title">A framework, not a script collection</h2>
+        </div>
+        <div class="card-grid">
+            <article class="card">
+                <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg></div>
+                <h3>Java 25 &rarr; JavaScript</h3>
+                <p>TeaVM 0.16.0 compiles Java bytecode to a plain <code>app.js</code> at build time. No WebAssembly, no bundler magic — just a script tag.</p>
+                <span class="pill pill-ok">Implemented</span>
+            </article>
+            <article class="card">
+                <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 4 18 3-9h6"/></svg></div>
+                <h3>Signals &amp; Computed</h3>
+                <p><code>Signal</code>, <code>Effect</code>, lazy <code>Computed</code> with push-based invalidation, batching, FIFO scheduling and scope disposal.</p>
+                <span class="pill pill-ok">Implemented</span>
+            </article>
+            <article class="card">
+                <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/></svg></div>
+                <h3>Reactive renderer</h3>
+                <p>A sealed <code>RenderNode</code> tree with positional reconciliation; the renderer reuses DOM nodes and updates attributes and properties surgically.</p>
+                <span class="pill pill-ok">Implemented</span>
+            </article>
+            <article class="card">
+                <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/></svg></div>
+                <h3>Component model</h3>
+                <p><code>Component</code>, <code>AbstractComponent</code> with <code>ResourceRegistry</code> ownership, class-based and functional components via <code>Views.componentFactory</code>.</p>
+                <span class="pill pill-ok">Implemented</span>
+            </article>
+            <article class="card">
+                <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h10M4 19h7"/><circle cx="19" cy="16" r="3"/></svg></div>
+                <h3>Boring HTML, by design</h3>
+                <p>Plain <code>class</code> and <code>style</code> attributes, untouched by the framework — Bootstrap, Tailwind CSS and daisyUI work without a proprietary pipeline.</p>
+                <span class="pill pill-ok">Implemented</span>
+            </article>
+            <article class="card">
+                <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+                <h3>Tested end to end</h3>
+                <p>JUnit across all modules and Playwright browser tests that click through the compiled counter and showcase examples in Chromium.</p>
+                <span class="pill pill-ok">Implemented</span>
+            </article>
+        </div>
+    </section>
 
-<section class="docs">
-    <h2>Documentation</h2>
-    <nav class="doc-nav">
-        <a href="#architecture">Architecture</a>
-        <a href="#core">Core API</a>
-        <a href="#reactivity">Reactivity</a>
-        <a href="#components">Components</a>
-        <a href="#playground">Playground</a>
-    </nav>
-</section>
+    <!-- Philosophy -->
+    <section id="philosophy" class="section container" aria-labelledby="philosophy-title">
+        <div class="section-head">
+            <p class="eyebrow">Philosophy</p>
+            <h2 id="philosophy-title">Three promises, kept in code</h2>
+        </div>
+        <div class="promise-grid">
+            <div class="promise">
+                <h3>Java stays primary</h3>
+                <p>No DSL, no annotation processor magic required to start. The API is plain records, interfaces and generics that compile with <code>--release 25</code>.</p>
+            </div>
+            <div class="promise">
+                <h3>Honest status</h3>
+                <p>Every user-facing feature is either covered by automated tests or clearly labelled as planned. The docs never present proposals as shipped capabilities.</p>
+            </div>
+            <div class="promise">
+                <h3>No lock-in</h3>
+                <p><code>dejaview-core</code> never imports a browser API. Renderers, DOM contracts and examples live in separate modules you can replace or extend.</p>
+            </div>
+        </div>
+    </section>
 
-<section id="architecture" class="docs-section">
-    <h2>Architecture Overview</h2>
-    <p>The project follows the long-term design documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and recorded in ADRs [ADR-0003 … ADR-0014](docs/ADR/README.md). Key points:</p>
-    <ul>
-        <li><strong>dejaview-core</strong> — immutable view model, `Property`, `Lifecycle`, `Preconditions`.</li>
-        <li><strong>dejaview-reactivity</strong> — signals, effects, computed, scopes, batching, scheduler.</li>
-        <li><strong>dejaview-dom</strong> — DOM contracts, render tree, `DomTreeReconciler`, TeaVM JSO adapter.</li>
-        <li><strong>examples/*</strong> — Java → JavaScript browser examples compiled by TeaVM.</li>
-    </ul>
-</section>
+    <!-- Status -->
+    <section id="status" class="section container" aria-labelledby="status-title">
+        <div class="section-head">
+            <p class="eyebrow">Implementation status</p>
+            <h2 id="status-title">What works today — and what doesn&rsquo;t yet</h2>
+            <p class="section-sub">As of <code>0.1.0-SNAPSHOT</code>. The full matrix lives in <a href="/docs/IMPLEMENTATION_STATUS.md">IMPLEMENTATION_STATUS.md</a>; the <a href="/docs/ROADMAP.md">ROADMAP</a> is authoritative for what ships next.</p>
+        </div>
+        <div class="status-cols">
+            <div class="status-col status-col-ok">
+                <h3>Implemented &amp; tested</h3>
+                <ul>
+                    <li>Maven multi-module build, Maven Wrapper, Java 25 baseline</li>
+                    <li>Immutable view model (<code>Views.div</code>, <code>h1</code>, <code>button</code>…) and attributes/properties/events</li>
+                    <li><code>Signal</code>, <code>Effect</code>, <code>Computed</code>, batching, FIFO scheduler, <code>ReactiveScope</code></li>
+                    <li>Sealed <code>RenderNode</code> tree with positional reconciliation and reactive DOM updates</li>
+                    <li>Component model: <code>Component</code>, <code>AbstractComponent</code>, <code>ResourceRegistry</code>, functional components</li>
+                    <li>Plain <code>class</code>/<code>style</code> attributes — Bootstrap, Tailwind CSS, daisyUI markup just works</li>
+                    <li>Browser examples (counter, showcase) compiled by TeaVM and verified in Chromium</li>
+                </ul>
+            </div>
+            <div class="status-col status-col-planned">
+                <h3>Planned, not built yet</h3>
+                <ul>
+                    <li>Inputs, outputs, named slots and lifecycle hooks for components (Sprint 08)</li>
+                    <li>Fine-grained DOM binding nodes and keyed reconciliation</li>
+                    <li>Client-side router, forms, HTTP client, dependency injection</li>
+                    <li>SSR/SSG and hydration</li>
+                    <li>In-browser compilation for the playground (needs the dev-server milestone)</li>
+                    <li>Automated Bootstrap/Tailwind/daisyUI compatibility suite</li>
+                </ul>
+            </div>
+        </div>
+    </section>
 
-<section id="core-api" class="docs-section">
-    <h2>Core API</h2>
-    <p>All public classes live under the `io.dejaview.core` package. The most relevant ones are:</p>
-    <ul>
-        <li><code>io.dejaview.core.Component</code> — functional interface: <code>render()</code>, default <code>name()</code>, no-op <code>close()</code>.</li>
-        <li><code>io.dejaview.core.AbstractComponent</code> — base class that owns resources via <code>ResourceRegistry</code>; implements <code>Component</code>. Subclasses cannot override <code>close()</code>.</li>
-        <li><code>io.dejaview.core.ComponentView</code> — record holding a <code>Supplier<? extends Component></code> factory; <code>of(Component)</code> mounts an existing instance.</li>
-        <li><code>Views.component(Supplier<View>) / Views.componentFactory(Supplier<? extends Component>)</code> — convenience factories.</li>
-    </ul>
-</section>
+    <!-- Architecture -->
+    <section id="architecture" class="section container" aria-labelledby="arch-title">
+        <div class="section-head">
+            <p class="eyebrow">Architecture</p>
+            <h2 id="arch-title">Layered, with the boundary you expect</h2>
+        </div>
+        <div class="arch-diagram" role="img" aria-label="Module dependency diagram: dejaview-core is pure Java, dejaview-reactivity depends on it, dejaview-dom adds the renderer and browser adapter, examples depend on all three.">
+            <div class="arch-layer arch-examples"><span class="arch-label">examples/*</span>counter &middot; showcase — TeaVM-compiled apps</div>
+            <div class="arch-arrow" aria-hidden="true">&#8595;</div>
+            <div class="arch-layer arch-dom"><span class="arch-label">dejaview-dom</span>DOM contracts &middot; render tree &middot; reconciler &middot; TeaVM JSO adapter</div>
+            <div class="arch-arrow" aria-hidden="true">&#8595;</div>
+            <div class="arch-layer arch-reactivity"><span class="arch-label">dejaview-reactivity</span>Signal &middot; Effect &middot; Computed &middot; batching &middot; scopes</div>
+            <div class="arch-arrow" aria-hidden="true">&#8595;</div>
+            <div class="arch-layer arch-core"><span class="arch-label">dejaview-core</span>immutable view model &middot; Component &middot; ResourceRegistry</div>
+        </div>
+        <p class="arch-note">Dependencies point inward only. <code>dejaview-core</code> has no browser, DOM or TeaVM imports — it compiles and tests on plain JVM 25. The full design lives in <a href="/docs/ARCHITECTURE.md">ARCHITECTURE.md</a>; significant decisions are recorded in <a href="/docs/ADR/README.md">ADRs 0001–0014</a>.</p>
+    </section>
 
-<section id="reactivity" class="docs-section">
-    <h2>Reactivity</h2>
-    <p>Core primitives:</p>
-    <ul>
-        <li><code>Signal<T> – mutable state</code> (get/set/update).</li>
-        <li><code>Effect – synchronous observer that tracks reads and reconciles DOM.</code> Disposed with the mounted tree.</li>
-        <li><code>Computed<T> – lazy, cached value invalidated push‑based.</code> Detects cycles.</li>
-        <li><code>ReactiveScope – groups disposal of effects/computed/child scopes.</code></li>
-    </ul>
-</section>
+    <!-- Getting started -->
+    <section id="getting-started" class="section container" aria-labelledby="gs-title">
+        <div class="section-head">
+            <p class="eyebrow">Getting started</p>
+            <h2 id="gs-title">From zero to a running counter in minutes</h2>
+        </div>
+        <ol class="gs-steps">
+            <li class="gs-step">
+                <h3><span class="gs-num">1</span> Prerequisites</h3>
+                <p>JDK 25 and Git. Maven is not required — the repo ships the Maven Wrapper.</p>
+            </li>
+            <li class="gs-step">
+                <h3><span class="gs-num">2</span> Clone &amp; build</h3>
+                <div class="copy-block">
+                    <pre><code>git clone https://github.com/dejaview/dejaview.git
+cd dejaview
+./mvnw clean verify</code></pre>
+                    <button class="copy-btn" type="button" data-copy="git clone https://github.com/dejaview/dejaview.git&#10;cd dejaview&#10;./mvnw clean verify" aria-label="Copy clone and build commands">Copy</button>
+                </div>
+            </li>
+            <li class="gs-step">
+                <h3><span class="gs-num">3</span> Run the counter in a real browser</h3>
+                <p>Compiles the example with TeaVM and clicks through it in headless Chromium.</p>
+                <div class="copy-block">
+                    <pre><code>./mvnw -Pe2e -pl examples/counter -am verify</code></pre>
+                    <button class="copy-btn" type="button" data-copy="./mvnw -Pe2e -pl examples/counter -am verify" aria-label="Copy E2E command">Copy</button>
+                </div>
+            </li>
+            <li class="gs-step">
+                <h3><span class="gs-num">4</span> Serve this website</h3>
+                <p>Static files, no build step. Serve from the repo root so example bundles resolve.</p>
+                <div class="copy-block">
+                    <pre><code>python3 -m http.server 8099
+# http://localhost:8099/website/</code></pre>
+                    <button class="copy-btn" type="button" data-copy="python3 -m http.server 8099" aria-label="Copy serve command">Copy</button>
+                </div>
+            </li>
+        </ol>
+    </section>
 
-<section id="components" class="docs-section">
-    <h2>Components</h2>
-    <p>See [Component.java](dejaview-core/src/main/java/io/dejaview/core/Component.java) and [AbstractComponent.java](dejaview-core/src/main/java/io/dejaview/core/AbstractComponent.java). Components own their resources through <code>own(T)</code> / <code>onDispose(Runnable)</code> registered with <code>ResourceRegistry</code>.</p>
-</section>
+    <!-- Docs -->
+    <section id="docs" class="section container" aria-labelledby="docs-title">
+        <div class="section-head">
+            <p class="eyebrow">Documentation</p>
+            <h2 id="docs-title">The documentation is the source of truth</h2>
+        </div>
+        <ul class="docs-grid">
+            <li><a class="doc-card" href="/docs/ARCHITECTURE.md"><strong>Architecture</strong><span>Long-term design, layer diagram, component system and ADR index.</span></a></li>
+            <li><a class="doc-card" href="/docs/COMPILER.md"><strong>Compiler &amp; TeaVM</strong><span>Feasibility study, validated matrix and constraints of the JavaScript target.</span></a></li>
+            <li><a class="doc-card" href="/docs/IMPLEMENTATION_STATUS.md"><strong>Implementation status</strong><span>Implemented vs planned, verified limitations and the next milestone.</span></a></li>
+            <li><a class="doc-card" href="/docs/ROADMAP.md"><strong>Roadmap</strong><span>Sprint-by-sprint plan; the authoritative scope for what ships next.</span></a></li>
+            <li><a class="doc-card" href="/docs/ADR/README.md"><strong>Decision records</strong><span>ADR-0001 through ADR-0014 — every significant technical decision, with rationale.</span></a></li>
+            <li><a class="doc-card" href="/website/playground/"><strong>Playground</strong><span>Interactive examples running the actual compiled framework in your browser.</span></a></li>
+        </ul>
+    </section>
 
-<section id="playground" class="docs-section">
-    <h2>Playground</h2>
-    <p>An interactive editor where you can paste real DejaView Java code, see it compile to JavaScript, and watch the browser bundle run. See <a href="#playground">website/playground/playground.html</a> for details.</p>
-</section>
+</main>
 
 <footer class="site-footer">
-    <p>DejaView v0.1.0-SNAPSHOT · License: To be determined · <a href="/develop">https://github.com/dejaview/dejaview</a></p>
+    <div class="container footer-inner">
+        <p class="footer-brand">DejaView <span class="footer-tag">Java. Reimagined for the Web.</span></p>
+        <nav class="footer-nav" aria-label="Footer">
+            <a href="/website/playground/">Playground</a>
+            <a href="https://github.com/dejaview/dejaview" rel="noopener noreferrer">GitHub</a>
+            <a href="/docs/ARCHITECTURE.md">Architecture</a>
+            <a href="/docs/ROADMAP.md">Roadmap</a>
+        </nav>
+        <p class="footer-meta">v0.1.0-SNAPSHOT &middot; License: To be determined &middot; Built with Java 25, TeaVM and Maven</p>
+    </div>
 </footer>
-
+<script src="js/highlight.js" defer></script>
+<script src="js/site.js" defer></script>
 </body>
 </html>
