@@ -23,6 +23,7 @@
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
         <a href="#features">Features</a>
+        <a href="#demo">Live demo</a>
         <a href="#status">Status</a>
         <a href="#getting-started">Get started</a>
         <a href="#docs">Docs</a>
@@ -117,6 +118,28 @@
                 <p>JUnit across all modules and Playwright browser tests that click through the compiled counter and showcase examples in Chromium.</p>
                 <span class="pill pill-ok">Implemented</span>
             </article>
+        </div>
+    </section>
+
+    <!-- Live demo -->
+    <section id="demo" class="section container" aria-labelledby="demo-title">
+        <div class="section-head">
+            <p class="eyebrow">Live demo</p>
+            <h2 id="demo-title">Real DejaView, running right now</h2>
+            <p class="section-sub">This is not a mock-up. It is the exact <code>ShowcaseApp</code> bundle verified by the browser E2E suite — compiled from Java by TeaVM and executing your clicks.</p>
+        </div>
+        <div class="demo-grid">
+            <div class="demo-copy">
+                <ul class="demo-facts">
+                    <li><strong>Class-based component</strong> extending <code>AbstractComponent</code></li>
+                    <li><strong>Signal-driven</strong> — one signal, one effect, positional reconciliation</li>
+                    <li><strong>Zero JavaScript glue</strong> — the button handler is Java <code>count.update(v -&gt; v + 1)</code></li>
+                </ul>
+                <p><a class="btn btn-ghost" href="/website/playground/">Open the playground &rarr;</a></p>
+            </div>
+            <div class="demo-frame">
+                <iframe src="/examples/showcase/target/webapp/index.html?example=counter" title="Live DejaView counter example" loading="lazy"></iframe>
+            </div>
         </div>
     </section>
 

@@ -292,15 +292,15 @@ a { color: var(--accent-cyan); }
 /* ---------- Responsive ---------- */
 @media (max-width: 1020px) {
     .card-grid, .docs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .hero-inner { grid-template-columns: 1fr; gap: 2.5rem; padding: 3rem 0 3.5rem; }
-    .promise-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-    .status-cols { grid-template-columns: 1fr; }
-    .gs-steps { grid-template-columns: 1fr; }
+    .hero-inner { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; padding: 3rem 0 3.5rem; }
+    .promise-grid { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .status-cols { grid-template-columns: minmax(0, 1fr); }
+    .gs-steps { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 640px) {
     .site-nav a:not(.nav-cta) { display: none; }
-    .card-grid, .docs-grid { grid-template-columns: 1fr; }
+    .card-grid, .docs-grid { grid-template-columns: minmax(0, 1fr); }
     .arch-layer { flex-direction: column; gap: 0.2rem; }
     .arch-label { min-width: 0; }
 }
@@ -308,4 +308,22 @@ a { color: var(--accent-cyan); }
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+/* Grid items must be allowed to shrink below content width */
+.hero-copy, .hero-code, .gs-step, .doc-card, .card, .promise, .status-col, .arch-layer { min-width: 0; }
+.code-window pre { max-width: 100%; }
+.copy-block pre code { white-space: pre; }
+
+/* Live demo section */
+.demo-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 2rem; align-items: center; }
+.demo-facts { list-style: none; display: grid; gap: 0.9rem; margin-bottom: 1.4rem; }
+.demo-facts li { position: relative; padding-left: 1.4rem; color: var(--text-dim); font-size: 0.94rem; }
+.demo-facts li::before { content: "→"; position: absolute; left: 0; color: var(--accent-cyan); }
+.demo-facts strong { color: var(--text); }
+.demo-frame { border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); background: #0f1117; }
+.demo-frame iframe { display: block; width: 100%; height: 26rem; border: 0; background: #0f1117; }
+
+@media (max-width: 1020px) {
+    .demo-grid { grid-template-columns: minmax(0, 1fr); }
 }
