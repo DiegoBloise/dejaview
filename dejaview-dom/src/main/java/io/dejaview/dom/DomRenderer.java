@@ -1,6 +1,7 @@
 package io.dejaview.dom;
 
 import io.dejaview.core.Attribute;
+import io.dejaview.core.ComponentView;
 import io.dejaview.core.ElementView;
 import io.dejaview.core.EventBinding;
 import io.dejaview.core.FragmentView;
@@ -18,11 +19,16 @@ import java.util.Objects;
  * {@code Dom*} interfaces, which keeps the traversal logic testable on the JVM
  * and leaves the platform-specific code in a thin adapter.</p>
  *
- * <p>This is a first-mount renderer: it appends the view tree to the supplied
- * container and returns a {@link MountedDom} handle. Diffing, keyed updates and
- * hydration are later milestones and are intentionally not implemented here.</p>
+ * <p>Rendering happens in two phases: the renderer first builds a
+ * {@link RenderNode} tree that owns the created DOM nodes, listeners and child
+ * nodes, then appends the resulting roots to the container. The returned
+ * {@link MountedDom} handle can dispose the tree without re-walking the original
+ * view.</p>
+ *
+ * <p>This is a first-mount renderer: diffing, keyed updates and hydration are
+ * later milestones. The update contract is {@link TreeReconciler}.</p>
  */
-public final class DomRenderer {
+public final class DomRenderer implements Renderer {
 
     /**
      * Appends {@code view} to {@code container}.
@@ -30,50 +36,54 @@ public final class DomRenderer {
      * @return a handle that detaches the mounted nodes and listeners
      * @throws NullPointerException if any argument is {@code null}
      */
+    @Override
     public MountedDom render(View view, DomDocument document, DomElement container) {
         Objects.requireNonNull(view, "view");
         Objects.requireNonNull(document, "document");
         Objects.requireNonNull(container, "container");
 
-        List<DomNode> roots = new ArrayList<>();
-        List<DomEventRegistration> events = new ArrayList<>();
-        append(view, document, container, roots, events);
-        return new MountedDom(container, roots, events);
+        RenderNode root = build(view, document);
+        for (DomNode node : root.nodes()) {
+            container.append(node);
+        }
+        return new MountedDom(container, List.of(root));
     }
 
-    private static void append(
-            View view,
-            DomDocument document,
-            DomElement parent,
-            List<DomNode> roots,
-            List<DomEventRegistration> events) {
-        switch (view) {
-            case TextView text -> appendNode(document.createText(text.value()), parent, roots);
+    private static RenderNode build(View view, DomDocument document) {
+        return switch (view) {
+            case TextView text -> new TextRenderNode(document.createText(text.value()));
             case FragmentView fragment -> {
+                List<RenderNode> children = new ArrayList<>();
                 for (View child : fragment.children()) {
-                    append(child, document, parent, roots, events);
+                    children.add(build(child, document));
                 }
+                yield new FragmentRenderNode(children);
             }
-            case ElementView element -> {
-                DomElement domElement = document.createElement(element.tagName());
-                for (Attribute attribute : element.attributes()) {
-                    domElement.setAttribute(attribute.name(), attribute.value());
-                }
-                for (EventBinding event : element.events()) {
-                    events.add(domElement.addEventListener(event.type(), event.handler()));
-                }
-                for (View child : element.children()) {
-                    append(child, document, domElement, null, events);
-                }
-                appendNode(domElement, parent, roots);
-            }
-        }
+            case ComponentView component -> new ComponentRenderNode(build(component.resolve(), document));
+            case ElementView element -> buildElement(element, document);
+        };
     }
 
-    private static void appendNode(DomNode node, DomElement parent, List<DomNode> roots) {
-        parent.append(node);
-        if (roots != null) {
-            roots.add(node);
+    private static RenderNode buildElement(ElementView view, DomDocument document) {
+        DomElement element = document.createElement(view.tagName());
+        for (Attribute attribute : view.attributes()) {
+            element.setAttribute(attribute.name(), attribute.value());
         }
+
+        List<DomEventRegistration> events = new ArrayList<>();
+        for (EventBinding event : view.events()) {
+            events.add(element.addEventListener(event.type(), event.handler()));
+        }
+
+        List<RenderNode> children = new ArrayList<>();
+        for (View child : view.children()) {
+            RenderNode childNode = build(child, document);
+            for (DomNode node : childNode.nodes()) {
+                element.append(node);
+            }
+            children.add(childNode);
+        }
+
+        return new ElementRenderNode(element, children, events);
     }
 }

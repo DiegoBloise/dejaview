@@ -12,5 +12,5 @@ package io.dejaview.core;
  * {@link ElementView#child(View)} return a new instance instead of mutating
  * the receiver, which makes view trees safe to share, test and cache.</p>
  */
-public sealed interface View permits ElementView, FragmentView, TextView {
+public sealed interface View permits ComponentView, ElementView, FragmentView, TextView {
 }

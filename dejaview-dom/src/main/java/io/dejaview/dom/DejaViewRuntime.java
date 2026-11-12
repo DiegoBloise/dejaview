@@ -25,15 +25,21 @@ public final class DejaViewRuntime implements AutoCloseable {
     private final DomDocument document;
     private final DomElement container;
     private final RuntimeConfig config;
+    private final Renderer renderer;
     private final List<MountedDom> mounts = new ArrayList<>();
 
     private boolean started;
     private boolean disposed;
 
-    private DejaViewRuntime(DomDocument document, DomElement container, RuntimeConfig config) {
+    private DejaViewRuntime(
+            DomDocument document,
+            DomElement container,
+            RuntimeConfig config,
+            Renderer renderer) {
         this.document = Objects.requireNonNull(document, "document");
         this.container = Objects.requireNonNull(container, "container");
         this.config = Objects.requireNonNull(config, "config");
+        this.renderer = Objects.requireNonNull(renderer, "renderer");
     }
 
     /**
@@ -42,7 +48,18 @@ public final class DejaViewRuntime implements AutoCloseable {
      */
     public static DejaViewRuntime create(
             DomDocument document, DomElement container, RuntimeConfig config) {
-        return new DejaViewRuntime(document, container, config);
+        return create(document, container, config, new DomRenderer());
+    }
+
+    /**
+     * Creates a runtime with an explicit renderer.
+     */
+    public static DejaViewRuntime create(
+            DomDocument document,
+            DomElement container,
+            RuntimeConfig config,
+            Renderer renderer) {
+        return new DejaViewRuntime(document, container, config, renderer);
     }
 
     /**
@@ -74,7 +91,7 @@ public final class DejaViewRuntime implements AutoCloseable {
     public MountedDom mount(View view) {
         Objects.requireNonNull(view, "view");
         ensureActive();
-        MountedDom mounted = new DomRenderer().render(view, document, container);
+        MountedDom mounted = renderer.render(view, document, container);
         mounts.add(mounted);
         return mounted;
     }

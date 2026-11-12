@@ -7,22 +7,20 @@ import java.util.Objects;
  * A view tree that has been mounted into a container.
  *
  * <p>Disposing the result detaches every node that was appended to the
- * container and removes all event listeners registered during the mount. This
- * is the minimal renderer lifecycle: it gives the runtime a way to release a
- * mounted tree without diffing or unmounting individual children.</p>
+ * container and releases the listeners and child nodes owned by the render
+ * tree. This is the minimal renderer lifecycle: it gives the runtime a way to
+ * release a mounted tree without diffing or unmounting individual children.</p>
  */
 public final class MountedDom implements AutoCloseable {
 
     private final DomElement container;
-    private final List<DomNode> roots;
-    private final List<DomEventRegistration> events;
+    private final List<RenderNode> roots;
 
     private boolean disposed;
 
-    MountedDom(DomElement container, List<DomNode> roots, List<DomEventRegistration> events) {
+    MountedDom(DomElement container, List<RenderNode> roots) {
         this.container = Objects.requireNonNull(container, "container");
         this.roots = List.copyOf(roots);
-        this.events = List.copyOf(events);
     }
 
     /**
@@ -33,7 +31,7 @@ public final class MountedDom implements AutoCloseable {
     }
 
     /**
-     * Detaches the mounted nodes and removes their listeners. Calling this
+     * Detaches the mounted nodes and releases their listeners. Calling this
      * method more than once has no additional effect.
      */
     public void dispose() {
@@ -42,11 +40,12 @@ public final class MountedDom implements AutoCloseable {
         }
         disposed = true;
 
-        for (int index = events.size() - 1; index >= 0; index--) {
-            events.get(index).remove();
-        }
         for (int index = roots.size() - 1; index >= 0; index--) {
-            container.removeChild(roots.get(index));
+            RenderNode root = roots.get(index);
+            for (DomNode node : root.nodes()) {
+                container.removeChild(node);
+            }
+            root.dispose();
         }
     }
 

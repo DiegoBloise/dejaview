@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -148,5 +149,68 @@ class DomRendererTest {
         mounted.dispose();
 
         assertTrue(container.children().isEmpty());
+    }
+
+    @Test
+    void rendersResolvedComponentViews() {
+        FakeDomElement container = document.createElement("main");
+
+        renderer.render(
+                Views.component(() -> Views.div(Views.text("inside"))),
+                document,
+                container);
+
+        FakeDomElement root = assertInstanceOf(FakeDomElement.class, container.children().get(0));
+        assertEquals("div", root.tagName());
+        assertEquals("inside", assertInstanceOf(FakeText.class, root.children().get(0)).text());
+    }
+
+    @Test
+    void rendersNestedComponentsAndFragments() {
+        FakeDomElement container = document.createElement("main");
+
+        renderer.render(
+                Views.component(() -> Views.fragment(
+                        Views.component(() -> Views.span("one")),
+                        Views.span("two"))),
+                document,
+                container);
+
+        assertEquals(2, container.children().size());
+        assertEquals("span", assertInstanceOf(FakeDomElement.class, container.children().get(0)).tagName());
+        assertEquals("span", assertInstanceOf(FakeDomElement.class, container.children().get(1)).tagName());
+    }
+
+    @Test
+    void disposingComponentTreeReleasesNestedListeners() {
+        AtomicInteger clicks = new AtomicInteger();
+        FakeDomElement container = document.createElement("main");
+
+        MountedDom mounted = renderer.render(
+                Views.component(() -> Views.div(
+                        Views.button("Increment").onClick(clicks::incrementAndGet))),
+                document,
+                container);
+
+        FakeDomElement root = assertInstanceOf(FakeDomElement.class, container.children().get(0));
+        FakeDomElement button = assertInstanceOf(FakeDomElement.class, root.children().get(0));
+
+        mounted.dispose();
+
+        assertTrue(container.children().isEmpty());
+        assertEquals(0, button.listenerCount("click"));
+    }
+
+    @Test
+    void implementsTheRendererContract() {
+        assertInstanceOf(Renderer.class, renderer);
+    }
+
+    @Test
+    void treeReconcilerContractCanBeImplementedAsALambda() {
+        RenderNode node = new TextRenderNode(document.createText("text"));
+        TreeReconciler reconciler = (current, next, domDocument) -> current;
+
+        assertSame(node, reconciler.reconcile(node, Views.text("next"), document));
     }
 }

@@ -99,6 +99,22 @@ class DejaViewRuntimeTest {
     }
 
     @Test
+    void usesTheConfiguredRenderer() {
+        AtomicInteger renders = new AtomicInteger();
+        Renderer recording = (view, domDocument, target) -> {
+            renders.incrementAndGet();
+            return new DomRenderer().render(view, domDocument, target);
+        };
+
+        DejaViewRuntime runtime = DejaViewRuntime
+                .create(document, container, config, recording)
+                .start(Views.div());
+
+        assertEquals(1, renders.get());
+        runtime.shutdown();
+    }
+
+    @Test
     void rejectsNullArguments() {
         assertThrows(NullPointerException.class,
                 () -> DejaViewRuntime.create(null, container, config));
@@ -106,6 +122,8 @@ class DejaViewRuntimeTest {
                 () -> DejaViewRuntime.create(document, null, config));
         assertThrows(NullPointerException.class,
                 () -> DejaViewRuntime.create(document, container, null));
+        assertThrows(NullPointerException.class,
+                () -> DejaViewRuntime.create(document, container, config, null));
         assertThrows(NullPointerException.class,
                 () -> DejaViewRuntime.create(document, container, config).start(null));
         assertThrows(NullPointerException.class,

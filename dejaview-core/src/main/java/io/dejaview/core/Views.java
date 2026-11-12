@@ -1,5 +1,7 @@
 package io.dejaview.core;
 
+import java.util.function.Supplier;
+
 /**
  * Factory methods for building view trees.
  *
@@ -29,6 +31,13 @@ public final class Views {
 
     public static FragmentView fragment(View... children) {
         return new FragmentView(java.util.List.of(children));
+    }
+
+    /**
+     * Creates a view that resolves its content when rendered.
+     */
+    public static ComponentView component(Supplier<View> content) {
+        return new ComponentView(content);
     }
 
     public static ElementView element(String tagName, View... children) {
