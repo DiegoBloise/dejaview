@@ -19,11 +19,13 @@
 > [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
 > [ADR-0009](ADR/0009-lazy-computed-values.md) and
 > [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md):
-> `dejaview-core` (immutable view model, framework configuration, application
-> context, resource registry, logging and lifecycle contracts), `dejaview-reactivity` (`Signal`,
-> `Effect`, `Computed`, batching and scopes), `dejaview-dom` (DOM contracts,
-> first-mount renderer, TeaVM JSO adapter) and `examples/counter`. TeaVM 0.16.0
-> with Java 25 has been validated; see [`COMPILER.md`](COMPILER.md). The
+> `dejaview-core` (immutable view model including `ComponentView` and
+> `Property`, framework configuration, application context, resource registry,
+> logging and lifecycle contracts), `dejaview-reactivity` (`Signal`, `Effect`,
+> `Computed`, batching and scopes), `dejaview-dom` (DOM contracts, render tree,
+> reactive renderer, positional reconciler, TeaVM JSO adapter) and
+> `examples/counter`. TeaVM 0.16.0 with Java 25 has been validated; see
+> [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
 > [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Modules and
 > capabilities described below but absent from that list are proposals, not
@@ -1204,6 +1206,7 @@ O desenvolvimento deverá ocorrer incrementalmente.
 - [x] Implementar ciclo de vida e shutdown do runtime.
 - [x] Implementar abstrações de core (configuração, contexto, disposal, logging e exceções).
 - [x] Implementar árvore de renderização explícita e contratos de renderer/reconciliação.
+- [x] Implementar atualizações reativas de DOM e reconciliação posicional.
 
 **Objetivo:** executar uma aplicação Java no navegador utilizando DejaView.
 
@@ -1235,13 +1238,16 @@ detalhado em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 `ReactiveScope` estão implementados e testados. Effects executam de forma
 síncrona fora de batches e são deduplicados dentro de `Reactive.batch(...)`;
 computeds são lazy, cacheados e invalidados por push; loops reativos são
-detectados por um limite de execuções. Ainda não há short-circuit por igualdade
-nem ordenação topológica explícita. O exemplo usa um `Effect` que resolve o nó
-via `Dom.byId`; bindings reativos gerenciados pelo renderer são o próximo passo.
+detectados por um limite de execuções. O renderer usa uma `ComponentView` como
+fronteira reativa: um único `Effect` por árvore montada rastreia os signals lidos
+e reconcilia o DOM posicionalmente, atualizando texto, atributos, propriedades e
+filhos sem recriar nós inalterados. Ainda não há short-circuit por igualdade,
+ordenação topológica explícita, bindings por nó ou reconciliação com chaves.
 Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
 [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
-[ADR-0009](ADR/0009-lazy-computed-values.md) e
-[ADR-0010](ADR/0010-batching-scheduling-and-scopes.md).
+[ADR-0009](ADR/0009-lazy-computed-values.md),
+[ADR-0010](ADR/0010-batching-scheduling-and-scopes.md) e
+[ADR-0013](ADR/0013-reactive-rendering-and-reconciliation.md).
 
 ## Phase 3 — Component System
 
@@ -1341,6 +1347,7 @@ ADRs aceitos:
 | [0010](ADR/0010-batching-scheduling-and-scopes.md) | Batching, agendamento síncrono e escopos reativos | Accepted |
 | [0011](ADR/0011-core-application-abstractions.md) | Abstrações de aplicação no core | Accepted |
 | [0012](ADR/0012-render-tree-and-renderer-placement.md) | Árvore de renderização e localização do renderer | Accepted |
+| [0013](ADR/0013-reactive-rendering-and-reconciliation.md) | Renderização reativa e reconciliação posicional | Accepted |
 
 Decisões futuras (Component API, Dependency Injection, Hydration, estratégia de
 renderização, etc.) ainda não possuem ADR e permanecem propostas até serem

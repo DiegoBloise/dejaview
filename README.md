@@ -41,27 +41,29 @@ Java source
   → DOM rendering
   → click
   → Signal update
-  → Effect rerun
-  → DOM text update
+  → render effect
+  → positional reconciliation
+  → DOM text and attribute update
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end test.
 It is a **foundation**, not a usable application framework yet: there is a
-minimal reactivity core (signals and effects), but no component system,
-routing, SSR or tooling.
+minimal reactivity core (signals and effects) and component-scoped rendering, but
+no component system, routing, SSR or tooling.
 
 | Capability | Status |
 |---|---|
 | Maven multi-module build, Maven Wrapper, centralized versions | Implemented |
 | Java 25 → JavaScript compilation with TeaVM 0.16.0 | Implemented and validated |
-| Immutable view model (elements, text, fragments, attributes, events) | Implemented and tested |
-| Platform-neutral DOM contracts and first-mount renderer | Implemented and tested |
+| Immutable view model (elements, text, fragments, components, attributes, properties, events) | Implemented and tested |
+| Platform-neutral DOM contracts, render tree and reactive renderer | Implemented and tested |
 | Browser DOM adapter (TeaVM JSO) | Implemented and tested in Chromium |
 | Interactive browser example | Implemented |
 | `Signal` and synchronous `Effect` with dependency tracking | Implemented and tested |
 | Lazy `Computed` with cache, invalidation and cycle detection | Implemented and tested |
 | Batching, FIFO scheduling, cleanup and `ReactiveScope` disposal | Implemented and tested |
-| Equality short-circuit, topological ordering, renderer bindings | Planned (rest of Phase 2 / Sprint 06) |
+| Component-scoped reactive rendering and positional reconciliation | Implemented and tested |
+| Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
 | Components, lifecycle, inputs/outputs/slots | Planned (Phase 3) |
 | Routing, DI, HTTP, forms, state management | Planned (Phase 4) |
 | CLI, DevTools, compiler abstraction | Planned |
@@ -125,21 +127,21 @@ created as empty placeholders.
 
 | Module | Responsibility | Status |
 |---|---|---|
-| `dejaview-core` | Immutable view model: `View`, `ElementView`, `TextView`, `FragmentView`, attributes, event bindings, `Views` factories. No browser or TeaVM imports. | Implemented |
+| `dejaview-core` | Immutable view model: `View`, `ElementView`, `TextView`, `FragmentView`, `ComponentView`, attributes, properties, event bindings, `Views` factories. No browser or TeaVM imports. | Implemented |
 | `dejaview-reactivity` | Platform-independent `Signal<T>`, `Effect`, lazy `Computed<T>`, explicit batching, FIFO scheduling and `ReactiveScope` ownership. No browser or TeaVM imports. | Implemented |
-| `dejaview-dom` | Platform-neutral DOM contracts, first-mount `DomRenderer`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
+| `dejaview-dom` | Platform-neutral DOM contracts, render tree, reactive `DomRenderer`, positional `TreeReconciler`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
 
 Dependency direction:
 
 ```text
-examples/counter → dejaview-dom → dejaview-core
-                 → dejaview-reactivity
+examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
+examples/counter → dejaview-reactivity
 ```
 
-`dejaview-reactivity` is independent of both the view model and the DOM. The
-renderer will consume it in a later slice to replace the example's direct DOM
-binding.
+`dejaview-reactivity` is independent of the view model and the DOM. The renderer
+uses it to track signals read by component views and to reconcile the mounted
+tree; application code no longer performs direct DOM updates.
 
 The target architecture keeps the core independent of browser APIs and places
 platform-specific code in dedicated modules. The remaining long-term module map
@@ -184,27 +186,28 @@ WebAssembly is explicitly out of scope.
 
 The implemented flow is deliberately small:
 
-1. `CounterApp` builds an immutable view tree with `Views` factories.
+1. `CounterApp` builds an immutable view tree with `Views` factories inside a
+   component view.
 2. `DejaView.mount(view, "app")` resolves the container and asks `DomRenderer`
-   to append the tree.
+   to mount the tree.
 3. `DomRenderer` works only against `DomDocument` / `DomElement` / `DomNode`
    contracts, so it is tested on the JVM with a fake DOM.
 4. In the browser, `BrowserDomElement` implements those contracts using TeaVM
    JSO (`HTMLDocument`, `HTMLElement`, `Node`, `EventListener`).
-5. The count is a `Signal<Integer>`. An `Effect` reads it and updates the text
-   node; the click handler only calls `count.update(...)`.
+5. The count is a `Signal<Integer>` read while the component renders. The
+   mounted tree's `Effect` tracks that read, and the click handler only calls
+   `count.update(...)`. The renderer then reconciles the existing DOM nodes.
 
-The effect currently resolves the text node with `Dom.byId("count")`. That is a
-temporary bridge until the renderer owns reactive text bindings. It is recorded
-in [ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md); the earlier
-manual update shortcut is in [ADR-0007](docs/ADR/0007-first-milestone-scope.md).
+The renderer owns the reactive binding: application code no longer looks up DOM
+nodes. The flow is recorded in
+[ADR-0013](docs/ADR/0013-reactive-rendering-and-reconciliation.md).
 
 ## Conceptual API (Not Implemented)
 
 The following snippet illustrates the intended long-term developer experience.
-**It is a design sketch, not a working API.** `Signal` and `Effect` exist as
-plain Java classes, but `@Component`, the `signal(...)` factory and reactive
-`View` rendering do not.
+**It is a design sketch, not a working API.** `Signal`, `Effect` and
+component-scoped reactive rendering exist, but `@Component`, the `signal(...)`
+factory, class-based components and their lifecycle do not.
 
 ```java
 @Component
@@ -249,8 +252,8 @@ The intended developer experience focuses on:
 
 | Phase | Description | Status |
 |---|---|---|
-| 1 | Foundation and JavaScript runtime | Foundation implemented (first-mount rendering) |
-| 2 | Reactivity Engine | In progress — `Signal`, `Effect`, `Computed`, batching, scheduling and scopes implemented; renderer bindings pending |
+| 1 | Foundation and JavaScript runtime | Foundation implemented |
+| 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
 | 3 | Component System | Planned |
 | 4 | Application Framework | Planned |
 | 5 | Compiler and Tooling | Planned |
@@ -258,28 +261,31 @@ The intended developer experience focuses on:
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: finish Phase 2 — Reactivity
+### Next milestone: Sprint 07 — Component Model and Composition
 
-The reactivity primitives are implemented: `Signal<T>` (`get`, `set`, `update`),
-`Effect` with automatic dependency tracking and disposal, lazy `Computed<T>`
-with caching, invalidation and cycle detection, explicit batching
-(`Reactive.batch`), synchronous FIFO scheduling, cleanup callbacks
-(`Reactive.onCleanup`) and `ReactiveScope` ownership. The counter example
-updates through an effect instead of mutating the DOM in the click handler.
+The rendering and reactivity foundations are implemented: `Signal<T>`, `Effect`,
+lazy `Computed<T>`, batching, synchronous FIFO scheduling, cleanup and
+`ReactiveScope` ownership, plus a render tree and a reactive renderer that
+reconciles text, attributes, properties, class/style attributes, events and
+children in place. The counter example updates through a signal read by a
+component view; the renderer owns the DOM update and no longer requires
+`Dom.byId`.
 
-The remaining Phase 2 work is:
+The remaining Phase 2 refinements are:
 
 1. Equality short-circuiting so dependents do not rerun when a computed value is
    unchanged.
 2. Optional topological ordering for glitch-free computed propagation.
-3. Renderer-owned reactive bindings, removing `Dom.byId` from application code.
-4. A browser E2E test where a signal update reaches the DOM through a renderer
-   binding rather than a manual lookup.
+
+Neither blocks the component model. Sprint 07 should build component lifecycle,
+ownership and composition on top of `ComponentView`. Keyed list reconciliation
+and fine-grained binding nodes remain future work.
 
 Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 [ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md),
-[ADR-0009](docs/ADR/0009-lazy-computed-values.md) and
-[ADR-0010](docs/ADR/0010-batching-scheduling-and-scopes.md).
+[ADR-0009](docs/ADR/0009-lazy-computed-values.md),
+[ADR-0010](docs/ADR/0010-batching-scheduling-and-scopes.md) and
+[ADR-0013](docs/ADR/0013-reactive-rendering-and-reconciliation.md).
 
 ## Build Commands
 
@@ -325,9 +331,11 @@ Significant decisions are recorded as ADRs rather than changed silently.
   or glitch-free propagation yet.
 - Ownership is explicit through `ReactiveScope`; components do not own scopes
   automatically.
-- The example's effect still resolves the DOM node with `Dom.byId("count")`;
-  renderer-owned reactive bindings do not exist yet.
-- First mount only: no diffing, patching, unmounting or hydration.
+- Reactive updates are component-scoped: a signal read while rendering reruns
+  the component and reconciles its subtree. Fine-grained binding nodes do not
+  exist yet.
+- Reconciliation is positional. Moving or reordering children can recreate DOM
+  nodes; there is no keyed diff, public unmount API or hydration.
 - No component abstraction, routing, DI, HTTP client, forms or state management.
 - Browser E2E coverage is Chromium only.
 - Only the JDK/TeaVM APIs exercised by the current code are validated.

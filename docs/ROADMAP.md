@@ -368,44 +368,46 @@ The rendering engine must be able to represent and render a basic component tree
 
 **Objective:** Connect the rendering engine to the reactive system.
 
-**Status (2026-11-11):** In progress. Implemented: DOM element creation, text
-rendering, initial attribute/class application and child insertion during first
-mount. Reactive bindings, updates, removal/replacement and DOM cleanup are
-pending. The counter example still updates text through a manual `Dom.byId`
-effect.
+**Status (2026-11-12):** Completed. Component views are the reactive boundary: each
+mounted tree owns one `Effect` that renders the view, tracks the signals read by
+component suppliers and reconciles the result. `DomTreeReconciler` updates text,
+attributes, properties, class/style attributes, events and children in place,
+and replaces nodes when the node kind or tag name changes. `Reactive.batch`
+coalesces multiple signal writes into one reconciliation. The counter example no
+longer uses `Dom.byId`.
 
 ### Implementation
 
 - [x] Implement DOM element creation.
 - [x] Implement text rendering.
-- [ ] Implement attribute updates.
-- [ ] Implement property updates.
-- [ ] Implement class updates.
-- [ ] Implement style updates.
+- [x] Implement attribute updates.
+- [x] Implement property updates.
+- [x] Implement class updates.
+- [x] Implement style updates.
 - [x] Implement child insertion.
-- [ ] Implement child removal.
-- [ ] Implement node replacement.
-- [ ] Implement reactive text bindings.
-- [ ] Implement reactive attribute bindings.
-- [ ] Implement reactive conditional updates.
-- [ ] Implement update scheduling.
-- [ ] Implement DOM cleanup.
+- [x] Implement child removal.
+- [x] Implement node replacement.
+- [x] Implement reactive text bindings.
+- [x] Implement reactive attribute bindings.
+- [x] Implement reactive conditional updates.
+- [x] Implement update scheduling.
+- [x] Implement DOM cleanup.
 
 ### Deliverables
 
 - Functional DOM renderer.
-- Reactive DOM bindings.
+- Component-scoped reactive DOM bindings.
 - Initial rendering update pipeline.
 
 ### Tests
 
 - [x] Java application renders HTML elements.
-- [ ] Text changes update the existing DOM node.
-- [ ] Reactive attributes update correctly.
-- [ ] Removed elements are detached.
-- [ ] Unrelated DOM nodes are not unnecessarily recreated.
-- [ ] Reactive updates are batched.
-- [ ] Event listeners and effects are cleaned up.
+- [x] Text changes update the existing DOM node.
+- [x] Reactive attributes update correctly.
+- [x] Removed elements are detached.
+- [x] Unrelated DOM nodes are not unnecessarily recreated.
+- [x] Reactive updates are batched.
+- [x] Event listeners and effects are cleaned up.
 
 ### Acceptance Criteria
 
@@ -1402,7 +1404,7 @@ their acceptance criteria. The authoritative implemented-versus-planned list is
 | 03 | Signals and Reactive Primitives | Completed |
 | 04 | Computed, Effects and Scheduling | Completed |
 | 05 | Rendering Engine Foundation | Completed |
-| 06 | DOM Rendering and Reactive Updates | In Progress — element creation, text and initial attributes exist; reactive bindings and update pipeline pending |
+| 06 | DOM Rendering and Reactive Updates | Completed |
 | 07 | Component Model and Composition | Not Started |
 | 08 | Inputs, Outputs, Templates and Lifecycle | Not Started |
 | 09 | Dependency Injection | Not Started |
