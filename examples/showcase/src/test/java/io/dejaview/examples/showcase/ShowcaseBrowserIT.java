@@ -142,6 +142,65 @@ class ShowcaseBrowserIT {
     }
 
     @Test
+    void userCardExampleDrivesInputsOutputsAndSlots() throws IOException {
+        try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions().setHeadless(true));
+            try (BrowserContext context = browser.newContext();
+                 Page page = context.newPage()) {
+                List<String> pageErrors = new CopyOnWriteArrayList<>();
+                page.onPageError(pageErrors::add);
+
+                page.navigate(server.url() + "/index.html?example=usercard");
+
+                assertEquals("Team directory", page.textContent("h1"));
+                assertEquals("@Ada", page.textContent("h3"));
+                assertEquals("Core team", page.textContent("strong"));
+                assertEquals("Event: —", page.textContent("#event-log"));
+
+                page.click("button:has-text('Select Ada')");
+                assertEquals("Event: Selected Ada", page.textContent("#event-log"));
+
+                page.click("button:has-text('Switch member')");
+                assertEquals("@Grace", page.textContent("h3"));
+                assertEquals("Guest", page.textContent("strong"));
+
+                assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
+            } finally {
+                browser.close();
+            }
+        }
+    }
+
+    @Test
+    void keyedListExampleRotatesOrder() throws IOException {
+        try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions().setHeadless(true));
+            try (BrowserContext context = browser.newContext();
+                 Page page = context.newPage()) {
+                List<String> pageErrors = new CopyOnWriteArrayList<>();
+                page.onPageError(pageErrors::add);
+
+                page.navigate(server.url() + "/index.html?example=list");
+
+                assertEquals("Alpha", page.locator("li").nth(0).textContent());
+                assertEquals("Beta", page.locator("li").nth(1).textContent());
+                assertEquals("Gamma", page.locator("li").nth(2).textContent());
+
+                page.click("button:has-text('Rotate')");
+                assertEquals("Gamma", page.locator("li").nth(0).textContent());
+                assertEquals("Alpha", page.locator("li").nth(1).textContent());
+                assertEquals("Beta", page.locator("li").nth(2).textContent());
+
+                assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
+            } finally {
+                browser.close();
+            }
+        }
+    }
+
+    @Test
     void unknownExampleFallsBackToCounter() throws IOException {
         try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(

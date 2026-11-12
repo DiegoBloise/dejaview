@@ -32,6 +32,12 @@ public final class ShowcaseApp {
             case "conditional":
                 mountConditional("app");
                 break;
+            case "usercard":
+                mountUserCard("app");
+                break;
+            case "list":
+                mountList("app");
+                break;
             case "counter":
             default:
                 mountCounter("app");
@@ -96,6 +102,20 @@ public final class ShowcaseApp {
                 hostId);
     }
 
+    /** Inputs, outputs, slot projection and lifecycle. */
+    public static void mountUserCard(String hostId) {
+        DejaView.mount(
+                Views.componentFactory(UserCardDemo::new),
+                hostId);
+    }
+
+    /** Keyed list rendering with stable component identity. */
+    public static void mountList(String hostId) {
+        DejaView.mount(
+                Views.componentFactory(KeyedListDemo::new),
+                hostId);
+    }
+
     /** Class-based counter, identical in shape to the examples/counter app. */
     private static final class CounterExample extends AbstractComponent {
 
@@ -152,6 +172,78 @@ public final class ShowcaseApp {
                     show.get()
                             ? Views.p("Visible")
                             : Views.fragment(Views.p("Hidden")));
+        }
+    }
+
+    /** Parent pushing inputs, listening to outputs and projecting content. */
+    private static final class UserCardDemo extends AbstractComponent {
+
+        private final Signal<String> member = new Signal<>("Ada");
+        private final Signal<String> lastEvent = new Signal<>("—");
+
+        @Override
+        public View render() {
+            String name = member.get();
+            boolean ada = name.equals("Ada");
+            return Views.div(
+                    Views.h1("Team directory"),
+                    Views.button("Switch member")
+                            .onClick(() -> member.set(ada ? "Grace" : "Ada")),
+                    Views.componentFactory(UserCard.class, UserCard::new)
+                            .input("username", name)
+                            .on("select", selected -> lastEvent.set("Selected " + selected))
+                            .slot("header", Views.strong(ada ? "Core team" : "Guest"))
+                            .slot(Views.p(ada ? "Writes the renderer." : "Reviews every PR.")),
+                    Views.p("Event: " + lastEvent.get()).id("event-log"))
+                    .classes("example");
+        }
+    }
+
+    /** Presentational child: reads inputs, projects slots, emits outputs. */
+    private static final class UserCard extends AbstractComponent {
+
+        @Override
+        public void onInit() {
+            // Invoked once per mounted node, before the first render.
+        }
+
+        @Override
+        public View render() {
+            String username = input("username", String.class);
+            View bio = slot().isEmpty() ? Views.p("No bio yet.") : slot().get(0);
+            return Views.div(
+                    Views.element("header")
+                            .addChildren(slot("header").toArray(View[]::new)),
+                    Views.h3("@" + username),
+                    bio,
+                    Views.button("Select " + username)
+                            .onClick(() -> emit("select", username)))
+                    .classes("usercard");
+        }
+    }
+
+    /** Keyed list reconciliation keeps DOM nodes stable across reorders. */
+    private static final class KeyedListDemo extends AbstractComponent {
+
+        private final Signal<java.util.List<String>> order =
+                new Signal<>(java.util.List.of("Alpha", "Beta", "Gamma"));
+
+        @Override
+        public View render() {
+            java.util.List<View> rows = new java.util.ArrayList<>();
+            for (String label : order.get()) {
+                rows.add(Views.li(label).key(label));
+            }
+            return Views.div(
+                    Views.h1("Keyed list"),
+                    Views.button("Rotate").onClick(this::rotate),
+                    Views.ul(rows.toArray(View[]::new)));
+        }
+
+        private void rotate() {
+            java.util.List<String> current = new java.util.ArrayList<>(order.get());
+            current.add(0, current.remove(current.size() - 1));
+            order.set(java.util.List.copyOf(current));
         }
     }
 }
