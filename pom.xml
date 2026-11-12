@@ -19,6 +19,7 @@
         <module>dejaview-dom</module>
         <module>dejaview-di</module>
         <module>dejaview-router</module>
+        <module>dejaview-http</module>
         <module>examples/counter</module>
         <module>examples/showcase</module>
     </modules>
@@ -81,6 +82,11 @@
             <dependency>
                 <groupId>io.dejaview</groupId>
                 <artifactId>dejaview-router</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dejaview</groupId>
+                <artifactId>dejaview-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

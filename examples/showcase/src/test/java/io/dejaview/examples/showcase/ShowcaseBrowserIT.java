@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -254,6 +255,31 @@ class ShowcaseBrowserIT {
         }
     }
 
+    @Test
+    void httpExampleFetchesPingJson() throws IOException {
+        try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions().setHeadless(true));
+            try (BrowserContext context = browser.newContext();
+                 Page page = context.newPage()) {
+                List<String> pageErrors = new CopyOnWriteArrayList<>();
+                page.onPageError(pageErrors::add);
+
+                page.navigate(server.url() + "/index.html?example=http");
+
+                assertEquals("HTTP", page.textContent("h1"));
+                assertEquals("—", page.textContent("#http-result"));
+
+                page.click("#http-ping");
+                assertThat(page.locator("#http-result")).hasText("pong");
+
+                assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
+            } finally {
+                browser.close();
+            }
+        }
+    }
+
     /** Tiny static file server bound to an ephemeral loopback port. */
     private static final class Server implements AutoCloseable {
         private final HttpServer server;
@@ -312,6 +338,9 @@ class ShowcaseBrowserIT {
                 return "text/html; charset=utf-8";
             }
             if (name.endsWith(".map")) {
+                return "application/json; charset=utf-8";
+            }
+            if (name.endsWith(".json")) {
                 return "application/json; charset=utf-8";
             }
             return "application/octet-stream";

@@ -5,6 +5,8 @@ import io.dejaview.core.View;
 import io.dejaview.core.Views;
 import io.dejaview.dom.DejaView;
 import io.dejaview.reactivity.Signal;
+import io.dejaview.http.HttpClient;
+import io.dejaview.http.HttpResult;
 import io.dejaview.router.Route;
 import io.dejaview.router.Router;
 import io.dejaview.router.RouterHistory;
@@ -44,6 +46,9 @@ public final class ShowcaseApp {
                 break;
             case "router":
                 mountRouter("app");
+                break;
+            case "http":
+                mountHttp("app");
                 break;
             case "counter":
             default:
@@ -146,6 +151,11 @@ public final class ShowcaseApp {
                 .build();
         ref.set(router);
         DejaView.mount(Views.componentFactory(() -> new RouterShell(router)), hostId);
+    }
+
+    /** Browser HTTP example: fetches ping.json and renders the body. */
+    public static void mountHttp(String hostId) {
+        DejaView.mount(Views.componentFactory(HttpPingDemo::new), hostId);
     }
 
     /** Class-based counter, identical in shape to the examples/counter app. */
@@ -276,6 +286,36 @@ public final class ShowcaseApp {
             java.util.List<String> current = new java.util.ArrayList<>(order.get());
             current.add(0, current.remove(current.size() - 1));
             order.set(java.util.List.copyOf(current));
+        }
+    }
+
+    /** HTTP client demo: button triggers GET ping.json; result is rendered reactively. */
+    private static final class HttpPingDemo extends AbstractComponent {
+
+        private final Signal<String> result = new Signal<>("—");
+        private final HttpClient client = HttpClient.builder().build();
+
+        @Override
+        public View render() {
+            return Views.div(
+                            Views.h1("HTTP"),
+                            Views.button("GET ping.json")
+                                    .id("http-ping")
+                                    .onClick(this::ping),
+                            Views.p(result.get()).id("http-result"))
+                    .classes("example");
+        }
+
+        private void ping() {
+            client.get("ping.json", this::renderOutcome);
+        }
+
+        private void renderOutcome(HttpResult outcome) {
+            if (outcome instanceof HttpResult.Success success) {
+                result.set(success.response().body());
+            } else {
+                result.set("error: " + outcome.failure().code());
+            }
         }
     }
 
