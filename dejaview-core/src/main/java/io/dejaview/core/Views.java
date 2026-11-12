@@ -1,5 +1,6 @@
 package io.dejaview.core;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -34,10 +35,23 @@ public final class Views {
     }
 
     /**
-     * Creates a view that resolves its content when rendered.
+     * Creates a stateless functional component that resolves its content when
+     * rendered.
      */
     public static ComponentView component(Supplier<View> content) {
-        return new ComponentView(content);
+        Objects.requireNonNull(content, "content");
+        return new ComponentView(() -> new FunctionalComponent(content));
+    }
+
+    /**
+     * Creates a view that instantiates one component per mounted node.
+     *
+     * <p>Use this for class-based components. To mount an existing instance,
+     * use {@link ComponentView#of(Component)} or return the instance from the
+     * factory.</p>
+     */
+    public static ComponentView componentFactory(Supplier<? extends Component> factory) {
+        return ComponentView.ofFactory(factory);
     }
 
     public static ElementView element(String tagName, View... children) {
@@ -90,5 +104,27 @@ public final class Views {
 
     public static ElementView li(String value) {
         return li(text(value));
+    }
+
+    /**
+     * Adapter that lets a view supplier participate in the component model.
+     */
+    private static final class FunctionalComponent implements Component {
+
+        private final Supplier<View> content;
+
+        private FunctionalComponent(Supplier<View> content) {
+            this.content = content;
+        }
+
+        @Override
+        public String name() {
+            return "Function";
+        }
+
+        @Override
+        public View render() {
+            return Objects.requireNonNull(content.get(), "component view");
+        }
     }
 }

@@ -1,6 +1,7 @@
 package io.dejaview.dom;
 
 import io.dejaview.core.Attribute;
+import io.dejaview.core.Component;
 import io.dejaview.core.ComponentView;
 import io.dejaview.core.ElementView;
 import io.dejaview.core.EventBinding;
@@ -11,6 +12,7 @@ import io.dejaview.core.View;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Creates render nodes and their DOM nodes for a view tree.
@@ -27,7 +29,14 @@ final class RenderTreeBuilder {
         return switch (view) {
             case TextView text -> new TextRenderNode(document.createText(text.value()), text.value());
             case FragmentView fragment -> buildFragment(fragment, document);
-            case ComponentView component -> new ComponentRenderNode(build(component.resolve(), document));
+            case ComponentView component -> {
+                Component instance = component.create();
+                yield new ComponentRenderNode(
+                        instance,
+                        build(
+                                Objects.requireNonNull(instance.render(), "component view"),
+                                document));
+            }
             case ElementView element -> buildElement(element, document);
         };
     }

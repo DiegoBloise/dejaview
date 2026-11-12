@@ -45,7 +45,7 @@ final class DomTreeReconciler implements TreeReconciler {
                     ? updateFragment(fragmentNode, fragment, document, parent)
                     : replace(current, next, document, parent, reference);
             case ComponentView component -> current instanceof ComponentRenderNode componentNode
-                    ? updateComponent(componentNode, component, document, parent, reference)
+                    ? updateComponent(componentNode, document, parent, reference)
                     : replace(current, next, document, parent, reference);
             case ElementView element -> current instanceof ElementRenderNode elementNode
                     && elementNode.tagName().equals(element.tagName())
@@ -70,12 +70,16 @@ final class DomTreeReconciler implements TreeReconciler {
 
     private static RenderNode updateComponent(
             ComponentRenderNode node,
-            ComponentView view,
             DomDocument document,
             DomElement parent,
             DomNode reference) {
         RenderNode rendered = node.rendered();
-        node.replaceRendered(reconcile(rendered, view.resolve(), document, parent, reference));
+        node.replaceRendered(reconcile(
+                rendered,
+                Objects.requireNonNull(node.component().render(), "component view"),
+                document,
+                parent,
+                reference));
         return node;
     }
 
