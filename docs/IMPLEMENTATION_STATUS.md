@@ -73,6 +73,9 @@ treated as available.
 | Generated browser bundle | example | `target/webapp/app.js` |
 | Source maps | example | `app.js.map` |
 | Browser E2E test | example | `-Pe2e` Failsafe test |
+| Official website (landing, docs, status) | `website/` | Static site served over HTTP; sibling playground iframe |
+| Interactive playground with pre-compiled examples | `website/playground/` | Static HTML/CSS/JS + CodeMirror; examples execute real TeaVM bundles |
+| Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 
 ### End-to-end proof
 

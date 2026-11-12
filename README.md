@@ -121,6 +121,22 @@ The Playwright test is opt-in because it downloads Chromium on first use:
 
 On Windows, use `mvnw.cmd` instead of `./mvnw`.
 
+## Website and interactive playground
+
+The official website and playground live in `website/` and are served as static
+files (no build step required). The playground examples execute the same
+pre-compiled TeaVM bundle that the counter E2E test validates.
+
+```bash
+# Build the showcase example bundle
+./mvnw -pl examples/showcase -am package
+
+# Serve the website (repository root)
+python3 -m http.server 8099
+```
+
+Then open <http://localhost:8099/website/> and <http://localhost:8099/website/playground/>.
+
 ## Modules
 
 Only modules justified by the current milestone exist. Planned modules are not
@@ -158,7 +174,9 @@ dejaview/
 ├── dejaview-reactivity/    # Signals and effects (pure Java)
 ├── dejaview-dom/           # DOM contracts, renderer, browser adapter
 ├── examples/
-│   └── counter/            # Java → JavaScript browser example
+│   ├── counter/            # Java → JavaScript browser example
+│   └── showcase/           # Official website, documentation, playground
+├── website/                # Static website served from this directory
 ├── docs/
 │   ├── ARCHITECTURE.md     # Long-term architecture specification
 │   ├── COMPILER.md         # TeaVM feasibility report and constraints
