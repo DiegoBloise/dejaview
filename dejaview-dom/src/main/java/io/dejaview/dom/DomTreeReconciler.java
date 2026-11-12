@@ -30,11 +30,13 @@ import java.util.Objects;
  * one, so focus and selection survive updates that keep the order.</p>
  *
  * <h2>Component nodes</h2>
- * <p>Component nodes keep their instance across renders. A node replaces its
- * instance when the position is matched with a view whose component class
- * token differs from the token stored on the node. Both tokens must be
- * present for the swap to be detected; views built without a token always
- * reuse the instance.</p>
+ * <p>Component nodes keep their instance across renders. A node replaces
+ * its instance when the position is matched with a view whose component
+ * class token differs from the token stored on the node. Both tokens must
+ * be present for the swap to be detected. A node also replaces its instance
+ * when both views carry keys and the keys differ; a key is the view's
+ * identity, so a changed key means a different component should hold the
+ * position. Views with no key (or a shared key) reuse the instance.</p>
  */
 final class DomTreeReconciler implements TreeReconciler {
 
@@ -100,6 +102,14 @@ final class DomTreeReconciler implements TreeReconciler {
             // The re-render would place a component of a different class at
             // this position. Replace the node instead of silently reusing the
             // current instance.
+            return replace(node, view, document, parent, reference);
+        }
+        String currentKey = node.key();
+        String nextKey = view.key();
+        if (currentKey != null && nextKey != null && !currentKey.equals(nextKey)) {
+            // The view's key changed: identity changed with it. Replace the
+            // node instead of rebinding different inputs onto a component
+            // that was built for another key.
             return replace(node, view, document, parent, reference);
         }
         Component component = node.component();

@@ -17,8 +17,9 @@ import java.util.function.Supplier;
  * <p>The factory that produced the instance is kept for diagnostics, and the
  * component class token of the view is kept so the reconciler can detect
  * component-type swaps at the same template position without instantiating a
- * probe. A node only replaces its instance when both tokens are present and
- * differ.</p>
+ * probe. A node replaces its instance when both tokens are present and
+ * differ, or when the view's key is present on both sides and differs;
+ * otherwise the instance is reused.</p>
  */
 final class ComponentRenderNode implements RenderNode {
 

@@ -161,6 +161,56 @@ class KeyedReconciliationTest {
     }
 
     @Test
+    void keyChangeAtSinglePositionReplacesComponentInstance() {
+        Signal<String> route = new Signal<>("home");
+        ItemCard.created.set(0);
+        ItemCard.closed.set(0);
+
+        MountedDom mounted = renderer.render(
+                Views.component(() -> Views.div(
+                        Views.componentFactory(ItemCard::new)
+                                .input("id", route.get())
+                                .key(route.get()))),
+                document,
+                container);
+
+        assertEquals("home", renderedText(elementAt(container, 0)));
+
+        route.set("users/42");
+
+        // The key changed at a single child position: the old instance is
+        // disposed and a fresh one is bound, mirroring how a router outlet
+        // swaps routed components.
+        assertEquals("users/42", renderedText(elementAt(container, 0)));
+        assertEquals(2, ItemCard.created.get());
+        assertEquals(1, ItemCard.closed.get());
+        mounted.dispose();
+    }
+
+    @Test
+    void unchangedKeyAtSinglePositionReusesComponentInstance() {
+        Signal<String> input = new Signal<>("a");
+        ItemCard.created.set(0);
+        ItemCard.closed.set(0);
+
+        MountedDom mounted = renderer.render(
+                Views.component(() -> Views.div(
+                        Views.componentFactory(ItemCard::new)
+                                .input("id", input.get())
+                                .key("stable"))),
+                document,
+                container);
+
+        input.set("b");
+
+        // Same key: inputs are rebound on the existing instance.
+        assertEquals("b", renderedText(elementAt(container, 0)));
+        assertEquals(1, ItemCard.created.get());
+        assertEquals(0, ItemCard.closed.get());
+        mounted.dispose();
+    }
+
+    @Test
     void keyedComponentViewsCarryTheirKey() {
         ComponentView view = Views.componentFactory(ItemCard::new).key("card-1");
 
@@ -184,6 +234,11 @@ class KeyedReconciliationTest {
 
     private static FakeDomElement elementAt(FakeDomElement parent, int index) {
         return (FakeDomElement) parent.children().get(index);
+    }
+
+    private static String renderedText(FakeDomElement div) {
+        FakeDomElement li = elementAt(div, 0);
+        return ((FakeText) li.children().get(0)).text();
     }
 
     private static final class ItemCard extends AbstractComponent {
