@@ -1,5 +1,6 @@
 package io.dejaview.dom;
 
+import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.EventListener;
 import org.teavm.jso.dom.html.HTMLElement;
 
@@ -38,7 +39,32 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
     }
 
     @Override
-    public void addEventListener(String type, Runnable handler) {
-        element.addEventListener(type, (EventListener) event -> handler.run());
+    public void removeChild(DomNode child) {
+        if (!(child instanceof BrowserDomNode browserNode)) {
+            throw new IllegalArgumentException(
+                    "Cannot remove a node created by a different DomDocument implementation");
+        }
+        element.removeChild(browserNode.jsoNode());
+    }
+
+    @Override
+    public DomEventRegistration addEventListener(String type, Runnable handler) {
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(handler, "handler");
+
+        EventListener<Event> listener = event -> handler.run();
+        element.addEventListener(type, listener);
+        return new DomEventRegistration() {
+            private boolean removed;
+
+            @Override
+            public void remove() {
+                if (removed) {
+                    return;
+                }
+                removed = true;
+                element.removeEventListener(type, listener);
+            }
+        };
     }
 }

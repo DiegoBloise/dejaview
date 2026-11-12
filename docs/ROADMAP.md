@@ -141,27 +141,24 @@ The project must have a reproducible Java 25 build and a validated Java-to-JavaS
 
 **Objective:** Create the initial browser runtime and establish communication between compiled Java code and the browser.
 
-**Status (2026-11-11):** In progress. Implemented: runtime entry point
-(`DejaView`), application initialization, JavaScript interop abstractions, the
-framework/browser API boundary (`Dom*` contracts plus the TeaVM adapter), DOM
-access, element creation, element selection, child insertion and browser event
-registration. Pending: runtime configuration, environment detection, node
-removal, event listener removal and runtime shutdown/cleanup.
+**Status (2026-11-12):** Completed. The runtime supports configuration, browser
+environment detection, reversible DOM insertion/removal and an explicit
+shutdown lifecycle that releases mounted nodes and event listeners.
 
 ### Implementation
 
 - [x] Create the runtime entry point.
 - [x] Implement application initialization.
-- [ ] Implement runtime configuration.
-- [ ] Implement browser environment detection.
+- [x] Implement runtime configuration.
+- [x] Implement browser environment detection.
 - [x] Establish JavaScript interop abstractions.
 - [x] Establish the boundary between framework code and browser APIs.
 - [x] Implement basic DOM access.
 - [x] Implement element creation.
 - [x] Implement element selection.
-- [ ] Implement basic DOM insertion and removal.
+- [x] Implement basic DOM insertion and removal.
 - [x] Implement browser event registration.
-- [ ] Implement runtime shutdown and cleanup.
+- [x] Implement runtime shutdown and cleanup.
 
 ### Deliverables
 
@@ -173,11 +170,11 @@ removal, event listener removal and runtime shutdown/cleanup.
 ### Tests
 
 - [x] Runtime initializes successfully.
-- [ ] Runtime initialization occurs only once per application instance.
+- [x] Runtime initialization occurs only once per application instance.
 - [x] Java code can access the browser DOM.
 - [x] Java code can create and insert DOM elements.
-- [ ] Java code can register and remove browser events.
-- [ ] Runtime cleanup releases registered resources.
+- [x] Java code can register and remove browser events.
+- [x] Runtime cleanup releases registered resources.
 
 ### Acceptance Criteria
 
@@ -1400,7 +1397,7 @@ their acceptance criteria. The authoritative implemented-versus-planned list is
 | Sprint | Feature | Status |
 |---|---|---|
 | 00 | Technical Validation and Foundation | Completed |
-| 01 | JavaScript Runtime Bootstrap | In Progress — entry point, DOM access and events exist; configuration, environment detection, removal and shutdown pending |
+| 01 | JavaScript Runtime Bootstrap | Completed |
 | 02 | Core Abstractions | In Progress — module boundaries and rendering contracts exist; application context, lifecycle contracts, exceptions and logging pending |
 | 03 | Signals and Reactive Primitives | Completed |
 | 04 | Computed, Effects and Scheduling | Completed |

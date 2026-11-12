@@ -27,7 +27,17 @@ public interface DomElement extends DomNode {
     void append(DomNode child);
 
     /**
-     * Registers a listener for the given event type.
+     * Removes a child node.
+     *
+     * @throws IllegalArgumentException if the node belongs to a different DOM
+     *                                  implementation
      */
-    void addEventListener(String type, Runnable handler);
+    void removeChild(DomNode child);
+
+    /**
+     * Registers a listener for the given event type.
+     *
+     * @return a handle that removes the listener
+     */
+    DomEventRegistration addEventListener(String type, Runnable handler);
 }

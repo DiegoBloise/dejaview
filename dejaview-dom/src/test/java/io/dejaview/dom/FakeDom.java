@@ -100,9 +100,18 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     }
 
     @Override
-    public void addEventListener(String type, Runnable handler) {
-        listeners.computeIfAbsent(type, ignored -> new ArrayList<>())
-                .add(Objects.requireNonNull(handler, "handler"));
+    public void removeChild(DomNode child) {
+        children.remove(Objects.requireNonNull(child, "child"));
+    }
+
+    @Override
+    public DomEventRegistration addEventListener(String type, Runnable handler) {
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(handler, "handler");
+
+        List<Runnable> handlers = listeners.computeIfAbsent(type, ignored -> new ArrayList<>());
+        handlers.add(handler);
+        return () -> handlers.remove(handler);
     }
 
     String tagName() {
@@ -125,5 +134,9 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
         for (Runnable listener : listeners.getOrDefault(type, List.of())) {
             listener.run();
         }
+    }
+
+    int listenerCount(String type) {
+        return listeners.getOrDefault(type, List.of()).size();
     }
 }

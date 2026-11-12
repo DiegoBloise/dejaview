@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DomRendererTest {
 
@@ -110,5 +111,42 @@ class DomRendererTest {
         List<FakeDomElement> created = document.createdElements();
         assertEquals(3, created.size()); // container + div + span
         assertEquals(2, document.createdTexts().size()); // "one" and "two"
+    }
+
+    @Test
+    void disposingMountedTreeRemovesNodesAndListeners() {
+        AtomicInteger clicks = new AtomicInteger();
+        FakeDomElement container = document.createElement("main");
+
+        MountedDom mounted = renderer.render(
+                Views.div(Views.button("Increment").onClick(clicks::incrementAndGet)),
+                document,
+                container);
+
+        FakeDomElement root = assertInstanceOf(FakeDomElement.class, container.children().get(0));
+        FakeDomElement button = assertInstanceOf(FakeDomElement.class, root.children().get(0));
+        assertEquals(1, button.listenerCount("click"));
+
+        mounted.dispose();
+
+        assertTrue(mounted.isDisposed());
+        assertTrue(container.children().isEmpty());
+        assertEquals(0, button.listenerCount("click"));
+    }
+
+    @Test
+    void disposingMountedTreeRemovesAllFragmentRoots() {
+        FakeDomElement container = document.createElement("main");
+
+        MountedDom mounted = renderer.render(
+                Views.fragment(Views.span("one"), Views.span("two")),
+                document,
+                container);
+
+        assertEquals(2, container.children().size());
+
+        mounted.dispose();
+
+        assertTrue(container.children().isEmpty());
     }
 }

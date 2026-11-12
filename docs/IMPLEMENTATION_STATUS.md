@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0-SNAPSHOT  
 **Milestone:** Phase 2 — Reactivity (signals, effects, computed, scheduling, scopes)  
-**Last updated:** 2026-11-11
+**Last updated:** 2026-11-12
 
 This document separates what is implemented and tested from what is designed
 or planned. If a capability is not listed as implemented here, it should not be
@@ -37,6 +37,10 @@ treated as available.
 | Error propagation without corrupting the scheduler | `dejaview-reactivity` | JUnit tests |
 | Reactive counter update in the browser | example | Playwright E2E |
 | Platform-neutral DOM contracts | `dejaview-dom` | JUnit tests via fake DOM |
+| Runtime configuration (`RuntimeConfig`) | `dejaview-dom` | JUnit tests |
+| Browser environment detection | `dejaview-dom` | JUnit test on JVM; E2E in Chromium |
+| Reversible DOM event registration | `dejaview-dom` | JUnit tests via fake DOM |
+| Runtime start/shutdown with mounted-tree disposal | `dejaview-dom` | JUnit tests |
 | First-mount renderer | `dejaview-dom` | JUnit tests |
 | Browser DOM adapter | `dejaview-dom` | Playwright E2E |
 | Browser rendering | example | Playwright E2E |

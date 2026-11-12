@@ -7,6 +7,8 @@ import io.dejaview.core.FragmentView;
 import io.dejaview.core.TextView;
 import io.dejaview.core.View;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -17,29 +19,39 @@ import java.util.Objects;
  * and leaves the platform-specific code in a thin adapter.</p>
  *
  * <p>This is a first-mount renderer: it appends the view tree to the supplied
- * container. Diffing, keyed updates and hydration are later milestones and are
- * intentionally not implemented here.</p>
+ * container and returns a {@link MountedDom} handle. Diffing, keyed updates and
+ * hydration are later milestones and are intentionally not implemented here.</p>
  */
 public final class DomRenderer {
 
     /**
      * Appends {@code view} to {@code container}.
      *
+     * @return a handle that detaches the mounted nodes and listeners
      * @throws NullPointerException if any argument is {@code null}
      */
-    public void render(View view, DomDocument document, DomElement container) {
+    public MountedDom render(View view, DomDocument document, DomElement container) {
         Objects.requireNonNull(view, "view");
         Objects.requireNonNull(document, "document");
         Objects.requireNonNull(container, "container");
-        append(view, document, container);
+
+        List<DomNode> roots = new ArrayList<>();
+        List<DomEventRegistration> events = new ArrayList<>();
+        append(view, document, container, roots, events);
+        return new MountedDom(container, roots, events);
     }
 
-    private static void append(View view, DomDocument document, DomElement parent) {
+    private static void append(
+            View view,
+            DomDocument document,
+            DomElement parent,
+            List<DomNode> roots,
+            List<DomEventRegistration> events) {
         switch (view) {
-            case TextView text -> parent.append(document.createText(text.value()));
+            case TextView text -> appendNode(document.createText(text.value()), parent, roots);
             case FragmentView fragment -> {
                 for (View child : fragment.children()) {
-                    append(child, document, parent);
+                    append(child, document, parent, roots, events);
                 }
             }
             case ElementView element -> {
@@ -48,13 +60,20 @@ public final class DomRenderer {
                     domElement.setAttribute(attribute.name(), attribute.value());
                 }
                 for (EventBinding event : element.events()) {
-                    domElement.addEventListener(event.type(), event.handler());
+                    events.add(domElement.addEventListener(event.type(), event.handler()));
                 }
                 for (View child : element.children()) {
-                    append(child, document, domElement);
+                    append(child, document, domElement, null, events);
                 }
-                parent.append(domElement);
+                appendNode(domElement, parent, roots);
             }
+        }
+    }
+
+    private static void appendNode(DomNode node, DomElement parent, List<DomNode> roots) {
+        parent.append(node);
+        if (roots != null) {
+            roots.add(node);
         }
     }
 }
