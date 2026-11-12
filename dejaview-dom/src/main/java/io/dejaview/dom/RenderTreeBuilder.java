@@ -1,0 +1,68 @@
+package io.dejaview.dom;
+
+import io.dejaview.core.Attribute;
+import io.dejaview.core.ComponentView;
+import io.dejaview.core.ElementView;
+import io.dejaview.core.EventBinding;
+import io.dejaview.core.FragmentView;
+import io.dejaview.core.Property;
+import io.dejaview.core.TextView;
+import io.dejaview.core.View;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Creates render nodes and their DOM nodes for a view tree.
+ *
+ * <p>The builder is shared by the initial mount and by replacement during
+ * reconciliation. It never mutates an existing tree.</p>
+ */
+final class RenderTreeBuilder {
+
+    private RenderTreeBuilder() {
+    }
+
+    static RenderNode build(View view, DomDocument document) {
+        return switch (view) {
+            case TextView text -> new TextRenderNode(document.createText(text.value()), text.value());
+            case FragmentView fragment -> buildFragment(fragment, document);
+            case ComponentView component -> new ComponentRenderNode(build(component.resolve(), document));
+            case ElementView element -> buildElement(element, document);
+        };
+    }
+
+    private static RenderNode buildFragment(FragmentView fragment, DomDocument document) {
+        List<RenderNode> children = new ArrayList<>();
+        for (View child : fragment.children()) {
+            children.add(build(child, document));
+        }
+        return new FragmentRenderNode(children);
+    }
+
+    private static RenderNode buildElement(ElementView view, DomDocument document) {
+        DomElement element = document.createElement(view.tagName());
+        for (Attribute attribute : view.attributes()) {
+            element.setAttribute(attribute.name(), attribute.value());
+        }
+        for (Property property : view.properties()) {
+            element.setProperty(property.name(), property.value());
+        }
+
+        List<DomEventRegistration> registrations = new ArrayList<>();
+        for (EventBinding event : view.events()) {
+            registrations.add(element.addEventListener(event.type(), event.handler()));
+        }
+
+        List<RenderNode> children = new ArrayList<>();
+        for (View child : view.children()) {
+            RenderNode childNode = build(child, document);
+            for (DomNode node : childNode.nodes()) {
+                element.append(node);
+            }
+            children.add(childNode);
+        }
+
+        return new ElementRenderNode(element, view, registrations, children);
+    }
+}

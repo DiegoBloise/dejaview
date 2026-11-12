@@ -20,6 +20,10 @@
             <groupId>io.dejaview</groupId>
             <artifactId>dejaview-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-reactivity</artifactId>
+        </dependency>
 
         <!--
           TeaVM must be present on the project class path for browser modules.

@@ -13,7 +13,7 @@ public interface DomDocument {
     /**
      * Creates a text node.
      */
-    DomNode createText(String text);
+    DomText createText(String text);
 
     /**
      * Finds an element by id.

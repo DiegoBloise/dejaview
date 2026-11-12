@@ -8,10 +8,23 @@ import java.util.Objects;
  */
 final class TextRenderNode implements RenderNode {
 
-    private final DomNode node;
+    private final DomText node;
+    private String text;
 
-    TextRenderNode(DomNode node) {
+    TextRenderNode(DomText node, String text) {
         this.node = Objects.requireNonNull(node, "node");
+        this.text = Objects.requireNonNull(text, "text");
+    }
+
+    /**
+     * Updates the text node when the value changed.
+     */
+    void update(String next) {
+        Objects.requireNonNull(next, "next");
+        if (!text.equals(next)) {
+            text = next;
+            node.setText(next);
+        }
     }
 
     @Override

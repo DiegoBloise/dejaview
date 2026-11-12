@@ -1,5 +1,7 @@
 package io.dejaview.dom;
 
+import org.teavm.jso.JSBody;
+import org.teavm.jso.JSObject;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.EventListener;
 import org.teavm.jso.dom.html.HTMLElement;
@@ -25,26 +27,42 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
     }
 
     @Override
+    public void removeAttribute(String name) {
+        element.removeAttribute(name);
+    }
+
+    @Override
+    public void setProperty(String name, String value) {
+        setJsProperty(element, name, value);
+    }
+
+    @Override
+    public void removeProperty(String name) {
+        clearJsProperty(element, name);
+    }
+
+    @Override
     public void setText(String text) {
         element.setTextContent(text);
     }
 
     @Override
     public void append(DomNode child) {
-        if (!(child instanceof BrowserDomNode browserNode)) {
-            throw new IllegalArgumentException(
-                    "Cannot append a node created by a different DomDocument implementation");
+        element.appendChild(browserNode(child).jsoNode());
+    }
+
+    @Override
+    public void insertBefore(DomNode child, DomNode reference) {
+        if (reference == null) {
+            append(child);
+            return;
         }
-        element.appendChild(browserNode.jsoNode());
+        element.insertBefore(browserNode(child).jsoNode(), browserNode(reference).jsoNode());
     }
 
     @Override
     public void removeChild(DomNode child) {
-        if (!(child instanceof BrowserDomNode browserNode)) {
-            throw new IllegalArgumentException(
-                    "Cannot remove a node created by a different DomDocument implementation");
-        }
-        element.removeChild(browserNode.jsoNode());
+        element.removeChild(browserNode(child).jsoNode());
     }
 
     @Override
@@ -67,4 +85,22 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
             }
         };
     }
+
+    private static BrowserDomNode browserNode(DomNode node) {
+        if (!(node instanceof BrowserDomNode browserNode)) {
+            throw new IllegalArgumentException(
+                    "Cannot use a node created by a different DomDocument implementation");
+        }
+        return browserNode;
+    }
+
+    @JSBody(
+            params = {"element", "name", "value"},
+            script = "element[name] = value;")
+    private static native void setJsProperty(JSObject element, String name, String value);
+
+    @JSBody(
+            params = {"element", "name"},
+            script = "element[name] = null;")
+    private static native void clearJsProperty(JSObject element, String name);
 }

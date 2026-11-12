@@ -8,10 +8,20 @@ import java.util.Objects;
  */
 final class ComponentRenderNode implements RenderNode {
 
-    private final RenderNode rendered;
+    private RenderNode rendered;
+
+    private boolean disposed;
 
     ComponentRenderNode(RenderNode rendered) {
         this.rendered = Objects.requireNonNull(rendered, "rendered");
+    }
+
+    RenderNode rendered() {
+        return rendered;
+    }
+
+    void replaceRendered(RenderNode next) {
+        rendered = Objects.requireNonNull(next, "next");
     }
 
     @Override
@@ -21,6 +31,10 @@ final class ComponentRenderNode implements RenderNode {
 
     @Override
     public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
         rendered.dispose();
     }
 }

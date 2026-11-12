@@ -8,12 +8,20 @@ import java.util.List;
  */
 final class FragmentRenderNode implements RenderNode {
 
-    private final List<RenderNode> children;
+    private List<RenderNode> children;
 
     private boolean disposed;
 
     FragmentRenderNode(List<RenderNode> children) {
         this.children = List.copyOf(children);
+    }
+
+    List<RenderNode> children() {
+        return children;
+    }
+
+    void replaceChildren(List<RenderNode> next) {
+        children = List.copyOf(next);
     }
 
     @Override

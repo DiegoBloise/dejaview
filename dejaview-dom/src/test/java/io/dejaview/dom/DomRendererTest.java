@@ -208,9 +208,10 @@ class DomRendererTest {
 
     @Test
     void treeReconcilerContractCanBeImplementedAsALambda() {
-        RenderNode node = new TextRenderNode(document.createText("text"));
-        TreeReconciler reconciler = (current, next, domDocument) -> current;
+        RenderNode node = new TextRenderNode(document.createText("text"), "text");
+        TreeReconciler reconciler = (current, next, domDocument, parent) -> current;
 
-        assertSame(node, reconciler.reconcile(node, Views.text("next"), document));
+        assertSame(node, reconciler.reconcile(
+                node, Views.text("next"), document, document.createElement("main")));
     }
 }

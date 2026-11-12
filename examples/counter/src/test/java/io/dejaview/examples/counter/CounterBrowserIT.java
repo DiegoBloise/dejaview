@@ -50,12 +50,15 @@ class CounterBrowserIT {
 
                 assertEquals("DejaView", page.textContent("h1"));
                 assertEquals("Count: 0", page.textContent("#count"));
+                assertEquals("0", page.getAttribute("#count", "data-count"));
 
                 page.click("button");
                 assertEquals("Count: 1", page.textContent("#count"));
+                assertEquals("1", page.getAttribute("#count", "data-count"));
 
                 page.click("button");
                 assertEquals("Count: 2", page.textContent("#count"));
+                assertEquals("2", page.getAttribute("#count", "data-count"));
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {

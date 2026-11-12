@@ -7,7 +7,8 @@ import java.util.List;
  *
  * <p>Render nodes connect the immutable {@code View} model to the concrete DOM
  * nodes created by a renderer. They own listeners and child nodes so a mounted
- * tree can be disposed without re-walking the original view.</p>
+ * tree can be disposed without re-walking the original view. They also expose
+ * enough state for {@link TreeReconciler} to update the tree in place.</p>
  */
 public sealed interface RenderNode
         permits TextRenderNode, ElementRenderNode, FragmentRenderNode, ComponentRenderNode {

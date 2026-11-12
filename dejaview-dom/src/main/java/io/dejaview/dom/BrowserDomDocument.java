@@ -34,8 +34,8 @@ public final class BrowserDomDocument implements DomDocument {
     }
 
     @Override
-    public DomNode createText(String text) {
-        return new BrowserDomNode(document.createTextNode(text));
+    public DomText createText(String text) {
+        return new BrowserDomText(document.createTextNode(text));
     }
 
     @Override

@@ -17,31 +17,50 @@ import java.util.Objects;
  * }</pre>
  *
  * <p>Attribute names must be unique. Event bindings may repeat because a
- * single event can legitimately have multiple listeners.</p>
+ * single event can legitimately have multiple listeners. Properties are kept
+ * separate from attributes so platform adapters can apply each through the
+ * correct DOM API.</p>
  *
  * @param tagName    non-blank HTML tag name
  * @param attributes attributes in render order
+ * @param properties DOM properties in render order
  * @param children   child views in render order
  * @param events     event bindings in registration order
  */
 public record ElementView(
         String tagName,
         List<Attribute> attributes,
+        List<Property> properties,
         List<View> children,
         List<EventBinding> events) implements View {
 
     public ElementView {
         Objects.requireNonNull(tagName, "tagName");
         Objects.requireNonNull(attributes, "attributes");
+        Objects.requireNonNull(properties, "properties");
         Objects.requireNonNull(children, "children");
         Objects.requireNonNull(events, "events");
         if (tagName.isBlank()) {
             throw new IllegalArgumentException("Tag name must not be blank");
         }
         attributes = List.copyOf(attributes);
+        properties = List.copyOf(properties);
         children = List.copyOf(children);
         events = List.copyOf(events);
         rejectDuplicateAttributes(attributes);
+        rejectDuplicateProperties(properties);
+    }
+
+    /**
+     * Creates an element without properties. Kept so existing callers can
+     * construct an element directly.
+     */
+    public ElementView(
+            String tagName,
+            List<Attribute> attributes,
+            List<View> children,
+            List<EventBinding> events) {
+        this(tagName, attributes, List.of(), children, events);
     }
 
     /**
@@ -52,7 +71,18 @@ public record ElementView(
     public ElementView attr(String name, String value) {
         List<Attribute> updated = new ArrayList<>(attributes);
         updated.add(new Attribute(name, value));
-        return new ElementView(tagName, updated, children, events);
+        return new ElementView(tagName, updated, properties, children, events);
+    }
+
+    /**
+     * Returns a copy of this element with an additional DOM property.
+     *
+     * @throws IllegalArgumentException if the property is already present
+     */
+    public ElementView prop(String name, String value) {
+        List<Property> updated = new ArrayList<>(properties);
+        updated.add(new Property(name, value));
+        return new ElementView(tagName, attributes, updated, children, events);
     }
 
     /**
@@ -83,13 +113,21 @@ public record ElementView(
     }
 
     /**
+     * Returns a copy of this element with the given inline {@code style}
+     * attribute.
+     */
+    public ElementView style(String css) {
+        return attr("style", css);
+    }
+
+    /**
      * Returns a copy of this element with one additional child.
      */
     public ElementView child(View child) {
         Objects.requireNonNull(child, "child");
         List<View> updated = new ArrayList<>(children);
         updated.add(child);
-        return new ElementView(tagName, attributes, updated, events);
+        return new ElementView(tagName, attributes, properties, updated, events);
     }
 
     /**
@@ -105,7 +143,7 @@ public record ElementView(
         for (View child : newChildren) {
             updated.add(Objects.requireNonNull(child, "child"));
         }
-        return new ElementView(tagName, attributes, updated, events);
+        return new ElementView(tagName, attributes, properties, updated, events);
     }
 
     /**
@@ -115,7 +153,7 @@ public record ElementView(
     public ElementView on(String eventType, Runnable handler) {
         List<EventBinding> updated = new ArrayList<>(events);
         updated.add(new EventBinding(eventType, handler));
-        return new ElementView(tagName, attributes, children, updated);
+        return new ElementView(tagName, attributes, properties, children, updated);
     }
 
     /**
@@ -131,6 +169,17 @@ public record ElementView(
             for (int j = i + 1; j < attributes.size(); j++) {
                 if (name.equals(attributes.get(j).name())) {
                     throw new IllegalArgumentException("Duplicate attribute: " + name);
+                }
+            }
+        }
+    }
+
+    private static void rejectDuplicateProperties(List<Property> properties) {
+        for (int i = 0; i < properties.size(); i++) {
+            String name = properties.get(i).name();
+            for (int j = i + 1; j < properties.size(); j++) {
+                if (name.equals(properties.get(j).name())) {
+                    throw new IllegalArgumentException("Duplicate property: " + name);
                 }
             }
         }

@@ -57,6 +57,36 @@ class ElementViewTest {
     }
 
     @Test
+    void registersPropertiesSeparatelyFromAttributes() {
+        ElementView view = Views.element("input")
+                .attr("name", "count")
+                .prop("value", "1");
+
+        assertEquals(List.of(new Attribute("name", "count")), view.attributes());
+        assertEquals(List.of(new Property("value", "1")), view.properties());
+    }
+
+    @Test
+    void rejectsDuplicateProperties() {
+        ElementView view = Views.element("input").prop("value", "first");
+
+        assertThrows(IllegalArgumentException.class, () -> view.prop("value", "second"));
+    }
+
+    @Test
+    void rejectsBlankPropertyName() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Views.element("input").prop(" ", "value"));
+    }
+
+    @Test
+    void styleSetsTheStyleAttribute() {
+        ElementView view = Views.div().style("color: red");
+
+        assertEquals("color: red", view.attributes().get(0).value());
+    }
+
+    @Test
     void joinsClassNamesWithSpaces() {
         ElementView view = Views.div().classes("card", "card--wide");
 

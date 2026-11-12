@@ -54,11 +54,16 @@ final class FakeDomDocument implements DomDocument {
 class FakeDomNode implements DomNode {
 }
 
-final class FakeText extends FakeDomNode {
+final class FakeText extends FakeDomNode implements DomText {
 
-    private final String text;
+    private String text;
 
     FakeText(String text) {
+        this.text = Objects.requireNonNull(text, "text");
+    }
+
+    @Override
+    public void setText(String text) {
         this.text = Objects.requireNonNull(text, "text");
     }
 
@@ -72,6 +77,7 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     private final FakeDomDocument document;
     private final String tagName;
     private final Map<String, String> attributes = new LinkedHashMap<>();
+    private final Map<String, String> properties = new LinkedHashMap<>();
     private final List<DomNode> children = new ArrayList<>();
     private final Map<String, List<Runnable>> listeners = new LinkedHashMap<>();
     private String textContent = "";
@@ -90,6 +96,21 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     }
 
     @Override
+    public void removeAttribute(String name) {
+        attributes.remove(name);
+    }
+
+    @Override
+    public void setProperty(String name, String value) {
+        properties.put(name, value);
+    }
+
+    @Override
+    public void removeProperty(String name) {
+        properties.remove(name);
+    }
+
+    @Override
     public void setText(String text) {
         this.textContent = Objects.requireNonNull(text, "text");
     }
@@ -97,6 +118,20 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     @Override
     public void append(DomNode child) {
         children.add(Objects.requireNonNull(child, "child"));
+    }
+
+    @Override
+    public void insertBefore(DomNode child, DomNode reference) {
+        Objects.requireNonNull(child, "child");
+        if (reference == null) {
+            children.add(child);
+            return;
+        }
+        int index = children.indexOf(reference);
+        if (index < 0) {
+            throw new IllegalArgumentException("Reference node is not a child of this element");
+        }
+        children.add(index, child);
     }
 
     @Override
@@ -122,6 +157,10 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
         return Map.copyOf(attributes);
     }
 
+    Map<String, String> properties() {
+        return Map.copyOf(properties);
+    }
+
     List<DomNode> children() {
         return List.copyOf(children);
     }
@@ -131,7 +170,7 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     }
 
     void fire(String type) {
-        for (Runnable listener : listeners.getOrDefault(type, List.of())) {
+        for (Runnable listener : List.copyOf(listeners.getOrDefault(type, List.of()))) {
             listener.run();
         }
     }
