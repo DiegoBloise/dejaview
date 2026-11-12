@@ -1,0 +1,48 @@
+/* DejaView Playground – interactive editor with live preview.
+   The code shown is the actual Java source used to generate the browser bundle.
+   Examples are pre-compiled with TeaVM at build time; running them in the browser
+   executes real DejaView-generated JavaScript, not a simulation. */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #111; background: #f7f7f7; height: 100vh; display: flex; flex-direction: column; }
+
+.site-header { padding: 1rem 1.5rem; background: #0f1117; color: #f5f7fb; border-bottom: 1px solid #1c2030; }
+.site-header h1 { margin: 0; font-size: 1.25rem; }
+.site-header .sub-title { margin: 0.25rem 0 0; font-size: 0.85rem; color: #c5c8d1; }
+
+.playground-container { flex: 1; display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+
+.sidebar { background: #161b22; color: #c9d1d9; padding: 1rem; overflow-y: auto; border-right: 1px solid #30363d; }
+.sidebar h2 { font-size: 1rem; margin: 0 0 0.75rem; letter-spacing: 0.02em; text-transform: uppercase; color: #8b949e; }
+.example-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+.example-list li { cursor: pointer; padding: 0.5rem 0.6rem; border-radius: 6px; margin-bottom: 0.35rem; font-size: 0.9rem; }
+.example-list li:hover { background: #21262d; color: #fff; }
+.example-list li.active { background: #1f6feb33; color: #58a6ff; outline: 1px solid #1f6feb; }
+.example-list li.planned { opacity: 0.55; }
+.example-list li.planned::after { content: " (planned)"; color: #8b949e; font-size: 0.8em; }
+
+.example-info { font-size: 0.85rem; line-height: 1.5; color: #8b949e; }
+.example-info strong { color: #c9d1d9; }
+.example-info .status-implemented { color: #56d364; font-weight: 600; }
+.example-info .status-planned { color: #f97316; font-weight: 600; }
+
+.editor-pane { display: flex; flex-direction: column; overflow: hidden; }
+.toolbar { display: flex; gap: 0.5rem; padding: 0.5rem 1rem; background: #fff; border-bottom: 1px solid #e0e0e0; }
+.btn { font: inherit; padding: 0.4rem 0.9rem; border: 1px solid #d0d7de; border-radius: 6px; background: #f6f8fa; cursor: pointer; font-size: 0.85rem; }
+.btn:hover { background: #eaeef2; }
+.btn-primary { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+.btn-primary:hover { background: #388bfd; border-color: #388bfd; }
+.btn-secondary { background: transparent; }
+
+.code-editor { flex: 1; overflow: hidden; }
+.code-editor .CodeMirror { height: 100%; font-size: 0.88rem; }
+
+.output-panel { padding: 0.75rem 1rem; background: #0f1117; color: #c4f1ff; font-family: "Fira Code", Consolas, monospace; font-size: 0.82rem; max-height: 22vh; overflow: auto; border-top: 1px solid #222; white-space: pre-wrap; }
+.output-panel.hidden { display: none; }
+
+.preview-frame { flex: 1; background: #fff; }
+.preview-frame iframe { width: 100%; height: 100%; border: 0; }
+
+@media (max-width: 860px) {
+  .playground-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .sidebar { max-height: 35vh; }
+}

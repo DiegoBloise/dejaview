@@ -18,6 +18,7 @@
         <module>dejaview-reactivity</module>
         <module>dejaview-dom</module>
         <module>examples/counter</module>
+        <module>examples/showcase</module>
     </modules>
 
     <properties>

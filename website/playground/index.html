@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DejaView Playground — Interactive Examples</title>
+    <link rel="stylesheet" href="css/playground.css">
+    <script src="https://unpkg.com/codemirror@6.0.0/lib/codemirror.js" defer></script>
+    <script src="https://unpkg.com/codemirror@6.0.0/mode/clike/clike.js" defer></script>
+    <script src="js/playground.js" defer></script>
+</head>
+<body>
+
+<header class="site-header">
+    <h1>DejaView Playground</h1>
+    <p class="sub-title">Java. Reimagined for the Web. — Interactive Examples</p>
+</header>
+
+<div class="playground-container">
+
+    <aside class="sidebar">
+        <h2>Examples</h2>
+        <ul class="example-list" id="example-list">
+            <li data-example="counter">Counter (implemented)</li>
+            <li data-example="greeting">Greeting (implemented)</li>
+            <li data-example="composition">Nested components (implemented)</li>
+            <li data-example="conditional">Conditional rendering (implemented)</li>
+            <li data-example="todo" class="planned">Todo (planned)</li>
+            <li data-example="router" class="planned">Router (planned)</li>
+            <li data-example="forms" class="planned">Forms (planned)</li>
+        </ul>
+
+        <div class="example-info" id="example-info">
+            <p>Select an example to see its Java code and run it.</p>
+        </div>
+    </aside>
+
+    <section class="editor-pane">
+        <div class="toolbar">
+            <button id="btn-run" class="btn btn-primary" title="Run example">Run</button>
+            <button id="btn-copy" class="btn btn-secondary" title="Copy source">Copy</button>
+            <button id="btn-copy-all" class="btn btn-secondary" title="Copy full source">Copy All</button>
+        </div>
+
+        <div class="code-editor" id="code-editor"></div>
+
+        <div class="output-panel" id="output-panel">
+            <p>Output will appear here after running.</p>
+        </div>
+
+        <div class="preview-frame" id="preview-frame" style="display:none;">
+            <iframe id="preview-iframe" width="100%" height="100%" frameborder="0"></iframe>
+        </div>
+    </section>
+</div>
+
+<script>
+    // CodeMirror 6 API
+    document.addEventListener('DOMContentLoaded', function () {
+        var editor = CodeMirror(document.getElementById('code-editor'), {
+            lineNumbers: true,
+            theme: 'default'
+        });
+
+        window.dejaviewPlayground = {
+            editor: editor,
+            setSource: function (source) {
+                editor.setValue(source);
+            },
+            getSource: function () {
+                return editor.getValue();
+            }
+        };
+    });
+</script>
+
+</body>
+</html>

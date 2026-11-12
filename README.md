@@ -132,12 +132,13 @@ created as empty placeholders.
 | `dejaview-reactivity` | Platform-independent `Signal<T>`, `Effect`, lazy `Computed<T>`, explicit batching, FIFO scheduling and `ReactiveScope` ownership. No browser or TeaVM imports. | Implemented |
 | `dejaview-dom` | Platform-neutral DOM contracts, render tree, reactive `DomRenderer`, positional `TreeReconciler`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
+| `examples/showcase` | Official website, documentation and interactive playground (pre-compiled examples) | Implemented |
 
 Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
-examples/counter → dejaview-reactivity
+examples/showcase → dejaview-dom → dejaview-reactivity → dejaview-core
 ```
 
 `dejaview-reactivity` is independent of the view model and the DOM. The renderer
