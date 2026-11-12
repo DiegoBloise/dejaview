@@ -356,10 +356,11 @@ Significant decisions are recorded as ADRs rather than changed silently.
   exist yet.
 - Reconciliation is positional. Moving or reordering children can recreate DOM
   nodes; there is no keyed diff, public unmount API or hydration.
-- No component abstraction, routing, DI, HTTP client, forms or state management.
+- No component abstraction, routing, DI, HTTP client, forms or state management beyond the Sprint 07 component model.
 - Styling is plain HTML plus `class`/`style` attributes; there is no CSS
   pipeline or CSS-in-JS runtime. Bootstrap, Tailwind CSS and daisyUI are not yet
   covered by automated compatibility tests.
+- The website playground runs pre-compiled TeaVM bundles only; there is no in-browser compiler yet, so editing the Java source is a read-only preview until the development server is built.
 - Browser E2E coverage is Chromium only.
 - Only the JDK/TeaVM APIs exercised by the current code are validated.
 - The example emits readable, non-minified JavaScript; production optimization
