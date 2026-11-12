@@ -30,7 +30,7 @@
                 "    }",
                 "}"
             ].join("\n"),
-            iframeSrc: 'examples/showcase/target/webapp/index.html'
+            iframeSrc: "/examples/showcase/target/webapp/index.html"
         },
         'greeting': {
             name: 'Greeting (implemented)',
@@ -56,7 +56,7 @@
                 "    }",
                 "}"
             ].join("\n"),
-            iframeSrc: 'examples/showcase/target/webapp/index.html'
+            iframeSrc: "/examples/showcase/target/webapp/index.html"
         },
         'composition': {
             name: 'Nested components (implemented)',
@@ -89,7 +89,7 @@
                 "    }",
                 "}"
             ].join("\n"),
-            iframeSrc: 'examples/showcase/target/webapp/index.html'
+            iframeSrc: "/examples/showcase/target/webapp/index.html"
         },
         'conditional': {
             name: 'Conditional rendering (implemented)',
@@ -116,7 +116,7 @@
                 "    }",
                 "}"
             ].join("\n"),
-            iframeSrc: 'examples/showcase/target/webapp/index.html'
+            iframeSrc: "/examples/showcase/target/webapp/index.html"
         }
         // planned examples are not shown in the list; only implemented ones
     };
