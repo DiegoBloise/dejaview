@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 4 in progress — Sprint 09 (dependency injection) implemented.**
+**Phase 4 in progress — Sprint 10 (client-side router) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -47,7 +47,7 @@ Java source
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end
-test. Routing, SSR or tooling do not exist yet.
+test. HTTP, forms, state management, SSR or tooling do not exist yet.
 
 | Capability | Status |
 |---|---|
@@ -66,8 +66,9 @@ test. Routing, SSR or tooling do not exist yet.
 | Content projection (default and named slots) and lifecycle hooks (`onInit`, `onUpdate`, `onDestroy`) | Implemented and tested |
 | Plain `class`/`style` attributes usable with Bootstrap, Tailwind CSS and daisyUI | Implemented; library compatibility suite planned |
 | Dependency injection (`dejaview-di`): tokens, providers, `SINGLETON`/`SCOPED`/`TRANSIENT` scopes, hierarchical injectors, `inject()`/`has()`, `circular-dependency` detection, reverse-order disposal | Implemented and tested |
+| Routing (`dejaview-router`): immutable route definitions, nested routes, query parameters, guards, redirects, not-found routes, route-level metadata, `RouterOutlet` with route params as inputs, browser history, keyed component swaps at a single position | Implemented and tested (Chromium E2E) |
 | Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
-| Routing, HTTP, forms, state management | Planned (Phase 4; DI done) |
+| HTTP, forms, state management | Planned (Phase 4; DI and router done) |
 | CLI, DevTools, compiler abstraction | Planned |
 | SSR, SSG, hydration | Planned |
 
@@ -149,6 +150,7 @@ created as empty placeholders.
 | `dejaview-reactivity` | Platform-independent `Signal<T>`, `Effect`, lazy `Computed<T>`, explicit batching, FIFO scheduling and `ReactiveScope` ownership. No browser or TeaVM imports. | Implemented |
 | `dejaview-dom` | Platform-neutral DOM contracts, render tree, reactive `DomRenderer`, `TreeReconciler` (positional + keyed), TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `dejaview-di` | Platform-independent dependency injection: `InjectionToken`, `Provider`, scopes, hierarchical injectors, `inject()`/`has()`. No browser or TeaVM imports. | Implemented |
+| `dejaview-router` | Client-side routing: `Route` definitions, matching, parameters, query parameters, nested routes, guards, redirects, `RouterOutlet`, browser/memory history, navigation events. TeaVM JSO only in the browser history adapter. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Official website, documentation and interactive playground (pre-compiled examples) | Implemented |
 
@@ -156,8 +158,9 @@ Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
-examples/showcase → dejaview-dom → dejaview-reactivity → dejaview-core
+examples/showcase → dejaview-dom, dejaview-router → dejaview-core
 dejaview-di → dejaview-core
+dejaview-router → dejaview-core, dejaview-reactivity
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -167,8 +170,8 @@ DOM updates.
 
 The target architecture keeps the core independent of browser APIs and places
 platform-specific code in dedicated modules. The remaining long-term module map
-(`dejaview-renderer`, `dejaview-router`, `dejaview-ssr`, ...) is still a design
-proposal; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+(`dejaview-renderer`, `dejaview-ssr`, ...) is still a design proposal; see
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ### Repository layout
 
@@ -178,6 +181,7 @@ dejaview/
 ├── dejaview-reactivity/    # Signals and effects (pure Java)
 ├── dejaview-dom/           # DOM contracts, renderer, browser adapter
 ├── dejaview-di/            # Dependency injection (pure Java)
+├── dejaview-router/        # Client-side router (pure Java + TeaVM history adapter)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   └── showcase/           # Official website, documentation, playground
@@ -282,27 +286,30 @@ API — see
 |---|---|---|
 | 1 | Foundation and JavaScript runtime | Implemented |
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
-| 3 | Component System | In progress — Sprint 08 implemented (inputs, outputs, slots, lifecycle, keyed lists, dynamic component swaps); annotations and Context API remain |
-| 4 | Application Framework | In progress — Sprint 09 implemented (dependency injection); router next |
+| 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
+| 4 | Application Framework | In progress — Sprints 09–10 implemented (dependency injection, router); HTTP next |
 | 5 | Compiler and Tooling | Planned |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 10 — Router
+### Next milestone: Sprint 11 — HTTP Client
 
-Sprint 09 delivered the dependency injection system as a platform-independent
-module (`dejaview-di`, depending only on `dejaview-core`): identity-based
-`InjectionToken<T>` with a canonical `of(Class)` overload, explicit
-`Provider<T>` factories (no reflection — TeaVM-safe), `SINGLETON`/`SCOPED`/
-`TRANSIENT` scopes with explicit disposal ownership, hierarchical injectors
-with nearest-registration-wins and live shadowing (`injector.bind(...)`),
-`inject()`/`has()`, `circular-dependency` detection on a thread-local path, and
-reverse-order disposal of owned `AutoCloseable` instances. Constructor
-injection is the supported strategy; field/annotation injection (`@Inject`)
-remains a proposal. Components receive dependencies through plain constructor
-parameters resolved at the composition root; DI is not wired into the
-component system yet. See [ADR-0016](docs/ADR/0016-dependency-injection-model.md).
+Sprint 10 delivered client-side routing as a platform-independent module
+(`dejaview-router`, depending on `dejaview-core` and `dejaview-reactivity`):
+immutable `Route` definitions with literal, `:param` and `**` segments,
+nested and index routes, fail-fast `invalid-route` validation, resolve-before-push
+navigation (`navigate`/`replace`/`back`/`forward`) that leaves state and
+history unchanged on denial or no-match, root-first guards with
+prefix-accumulated contexts (`Allow`/`Deny`/`Redirect`; ten-hop `redirect-loop`
+budget), an optional `notFound(...)` chain, `NavigationEvent`s with a
+reversible listener, `RouterOutlet` rendering at a chain level keyed by the
+matched route's id (path parameters pushed as inputs), and browser history
+behind the `RouterHistory` seam (`MemoryRouterHistory` for tests,
+`BrowserHistory` for TeaVM). Single-position keyed components now replace the
+mounted instance when the key changes. Lazy route loading is limited to
+activation-time factory deferral; bundle-level code splitting is deferred to
+Sprint 15. See [ADR-0017](docs/ADR/0017-routing-model.md).
 
 The remaining Phase 2 refinements are still open:
 
@@ -364,11 +371,13 @@ Significant decisions are recorded as ADRs rather than changed silently.
 - Reactive updates are component-scoped: a signal read while rendering reruns
   the component and reconciles its subtree. Fine-grained binding nodes do not
   exist yet.
-- Reconciliation is positional, or keyed when children carry `key`. Lists
-  without keys reorder by position; there is no public unmount API or hydration.
-- Unkeyed tokenless views at the same position reuse the mounted instance even
-  if the new view renders a different component class — dynamic swaps require
-  distinct keys or a class token (`componentFactory(Class, Supplier)`).
+- Reconciliation is positional, or keyed when views carry `key` (lists switch
+  fully to keyed matching; a key change at a single position swaps the
+  mounted component). Views without keys reorder by position; there is no
+  public unmount API or hydration.
+- Tokenless unkeyed views at the same position reuse the mounted instance
+  even if the new view renders a different component class — dynamic swaps
+  require a distinct key or a class token (`componentFactory(Class, Supplier)`).
 - Annotation-based API (`@Component`, `@Input`, `@Output`) and Context API do
   not exist; the programmatic surface is the supported API.
 - Styling is plain HTML plus `class`/`style` attributes; there is no CSS

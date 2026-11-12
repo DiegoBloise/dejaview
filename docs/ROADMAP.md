@@ -597,22 +597,41 @@ Application services and components must be able to consume dependencies through
 
 **Objective:** Implement client-side navigation and route management.
 
+**Status (2026-11-12):** Completed. `dejaview-router` is a platform-independent
+module depending only on `dejaview-core` and `dejaview-reactivity`: immutable
+`Route` definitions (literal, `:param` and `**` segments; nested and index
+routes; fail-fast `invalid-route` validation with stable ids `route:N`), an
+explicit `Router` that resolves URLs before touching history
+(resolve-before-push; denied or unmatched navigations leave state unchanged),
+prefix-accumulated guards evaluated root-first (`Allow`/`Deny`/`Redirect`;
+ten-hop `redirect-loop` budget), route-declared and guard-returned redirects,
+an optional `notFound(...)` chain matched with guards, `NavigationEvent`s
+(`Started`/`Redirected`/`Ended`/`Cancelled`) with a reversible listener,
+`RouterOutlet` rendering at a chain level and keyed by the matched route's
+id (path parameters pushed as inputs), `MemoryRouterHistory` for tests and a
+TeaVM `BrowserHistory` (`pushState`/`replaceState` + `popstate`). Lazy route
+loading exists only as activation-time factory deferral; bundle-level code
+splitting is not supported by the current single-bundle TeaVM output and is
+deferred to Sprint 15. Verified by 90 JVM unit tests and a Chromium E2E test
+in the showcase (`?example=router`), which also covers browser back/forward
+adoption. See ADR-0017.
+
 ### Implementation
 
-- [ ] Implement route definitions.
-- [ ] Implement route matching.
-- [ ] Implement route parameters.
-- [ ] Implement query parameters.
-- [ ] Implement nested routes.
-- [ ] Implement route outlets.
-- [ ] Implement navigation APIs.
-- [ ] Integrate browser history.
-- [ ] Implement navigation events.
-- [ ] Implement route guards.
-- [ ] Implement redirects.
-- [ ] Implement lazy route loading.
-- [ ] Implement not-found routes.
-- [ ] Implement route-level metadata.
+- [x] Implement route definitions.
+- [x] Implement route matching.
+- [x] Implement route parameters.
+- [x] Implement query parameters.
+- [x] Implement nested routes.
+- [x] Implement route outlets.
+- [x] Implement navigation APIs.
+- [x] Integrate browser history.
+- [x] Implement navigation events.
+- [x] Implement route guards.
+- [x] Implement redirects.
+- [x] Implement lazy route loading. (Route factories defer component instantiation to activation; bundle-level code splitting deferred to Sprint 15 — the current TeaVM output is a single bundle; see ADR-0017)
+- [x] Implement not-found routes.
+- [x] Implement route-level metadata.
 
 ### Deliverables
 
@@ -622,19 +641,19 @@ Application services and components must be able to consume dependencies through
 
 ### Tests
 
-- [ ] Routes resolve correctly.
-- [ ] Dynamic parameters are extracted.
-- [ ] Query parameters are preserved.
-- [ ] Browser back and forward work.
-- [ ] Nested routes render correctly.
-- [ ] Guards allow and reject navigation correctly.
-- [ ] Redirects work.
-- [ ] Lazy routes load successfully.
-- [ ] Unknown routes display the configured fallback.
+- [x] Routes resolve correctly.
+- [x] Dynamic parameters are extracted.
+- [x] Query parameters are preserved.
+- [x] Browser back and forward work.
+- [x] Nested routes render correctly.
+- [x] Guards allow and reject navigation correctly.
+- [x] Redirects work.
+- [x] Lazy routes load successfully. (Deferred: factory deferral only; bundle-level splitting deferred to Sprint 15 — see note above and ADR-0017)
+- [x] Unknown routes display the configured fallback.
 
 ### Acceptance Criteria
 
-A multi-page application must be navigable without full browser page reloads.
+A multi-page application must be navigable without full browser page reloads. ✅ Met — the showcase router example navigates between screens and restores them on browser back/forward, verified in Chromium by `ShowcaseBrowserIT#routerExampleNavigatesAndRestoresHistory`.
 
 ---
 
@@ -1447,7 +1466,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-12):** Sprints 00 through 09 are complete. The
+**Current status (2026-11-12):** Sprints 00 through 10 are complete. The
 authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -1463,7 +1482,7 @@ authoritative implemented-versus-planned list is
 | 07 | Component Model and Composition | Completed |
 | 08 | Inputs, Outputs, Templates and Lifecycle | Completed |
 | 09 | Dependency Injection | Completed |
-| 10 | Router | Not Started |
+| 10 | Router | Completed |
 | 11 | HTTP Client | Not Started |
 | 12 | Reactive Forms | Not Started |
 | 13 | State Management | Not Started |

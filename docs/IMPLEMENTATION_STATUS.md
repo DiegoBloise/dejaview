@@ -97,6 +97,22 @@ treated as available.
 | `missing-provider` errors naming token, injector and in-flight chain; `provider-error` wrapping with preserved cause | `dejaview-di` | JUnit tests |
 | `AutoCloseable` disposal in reverse creation order through `ResourceRegistry`; children close before parent; idempotent `close()`; transients and `toInstance(...)` constants never injector-disposed | `dejaview-di` | JUnit tests |
 | Explicit constructor-injection strategy via `Provider<T>` factories (`Injector -> T`); TeaVM-safe, no reflection | `dejaview-di` | JUnit tests |
+| Keyed component replacement at a single position (a `ComponentView` whose `key` differs from the mounted node's key replaces the node; keys are component identity, like in keyed lists) | `dejaview-dom` | JUnit tests |
+| `Route` definitions (literal, `:param`, `**`; nested and index routes; fail-fast `invalid-route` validation; JVM-unique stable ids `route:N`) | `dejaview-router` | JUnit tests |
+| Route matching, parameters and child-wins parameter merge | `dejaview-router` | JUnit tests |
+| Query parameters (first-wins repeated keys, `+` as space, percent-decoding; `%2F` never splits segments) | `dejaview-router` | JUnit tests |
+| Nested routes and index (`""`) children | `dejaview-router` | JUnit tests |
+| `Router` API (`navigate`/`replace`/`back`/`forward`) with resolve-before-push semantics; denied or unmatched navigations leave state and history unchanged | `dejaview-router` | JUnit tests |
+| Route guards (`Allow`/`Deny`/`Redirect`), evaluated root-first with prefix-accumulated context | `dejaview-router` | JUnit tests |
+| Route-declared and guard-returned redirects, re-resolved from scratch, ten-hop `redirect-loop` budget | `dejaview-router` | JUnit tests |
+| `RouteMatch` (chain, params, query parameters, merged metadata) and route-level metadata | `dejaview-router` | JUnit tests |
+| `notFound(...)` chain matched as a normal chain (guards included); no-match is a `false` result with a `Cancelled` event, not an exception | `dejaview-router` | JUnit tests |
+| `NavigationEvent`s (`Started`/`Redirected`/`Ended`/`Cancelled`); `events()` subscription with reversible handle; `Ended` fires after commit | `dejaview-router` | JUnit tests |
+| `RouterOutlet` at chain levels (0 default), keyed by the matched route's id; path parameters pushed as inputs; layouts embed the next level | `dejaview-router` | JUnit tests |
+| `MemoryRouterHistory` (default history; seeded stack; back/forward notify listeners) | `dejaview-router` | JUnit tests |
+| `BrowserHistory` (`pushState`/`replaceState` + `popstate` adoption) | `dejaview-router` | Playwright E2E |
+| Router showcase example (`?example=router`): nested navigation, route params, browser back/forward restored by popstate adoption | `examples/showcase` | Playwright E2E |
+| Router example published in the playground | `website/playground` | Static bundle served by the showcase |
 
 ### End-to-end proof
 
@@ -138,7 +154,7 @@ reconciles the component and updates the existing text node and the counter's
 | Component annotations (`@Component`, `@Input`, `@Output`) | Not started | The programmatic API is the supported surface; annotations remain a proposal layered on top of it |
 | Annotations for lifecycle (`@OnInit` etc.) | Not started | `onInit`/`onUpdate`/`onDestroy` are the supported hooks |
 | Hydration | Planned (Phase 6) | |
-| Routing | Planned (Phase 4) | |
+| Routing | Implemented (Sprint 10) | See implemented table; bundle-level lazy route loading is deferred to Sprint 15 |
 | HTTP client | Planned (Phase 4) | |
 | Reactive forms | Planned (Phase 4) | |
 | State management | Planned | |
@@ -186,14 +202,14 @@ reconciles the component and updates the existing text node and the counter's
    still recreate them. Lists with any keyed child reconcile by key. There is
    no public unmount API or hydration.
 9. **Component identity is positional, or keyed, or typed.** A mounted
-   component keeps its instance while its position is reused. Distinct keys or
-   class tokens (`componentFactory(Class, Supplier)`) are the supported way to
-   swap component classes at one position; tokenless views reuse positionally,
-   so dynamic swaps without keys or tokens keep the previous instance. There
-   is no state migration.
+   component keeps its instance while its position is reused. Distinct keys —
+   including at a single child position — or class tokens
+   (`componentFactory(Class, Supplier)`) swap the instance; unkeyed tokenless
+   views reuse positionally, so dynamic swaps without keys or tokens keep
+   the previous instance. There is no state migration.
 10. **Seven examples across two modules.** `examples/counter` (one,
     class-based counter) and `examples/showcase` (counter, greeting,
-    composition, conditional, usercard, list), plus the conceptual previews in
+    composition, conditional, usercard, list, router), plus the conceptual previews in
     the playground that are not executable.
 11. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
     not part of the automated matrix yet.
@@ -209,6 +225,14 @@ reconciles the component and updates the existing text node and the counter's
     resolved at the composition root. The injector is lazy, not
     thread-safe, and has no `validate()` startup check; components cannot
     create automatic child scopes per view.
+16. **Routing is client-side only and not lazily split by bundle.** Route
+    components instantiate at activation (factories), but the TeaVM output is
+    a single bundle, so no route module loads on demand (deferred to Sprint
+    15). A guard that denies a browser-initiated navigation cannot revert the
+    URL — the browser keeps the restored address while the outlet keeps the
+    previous match.
+17. **The router has no data layer.** Route activation does not fetch data;
+    there is no loader or suspense concept.
 
 ---
 
@@ -226,23 +250,27 @@ reconciles the component and updates the existing text node and the counter's
 
 ## Next milestone recommendation
 
-**Sprint 10 — Router** (see `docs/ROADMAP.md`).
+**Sprint 11 — HTTP Client** (see `docs/ROADMAP.md`).
 
-Sprint 09 is implemented and tested: `dejaview-di` with identity-based
-`InjectionToken<T>` (canonical `of(Class)` overload), explicit `Provider<T>`
-factories (no reflection — TeaVM-safe), three scopes
-(`SINGLETON`/`SCOPED`/`TRANSIENT`) with explicit disposal ownership,
-hierarchical child injectors with nearest-registration-wins and live shadowing,
-`inject()`/`has()`, `AutoCloseable` disposal in reverse creation order (children
-before parent), and fail-fast errors with stable codes (`missing-provider`,
-`circular-dependency`, `provider-error`, `duplicate-binding`,
-`closed-injector`). Constructor injection is the supported strategy;
-field/annotation injection (`@Inject`) remains a proposal. The component system
-is not wired to the injector yet — components receive dependencies through plain
-constructor parameters resolved at the composition root. See ADR-0016.
+Sprint 10 is implemented and tested: `dejaview-router` with immutable `Route`
+definitions (literal, `:param`, `**`; nested and index routes; stable JVM
+ids), resolve-before-push navigation (`navigate`/`replace`/`back`/`forward`)
+that leaves state and history unchanged on denial or no-match, guards evaluated
+root-first with prefix-accumulated contexts (`Allow`/`Deny`/`Redirect`; ten-hop
+`redirect-loop` budget), route-declared and guard-returned redirects, an
+optional `notFound(...)` chain, `NavigationEvent`s with a reversible listener
+(`Ended` fires after commit), `RouterOutlet` rendering at a chain level keyed
+by the matched route's id (path parameters pushed as inputs), and browser
+history behind the `RouterHistory` seam (`BrowserHistory` for TeaVM,
+`MemoryRouterHistory` for the JVM). Single-position keyed component views now
+replace the mounted instance when the key changes, which is how route
+swaps dispose the previous screen. Lazy route loading is limited to
+activation-time factory deferral — bundle-level code splitting is deferred to
+Sprint 15. The router is not wired to the injector; route components receive
+dependencies through plain constructor parameters at the composition root. See
+ADR-0017.
 
 Open items carried forward: documented wrong-type-listener failure mode for
 outputs, and the absence of an `onMount()` hook (`onInit()` covers
-pre-render; anything DOM-effectful must wait for a re-render hook); and the
-question of how the injector reaches the mounted tree once routing and
-application bootstrapping exist (manual construction today).
+pre-render; anything DOM-effectful must wait for a re-render hook); DI is
+still not wired into the component system or the router's outlets.
