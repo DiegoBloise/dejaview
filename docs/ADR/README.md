@@ -13,6 +13,7 @@
 | [0009](0009-lazy-computed-values.md) | Lazy, cached computed values with push-based invalidation | Accepted |
 | [0010](0010-batching-scheduling-and-scopes.md) | Batching, synchronous scheduling and reactive scopes | Accepted |
 | [0011](0011-core-application-abstractions.md) | Core application abstractions | Accepted |
+| [0012](0012-render-tree-and-renderer-placement.md) | Render tree and renderer placement | Accepted |
 
 New ADRs use the same structure: context, decision, consequences, alternatives
 and revisit triggers. Superseded decisions keep their record and are linked from

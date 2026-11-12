@@ -318,33 +318,35 @@ The reactive engine must support Signals, Computed values and Effects with predi
 
 **Objective:** Establish the rendering engine independently of the concrete platform.
 
-**Status (2026-11-11):** In progress. Implemented: render node types (`View`,
-`ElementView`, `TextView`, `FragmentView`), platform renderer contracts
-(`DomDocument`, `DomElement`, `DomNode`) and an initial DOM renderer integration
-that mounts a view tree. The renderer currently lives in `dejaview-dom`; there is
-no separate `dejaview-renderer` module, render tree, reconciliation contract or
-renderer lifecycle yet.
+**Status (2026-11-12):** Completed. The immutable view model now includes a
+component node. `dejaview-dom` builds an explicit render tree — text, element,
+fragment and component nodes — that owns the created DOM nodes, listeners and
+child nodes. `Renderer` defines the mount contract, `TreeReconciler` defines the
+in-place update contract and `MountedDom` disposes the mounted render tree.
+In-place reconciliation itself belongs to Sprint 06. The renderer stays in
+`dejaview-dom`; no `dejaview-renderer` module was created (ADR-0003,
+ADR-0012).
 
 ### Implementation
 
-- [ ] Define rendering interfaces.
+- [x] Define rendering interfaces.
 - [x] Define render nodes.
 - [x] Define element nodes.
 - [x] Define text nodes.
 - [x] Define fragment nodes.
-- [ ] Define component nodes.
-- [ ] Implement render tree creation.
-- [ ] Implement tree reconciliation contracts.
-- [ ] Define renderer lifecycle.
+- [x] Define component nodes.
+- [x] Implement render tree creation.
+- [x] Implement tree reconciliation contracts.
+- [x] Define renderer lifecycle.
 - [x] Define platform renderer interfaces.
 - [x] Implement initial DOM renderer integration.
 
 ### Deliverables
 
-- `dejaview-renderer`.
-- Rendering contracts.
+- Rendering contracts (`Renderer`, `TreeReconciler`).
 - Initial render tree.
-- DOM renderer foundation.
+- DOM renderer foundation in `dejaview-dom` (no separate
+  `dejaview-renderer` module; see ADR-0003 and ADR-0012).
 
 ### Tests
 
@@ -353,7 +355,7 @@ renderer lifecycle yet.
 - [x] Element nodes preserve their properties.
 - [x] Fragments contain multiple children.
 - [x] Renderer can mount a basic tree.
-- [ ] Renderer can dispose a mounted tree.
+- [x] Renderer can dispose a mounted tree.
 - [x] Core rendering contracts work independently of DOM.
 
 ### Acceptance Criteria
@@ -1399,7 +1401,7 @@ their acceptance criteria. The authoritative implemented-versus-planned list is
 | 02 | Core Abstractions | Completed |
 | 03 | Signals and Reactive Primitives | Completed |
 | 04 | Computed, Effects and Scheduling | Completed |
-| 05 | Rendering Engine Foundation | In Progress — immutable view model, platform contracts and first-mount DOM renderer exist; renderer module, render tree, reconciliation and disposal pending |
+| 05 | Rendering Engine Foundation | Completed |
 | 06 | DOM Rendering and Reactive Updates | In Progress — element creation, text and initial attributes exist; reactive bindings and update pipeline pending |
 | 07 | Component Model and Composition | Not Started |
 | 08 | Inputs, Outputs, Templates and Lifecycle | Not Started |

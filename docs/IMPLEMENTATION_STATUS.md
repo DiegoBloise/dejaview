@@ -28,6 +28,7 @@ treated as available.
 | Logging contracts (`Logger`, `Loggers`) | `dejaview-core` | JUnit tests |
 | Internal argument checks | `dejaview-core` | JUnit tests |
 | Element, text and fragment nodes | `dejaview-core` | JUnit tests |
+| Component view node (`ComponentView`) | `dejaview-core` | JUnit tests |
 | Attribute and event bindings | `dejaview-core` | JUnit tests |
 | `Signal<T>` (`get`, `set`, `update`, equality no-op) | `dejaview-reactivity` | JUnit tests |
 | Synchronous `Effect` with dependency tracking and disposal | `dejaview-reactivity` | JUnit tests |
@@ -49,6 +50,9 @@ treated as available.
 | Browser environment detection | `dejaview-dom` | JUnit test on JVM; E2E in Chromium |
 | Reversible DOM event registration | `dejaview-dom` | JUnit tests via fake DOM |
 | Runtime start/shutdown with mounted-tree disposal | `dejaview-dom` | JUnit tests |
+| Explicit render tree (`RenderNode` variants) | `dejaview-dom` | JUnit tests via fake DOM |
+| Renderer and reconciliation contracts | `dejaview-dom` | JUnit tests |
+| Component rendering and disposal | `dejaview-dom` | JUnit tests via fake DOM |
 | First-mount renderer | `dejaview-dom` | JUnit tests |
 | Browser DOM adapter | `dejaview-dom` | Playwright E2E |
 | Browser rendering | example | Playwright E2E |

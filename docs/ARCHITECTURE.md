@@ -1203,6 +1203,7 @@ O desenvolvimento deverá ocorrer incrementalmente.
 - [x] Implementar inserção/remoção de nós e listeners.
 - [x] Implementar ciclo de vida e shutdown do runtime.
 - [x] Implementar abstrações de core (configuração, contexto, disposal, logging e exceções).
+- [x] Implementar árvore de renderização explícita e contratos de renderer/reconciliação.
 
 **Objetivo:** executar uma aplicação Java no navegador utilizando DejaView.
 
@@ -1211,8 +1212,9 @@ por um teste E2E em Chromium. O runtime possui configuração, detecção de
 ambiente, registro/remoção de listeners e shutdown explícito. O escopo exato do
 primeiro mount — sem diffing, reatividade ou hidratação — está em
 [ADR-0007](ADR/0007-first-milestone-scope.md), as abstrações de core em
-[ADR-0011](ADR/0011-core-application-abstractions.md) e o estado detalhado em
-[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+[ADR-0011](ADR/0011-core-application-abstractions.md), a árvore de renderização
+em [ADR-0012](ADR/0012-render-tree-and-renderer-placement.md) e o estado
+detalhado em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 ## Phase 2 — Reactivity Engine
 
@@ -1338,6 +1340,7 @@ ADRs aceitos:
 | [0009](ADR/0009-lazy-computed-values.md) | Computed lazy, cacheado e invalidado por push | Accepted |
 | [0010](ADR/0010-batching-scheduling-and-scopes.md) | Batching, agendamento síncrono e escopos reativos | Accepted |
 | [0011](ADR/0011-core-application-abstractions.md) | Abstrações de aplicação no core | Accepted |
+| [0012](ADR/0012-render-tree-and-renderer-placement.md) | Árvore de renderização e localização do renderer | Accepted |
 
 Decisões futuras (Component API, Dependency Injection, Hydration, estratégia de
 renderização, etc.) ainda não possuem ADR e permanecem propostas até serem
