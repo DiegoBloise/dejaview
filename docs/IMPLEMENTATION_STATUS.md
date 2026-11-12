@@ -29,9 +29,15 @@ treated as available.
 | Internal argument checks | `dejaview-core` | JUnit tests |
 | Element, text and fragment nodes | `dejaview-core` | JUnit tests |
 | Component view node (`ComponentView`) | `dejaview-core` | JUnit tests |
-| Component contract (`render`, `name`, `close`) | `dejaview-core` | JUnit tests |
-| Component resource ownership (`AbstractComponent`) | `dejaview-core` | JUnit tests |
-| Functional and class-based component factories | `dejaview-core` | JUnit tests |
+| Component view inputs, output listeners, slots and raw values | `dejaview-core` | JUnit tests |
+| Optional reconciliation key on all views (`TextView`, `FragmentView`, `ElementView`, `ComponentView`) | `dejaview-core` | JUnit tests |
+| `ComponentBindings` (inputs/slots/outputs, immutable copies) | `dejaview-core` | JUnit tests |
+| Component contract (`render`, `name`, `bind`, `onInit`, `onUpdate`, `onDestroy`, `close`) | `dejaview-core` | JUnit tests |
+| Component inputs with fail-fast validation (`input(String, Class)`, `inputOr`; codes `missing-input`/`invalid-input`) | `dejaview-core` | JUnit tests |
+| Component outputs (`emit` + `ComponentView#on`), registration order, no-op when no listeners | `dejaview-core` | JUnit tests |
+| Content projection (default and named slots; direct splice, no `SlotView`) | `dejaview-core` | JUnit tests |
+| `AbstractComponent` resource ownership (`own`, `onDispose`) | `dejaview-core` | JUnit tests |
+| Functional and class-based component factories (incl. class-token form `componentFactory(Class, Supplier)`) | `dejaview-core` | JUnit tests |
 | Attribute and event bindings | `dejaview-core` | JUnit tests |
 | `Signal<T>` (`get`, `set`, `update`, equality no-op) | `dejaview-reactivity` | JUnit tests |
 | Synchronous `Effect` with dependency tracking and disposal | `dejaview-reactivity` | JUnit tests |
@@ -61,6 +67,10 @@ treated as available.
 | Nested components and independent instance state | `dejaview-dom` | JUnit tests via fake DOM |
 | Component-scoped reactive rendering | `dejaview-dom` | JUnit tests via fake DOM |
 | In-place text, attribute and property updates | `dejaview-dom` | JUnit tests via fake DOM |
+| Keyed list reconciliation (opt-in when any child carries a key; duplicate keys fail fast before DOM mutation) | `dejaview-dom` | JUnit tests via fake DOM |
+| Conditional DOM re-anchor only when sibling order actually changed | `dejaview-dom` | JUnit tests via fake DOM |
+| Component type swaps detected via class tokens (`componentType`); tokenless views keep positional reuse | `dejaview-dom` | JUnit tests via fake DOM |
+| Component lifecycle order (`bind → onInit → render … bind → render → onUpdate … onDestroy → close`) | `dejaview-dom` | JUnit tests via fake DOM |
 | Class and style attribute updates | `dejaview-dom` | JUnit tests via fake DOM |
 | Plain `class`/`style` attributes for external CSS libraries | `dejaview-core`, `dejaview-dom` | JUnit tests via fake DOM |
 | Child removal and node replacement | `dejaview-dom` | JUnit tests via fake DOM |
@@ -74,8 +84,9 @@ treated as available.
 | Source maps | example | `app.js.map` |
 | Browser E2E test | `examples/counter`, `examples/showcase` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, docs, status) | `website/` | Static site served over HTTP; sibling playground iframe |
-| Interactive playground with pre-compiled examples | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
+| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list) | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
+| Showcase examples: `usercard` (inputs/outputs/slots/lifecycle) and `list` (keyed reconciliation) | `examples/showcase` | Playwright E2E in Chromium |
 
 ### End-to-end proof
 
@@ -91,7 +102,7 @@ Java source
   → click event
   → Signal update
   → render effect
-  → positional reconciliation
+  → reconciliation (positional; keyed for children with keys)
   → DOM text and attribute update
 ```
 
@@ -110,14 +121,12 @@ reconciles the component and updates the existing text node and the counter's
 |---|---|---|
 | Topological dependency ordering | Planned (Phase 2 refinement) | FIFO scheduling is implemented; glitch-free topological propagation is not |
 | Equality short-circuit for computed values | Planned (Phase 2 refinement) | Invalidated computeds always notify dependents |
-| Keyed list reconciliation | Planned | Positional matching preserves nodes for unchanged positions, but moving or reordering children can recreate them |
+| Keyed list reconciliation | Implemented | Children lists switch to keyed reconciliation as soon as one child carries a `key`; without keys, matching is positional |
 | Styling library compatibility suite | Planned (Sprint 23) | Elements already emit plain `class`/`style` attributes; Bootstrap, Tailwind and daisyUI are not covered by automated tests yet |
 | Fine-grained binding nodes | Not planned yet | Reactive updates are component-scoped: a signal read while rendering reruns the component and reconciles its subtree |
 | Automatic reactive-scope ownership | Planned | Components own disposable resources via `AbstractComponent`, but do not create or own a `ReactiveScope` automatically |
-| Component annotations (`@Component`, `@Input`, `@Output`) | Planned (Sprint 08) | Components are declared in Java code, not through annotations |
-| Inputs, outputs, slots | Planned (Sprint 08) | Components receive dependencies through constructors or closures |
-| Lifecycle hooks (`onInit`, `onMount`, `onUpdate`, `onDestroy`) | Planned (Sprint 08) | Only disposal (`close()`) exists |
-| Dynamic component swapping | Planned (Sprint 08) | A component node keeps its instance while its position is reused, regardless of the new component type |
+| Component annotations (`@Component`, `@Input`, `@Output`) | Not started | The programmatic API is the supported surface; annotations remain a proposal layered on top of it |
+| Annotations for lifecycle (`@OnInit` etc.) | Not started | `onInit`/`onUpdate`/`onDestroy` are the supported hooks |
 | Hydration | Planned (Phase 6) | |
 | Routing | Planned (Phase 4) | |
 | Dependency injection | Planned (Phase 4) | |
@@ -162,14 +171,20 @@ reconciles the component and updates the existing text node and the counter's
    with `IllegalStateException`.
 7. **Reactive primitives are not thread-safe.** They target the single-threaded
    browser runtime and single-threaded JVM tests.
-8. **Positional reconciliation only.** `DomTreeReconciler` preserves nodes at
-   matching positions, but moving or reordering children can recreate them.
-   There is no keyed diff, public unmount API or hydration.
-9. **Component identity is positional.** A mounted component keeps its instance
-   while its position is reused; there is no keyed identity, typed identity or
-   state migration when the component type changes. Inputs, outputs and lifecycle
-   hooks are not implemented yet.
-10. **Single example.** Only the counter example exists.
+8. **Reconciliation is positional unless a key is present.** Lists whose
+   children carry no `key` reconcile by position; reordering such children can
+   still recreate them. Lists with any keyed child reconcile by key. There is
+   no public unmount API or hydration.
+9. **Component identity is positional, or keyed, or typed.** A mounted
+   component keeps its instance while its position is reused. Distinct keys or
+   class tokens (`componentFactory(Class, Supplier)`) are the supported way to
+   swap component classes at one position; tokenless views reuse positionally,
+   so dynamic swaps without keys or tokens keep the previous instance. There
+   is no state migration.
+10. **Seven examples across two modules.** `examples/counter` (one,
+    class-based counter) and `examples/showcase` (counter, greeting,
+    composition, conditional, usercard, list), plus the conceptual previews in
+    the playground that are not executable.
 11. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
     not part of the automated matrix yet.
 12. **JVM/browser API parity.** Only APIs exercised by the current code are
@@ -196,14 +211,21 @@ reconciles the component and updates the existing text node and the counter's
 
 ## Next milestone recommendation
 
-**Sprint 08 — Inputs, Outputs, Templates and Lifecycle.**
+**Sprint 09 — Dependency Injection** (see `docs/ROADMAP.md`).
 
-Sprint 07 is implemented and tested: `Component` defines rendering, metadata and
-disposal; `ComponentView` creates one component instance per mounted node;
-`AbstractComponent` owns disposable resources; and components compose and nest
-with isolated state. The counter example is now a class-based component.
+Sprint 08 is implemented and tested: typed inputs (`input(String, Class)` /
+`inputOr`, fail-fast with `missing-input`/`invalid-input`), outputs (`emit` +
+`ComponentView#on`, registration order, no-op when unlistened), default and
+named slots (direct splice, no `SlotView`), explicit lifecycle
+(`onInit`/`onUpdate`/`onDestroy` in mount/re-render/unmount order) and keyed
+list reconciliation with token-based dynamic component replacement
+(`componentFactory(Class, Supplier)`). The `usercard` and `list` showcase
+examples exercise the new surface and are covered by Playwright E2E.
 
-Sprint 08 should add typed inputs and outputs, explicit lifecycle callbacks and
-the declarative template helpers (`when`, `each`) described in the roadmap.
-Fine-grained binding nodes and keyed list reconciliation remain future work and
-should not be added before a concrete need appears.
+Fine-grained binding nodes and annotation-based `@Input`/`@Output` remain
+future work; annotations should be layered on the programmatic API now in
+place, not on a parallel surface.
+
+Open items carried forward: documented wrong-type-listener failure mode for
+outputs, and the absence of an `onMount()` hook (`onInit()` covers
+pre-render; anything DOM-effectful must wait for a re-render hook).

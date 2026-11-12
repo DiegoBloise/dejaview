@@ -485,21 +485,33 @@ Developers must be able to create reusable Java components and compose them into
 
 **Objective:** Complete the component interaction and lifecycle model.
 
+**Status (2026-11-12):** Completed. Inputs are raw values re-bound on every
+render pass and validated fail-fast (`input(String, Class)` / `inputOr`) with
+`DejaViewException` codes `missing-input`/`invalid-input`. Outputs are
+`Consumer` listeners registered on the view (`ComponentView#on`), emitted in
+registration order via `emit`. Projection splices slot views (default/named)
+directly into the rendered tree — no `SlotView`. Lifecycle order is
+`bind → init → render … bind → render → update … destroy → close`. Dynamic
+component swaps at one template position replace the node when both views
+carry a differing class token (`Views.componentFactory(Class, Supplier)`) or
+distinct keys; without either, reuse is positional. Children lists switch to
+keyed reconciliation as soon as one child carries a key.
+
 ### Implementation
 
-- [ ] Implement component inputs.
-- [ ] Implement input validation.
-- [ ] Implement component outputs.
-- [ ] Implement event emission.
-- [ ] Implement content projection.
-- [ ] Implement named slots.
-- [ ] Implement lifecycle initialization.
-- [ ] Implement update lifecycle.
-- [ ] Implement destruction lifecycle.
-- [ ] Implement conditional rendering.
-- [ ] Implement list rendering.
-- [ ] Implement dynamic components.
-- [ ] Implement keyed list reconciliation.
+- [x] Implement component inputs.
+- [x] Implement input validation.
+- [x] Implement component outputs.
+- [x] Implement event emission.
+- [x] Implement content projection.
+- [x] Implement named slots.
+- [x] Implement lifecycle initialization.
+- [x] Implement update lifecycle.
+- [x] Implement destruction lifecycle.
+- [x] Implement conditional rendering.
+- [x] Implement list rendering.
+- [x] Implement dynamic components.
+- [x] Implement keyed list reconciliation.
 
 ### Deliverables
 
@@ -510,14 +522,14 @@ Developers must be able to create reusable Java components and compose them into
 
 ### Tests
 
-- [ ] Inputs are received correctly.
-- [ ] Input changes trigger the expected updates.
-- [ ] Outputs emit the correct values.
-- [ ] Projected content renders correctly.
-- [ ] Lifecycle hooks execute in the correct order.
-- [ ] Conditional rendering mounts and disposes components correctly.
-- [ ] List rendering preserves component identity when keys are stable.
-- [ ] Dynamic components can be replaced safely.
+- [x] Inputs are received correctly.
+- [x] Input changes trigger the expected updates.
+- [x] Outputs emit the correct values.
+- [x] Projected content renders correctly.
+- [x] Lifecycle hooks execute in the correct order.
+- [x] Conditional rendering mounts and disposes components correctly.
+- [x] List rendering preserves component identity when keys are stable.
+- [x] Dynamic components can be replaced safely.
 
 ### Acceptance Criteria
 

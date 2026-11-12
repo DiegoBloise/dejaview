@@ -16,6 +16,7 @@
 | [0012](0012-render-tree-and-renderer-placement.md) | Render tree and renderer placement | Accepted |
 | [0013](0013-reactive-rendering-and-reconciliation.md) | Reactive rendering and positional reconciliation | Accepted |
 | [0014](0014-component-model-and-ownership.md) | Component model and ownership | Accepted |
+| [0015](0015-component-interaction-model.md) | Component interaction model: inputs, outputs, slots, lifecycle and keyed lists | Accepted |
 
 New ADRs use the same structure: context, decision, consequences, alternatives
 and revisit triggers. Superseded decisions keep their record and are linked from

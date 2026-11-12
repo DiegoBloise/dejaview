@@ -442,13 +442,18 @@ public class UserCard {
 }
 ```
 
-> **Estado atual (Sprint 07).** O contrato implementado é
-> `Component` (`render()`, `name()` e `close()`) com `AbstractComponent` para
-> propriedade de recursos e `ComponentView` com uma factory por nó montado.
-> Componentes funcionais usam `Views.component(...)`; componentes de classe usam
-> `Views.componentFactory(...)`. Anotações (`@Component`, `@Input`, `@Output`),
-> inputs/outputs tipados e lifecycle hooks explícitos ainda são propostas.
-> Ver [ADR-0014](ADR/0014-component-model-and-ownership.md).
+> **Estado atual (Sprint 08).** O contrato implementado é
+> `Component` (`render()`, `name()`, `bind(...)`, `onInit()`, `onUpdate()`,
+> `onDestroy()` e `close()`) com `AbstractComponent` para propriedade de
+> recursos, inputs/outputs tipados com validação, projeção de conteúdo e
+> lifecycle explícito. `ComponentView` mantém uma factory por nó montado e
+> pode carregar inputs, listeners de outputs, slots e uma chave opcional.
+> Componentes funcionais usam `Views.component(...)`; componentes de classe
+> usam `Views.componentFactory(...)`, ou
+> `Views.componentFactory(Class, Supplier)` para indicar o tipo do componente
+> ao reconciliador. Anotações (`@Component`, `@Input`, `@Output`) ainda são
+> propostas. Ver [ADR-0014](ADR/0014-component-model-and-ownership.md) e
+> [ADR-0015](ADR/0015-component-interaction-model.md).
 
 ## 5.2. Component Composition
 
@@ -462,6 +467,18 @@ Suportar:
 - Componentes genéricos.
 - Componentes condicionais.
 - Componentes iterativos.
+
+> **Estado atual (Sprint 08).** Aninhamento, reutilização, composição
+> condicional e listas são implementados e testados. Listas com elementos
+> `key` misturam-se a irmãos sem chave por ordem relativa e reconciliam por
+> chave quando pelo menos um filho a porta; chaves duplicadas falham antes de
+> qualquer mutação do DOM. Componentes dinâmicos (a mesma posição renderizando
+> classes diferentes) são substituídos quando as views carregam tokens de
+> classe diferentes (`Views.componentFactory(Class, Supplier)`) ou quando as
+> chaves diferem; sem nenhuma das duas, o reuso é posicional, como antes.
+> Slots são projeção: o pai anexa views a slots nomeados/default e o
+> componente as insere na árvore renderizada (seção 5.3). "Templates" e
+> "componentes genéricos" permanecem propostas.
 
 ## 5.3. Inputs e Outputs
 
@@ -477,6 +494,30 @@ private EventEmitter<User> onSelect;
 
 Os inputs deverão suportar validação e valores padrão.
 
+> **Estado atual (Sprint 08).** A API programática está implementada e
+> testada; as anotações acima continuam sendo proposta.
+>
+> - **Inputs**: o pai anexa valores com `ComponentView#input(String, Object)`.
+>   Os valores são crus e capturados na criação da view; a cada renderização
+>   são re-ligados ao componente antes de `render()`, o que faz mudanças de
+>   input propagarem naturalmente a partir do componente pai. O componente
+>   lê com `input(String, Class)` (fail-fast, `DejaViewException` com código
+>   `missing-input` ou `invalid-input`) ou `inputOr(String, Class, T)` com
+>   valor padrão e validação de tipo. Inputs nulos são rejeitados na view.
+> - **Outputs**: o pai registra listeners com `ComponentView#on(String,
+>   Consumer<?>)`; o componente emite com `emit(String, Object)`. Todos os
+>   listeners são invocados na ordem de registro; emitir sem listeners é
+>   no-op. Exceções de listeners propagam.
+> - **Slots**: o pai projeta conteúdo com `ComponentView#slot(View...)`
+>   (slot default, `ComponentBindings.DEFAULT_SLOT`) ou `slot(String,
+>   View...)` (nomeado). O componente insere as views projetadas na sua
+>   árvore com `slot()` / `slot(String)`. Não existe `SlotView`: a projeção
+>   é splice direto de views, sem elemento wrapper e sem remapeamento.
+> - **Chaves**: `key(String)` em qualquer view participa da reconciliação por
+>   chave da lista de irmãos (ver 5.2).
+>
+> Detalhes em [ADR-0015](ADR/0015-component-interaction-model.md).
+
 ## 5.4. Lifecycle Hooks
 
 Implementar:
@@ -488,6 +529,19 @@ Implementar:
 - `onError()`
 
 Os hooks deverão possuir semântica documentada e consistente entre os ambientes de execução.
+
+> **Estado atual (Sprint 08).** Implementados: `onInit()` (uma vez, após o
+> registro dos bindings e antes do primeiro render), `onUpdate()` (após cada
+> re-render, depois que a árvore foi reconciliada; não roda no mount inicial)
+> e `onDestroy()` (exatamente uma vez, quando o nó do componente é removido,
+> antes de `close()` e antes da liberação do subárvore renderizado). A ordem
+> completa de montagem é `bind → onInit → render`; em re-renders,
+> `bind → render → onUpdate`; no unmount, `onDestroy → close → dispose da
+> subárvore`. `onMount()` e `onError()` não existem; erros de render
+> propagam para o `Effect` que dirige a árvore montada. `close()` continua
+> `final` em `AbstractComponent`; use `onDispose(Runnable)` para cleanup e
+> `onDestroy()` quando o cleanup precisa rodar antes dos recursos serem
+> liberados.
 
 ## 5.5. Component Templates
 
@@ -1249,10 +1303,10 @@ síncrona fora de batches e são deduplicados dentro de `Reactive.batch(...)`;
 computeds são lazy, cacheados e invalidados por push; loops reativos são
 detectados por um limite de execuções. O renderer usa uma `ComponentView` como
 fronteira reativa: um único `Effect` por árvore montada rastreia os signals lidos
-e reconcilia o DOM posicionalmente, atualizando texto, atributos, propriedades e
-filhos sem recriar nós inalterados. Ainda não há short-circuit por igualdade,
-ordenação topológica explícita, bindings por nó ou reconciliação com chaves.
-Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
+e reconcilia o DOM, atualizando texto, atributos, propriedades e filhos sem
+recriar nós inalterados. Listas de irmãos com alguma chave reconciliam por
+chave; as demais continuam posicionais. Ainda não há short-circuit por igualdade
+em computeds, ordenação topológica explícita nem bindings por nó. Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
 [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
 [ADR-0009](ADR/0009-lazy-computed-values.md),
 [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md) e
@@ -1261,26 +1315,31 @@ Detalhes em [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md),
 ## Phase 3 — Component System
 
 - [ ] Component annotations.
-- [x] Component lifecycle (disposal; inputs/outputs e callbacks explícitos na Sprint 08).
-- [ ] Inputs e Outputs.
+- [x] Component lifecycle (`onInit`/`onUpdate`/`onDestroy`; disposal).
+- [x] Inputs e Outputs (API programática; anotações seguem proposta).
 - [x] Component composition.
-- [ ] Slots.
-- [ ] Conditional rendering.
-- [ ] List rendering.
+- [x] Slots.
+- [x] Conditional rendering.
+- [x] List rendering (keyed reconciliation).
 - [ ] Context API.
 
 **Objetivo:** construir aplicações utilizando componentes independentes.
 
-**Estado:** o modelo de componentes da Sprint 07 está implementado e testado.
-`Component` define `render()`, `name()` e `close()`; `AbstractComponent` concentra
-a propriedade de recursos via `ResourceRegistry`; e `ComponentView` mantém uma
-factory que cria exatamente uma instância por nó montado. Componentes podem ser
-funcionais (`Views.component(...)`) ou baseados em classe
-(`Views.componentFactory(...)`), aninhar-se livremente e ter estado isolado por
-instância. A identidade é posicional: a instância sobrevive a re-renders na mesma
-posição e é fechada quando o nó é removido. Inputs, outputs, anotações, slots e
-callbacks de ciclo de vida explícitos ainda não existem. Detalhes em
-[ADR-0014](ADR/0014-component-model-and-ownership.md) e
+**Estado:** o modelo de componentes da Sprint 08 está implementado e testado.
+`Component` define `render()`, `name()`, `bind(ComponentBindings)`,
+`onInit()`, `onUpdate()`, `onDestroy()` e `close()`; `AbstractComponent`
+concentra a propriedade de recursos via `ResourceRegistry`, leitura validada de
+inputs (`input`/`inputOr`), emissão de outputs (`emit`) e projeção de conteúdo
+(`slot()`). `ComponentView` carrega factory, token opcional de classe
+(`componentType`), inputs, listeners de outputs, slots e chave opcional; cria
+exatamente uma instância por nó montado. Componentes podem ser funcionais
+(`Views.component(...)`) ou baseados em classe (`Views.componentFactory(...)`),
+aninhar-se livremente e ter estado isolado por instância. O reconciliador é
+posicional para listas sem chaves e por chave quando alguma criança a porta;
+component type swaps são detectados por token de classe explícito. Anotações
+(`@Component`, `@Input`, `@Output`) e Context API ainda não existem. Detalhes
+em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
+[ADR-0015](ADR/0015-component-interaction-model.md) e
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 ## Phase 4 — Application Framework
@@ -1370,10 +1429,10 @@ ADRs aceitos:
 | [0012](ADR/0012-render-tree-and-renderer-placement.md) | Árvore de renderização e localização do renderer | Accepted |
 | [0013](ADR/0013-reactive-rendering-and-reconciliation.md) | Renderização reativa e reconciliação posicional | Accepted |
 | [0014](ADR/0014-component-model-and-ownership.md) | Modelo de componentes e propriedade de recursos | Accepted |
+| [0015](ADR/0015-component-interaction-model.md) | Modelo de interação de componentes: inputs, outputs, slots, lifecycle e listas com chaves | Accepted |
 
-Decisões futuras (Inputs e Outputs, Dependency Injection, Hydration, estratégia
-de renderização, etc.) ainda não possuem ADR e permanecem propostas até serem
-registradas.
+Decisões futuras (Dependency Injection, Hydration, estratégia de renderização,
+etc.) ainda não possuem ADR e permanecem propostas até serem registradas.
 
 Cada ADR deverá registrar:
 

@@ -28,9 +28,9 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Foundation milestone implemented; Phase 2 in progress.**
+**Phase 3 in progress — Sprint 08 (inputs, outputs, lifecycle, keyed lists) implemented.**
 
-The repository now contains a working vertical slice:
+The repository now contains a working vertical slice through the component model:
 
 ```text
 Java source
@@ -42,14 +42,12 @@ Java source
   → click
   → Signal update
   → render effect
-  → positional reconciliation
+  → reconciliation (positional; keyed for keyed children)
   → DOM text and attribute update
 ```
 
-This chain is covered by automated JVM unit tests and a Chromium end-to-end test.
-It is a **foundation**, not a usable application framework yet: there is a
-minimal reactivity core (signals and effects) and component-scoped rendering, but
-no component system, routing, SSR or tooling.
+This chain is covered by automated JVM unit tests and a Chromium end-to-end
+test. Routing, DI, SSR or tooling do not exist yet.
 
 | Capability | Status |
 |---|---|
@@ -62,10 +60,12 @@ no component system, routing, SSR or tooling.
 | `Signal` and synchronous `Effect` with dependency tracking | Implemented and tested |
 | Lazy `Computed` with cache, invalidation and cycle detection | Implemented and tested |
 | Batching, FIFO scheduling, cleanup and `ReactiveScope` disposal | Implemented and tested |
-| Component-scoped reactive rendering and positional reconciliation | Implemented and tested |
+| Component-scoped reactive rendering and reconciliation (positional, plus keyed lists with opt-in `key`) | Implemented and tested |
+| Components: one instance per mounted node, resource ownership, functional and class-based factories | Implemented and tested |
+| Component inputs (`input`/`inputOr`, fail-fast `missing-input`/`invalid-input`) and outputs (`emit`, listeners in registration order) | Implemented and tested |
+| Content projection (default and named slots) and lifecycle hooks (`onInit`, `onUpdate`, `onDestroy`) | Implemented and tested |
 | Plain `class`/`style` attributes usable with Bootstrap, Tailwind CSS and daisyUI | Implemented; library compatibility suite planned |
 | Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
-| Components, lifecycle, inputs/outputs/slots | Planned (Phase 3) |
 | Routing, DI, HTTP, forms, state management | Planned (Phase 4) |
 | CLI, DevTools, compiler abstraction | Planned |
 | SSR, SSG, hydration | Planned |
@@ -146,7 +146,7 @@ created as empty placeholders.
 |---|---|---|
 | `dejaview-core` | Immutable view model: `View`, `ElementView`, `TextView`, `FragmentView`, `ComponentView`, attributes, properties, event bindings, `Views` factories. No browser or TeaVM imports. | Implemented |
 | `dejaview-reactivity` | Platform-independent `Signal<T>`, `Effect`, lazy `Computed<T>`, explicit batching, FIFO scheduling and `ReactiveScope` ownership. No browser or TeaVM imports. | Implemented |
-| `dejaview-dom` | Platform-neutral DOM contracts, render tree, reactive `DomRenderer`, positional `TreeReconciler`, TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
+| `dejaview-dom` | Platform-neutral DOM contracts, render tree, reactive `DomRenderer`, `TreeReconciler` (positional + keyed), TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Official website, documentation and interactive playground (pre-compiled examples) | Implemented |
 
@@ -206,55 +206,58 @@ WebAssembly is explicitly out of scope.
 
 The implemented flow is deliberately small:
 
-1. `CounterApp` builds an immutable view tree with `Views` factories inside a
-   component view.
-2. `DejaView.mount(view, "app")` resolves the container and asks `DomRenderer`
-   to mount the tree.
+1. A component builds an immutable view tree with `Views` factories. State lives
+   in signals owned by the component instance.
+2. `DejaView.mount(Views.componentFactory(MyComponent::new), "app")` resolves the
+   container and asks `DomRenderer` to mount the tree.
 3. `DomRenderer` works only against `DomDocument` / `DomElement` / `DomNode`
    contracts, so it is tested on the JVM with a fake DOM.
 4. In the browser, `BrowserDomElement` implements those contracts using TeaVM
    JSO (`HTMLDocument`, `HTMLElement`, `Node`, `EventListener`).
-5. The count is a `Signal<Integer>` read while the component renders. The
-   mounted tree's `Effect` tracks that read, and the click handler only calls
-   `count.update(...)`. The renderer then reconciles the existing DOM nodes.
+5. A signal read while the component renders is tracked by the mounted tree's
+   single `Effect`. The click handler only writes to the signal; the renderer
+   re-renders the component and reconciles the existing DOM nodes — in place
+   when keys and tag names match.
+6. Inputs flow down as raw values re-bound on every render pass
+   (`component.input("username", value)`), outputs flow up as registered
+   `Consumer`s (`component.on("select", listener)`), and projected content is
+   spliced into the component's tree via slots (`slot("header")` / `slot()`).
 
 The renderer owns the reactive binding: application code no longer looks up DOM
 nodes. The flow is recorded in
-[ADR-0013](docs/ADR/0013-reactive-rendering-and-reconciliation.md).
+[ADR-0013](docs/ADR/0013-reactive-rendering-and-reconciliation.md) and
+[ADR-0015](docs/ADR/0015-component-interaction-model.md).
 
 ## Conceptual API (Not Implemented)
 
-The following snippet illustrates the intended long-term developer experience.
-**It is a design sketch, not a working API.** `Signal`, `Effect` and
-component-scoped reactive rendering exist, but `@Component`, the `signal(...)`
-factory, class-based components and their lifecycle do not.
+The class-based component and lifecycle parts of this sketch exist today; the
+annotation API does not. The programmatic API is the supported surface:
 
 ```java
-@Component
-public class CounterComponent {
+final class UserCard extends AbstractComponent {
 
-    private final Signal<Integer> count = signal(0);
-
+    @Override
     public View render() {
-        return div(
-            h1("DejaView Counter"),
-
-            p(() -> "Count: " + count.get()),
-
-            button("Increment")
-                .onClick(() -> count.update(value -> value + 1))
+        String username = input("username", String.class);
+        return Views.div(
+            Views.h2("@" + username),
+            Views.button("Select").onClick(() -> emit("select", username))
         );
     }
 }
 ```
 
-The intended developer experience focuses on:
+```java
+// parent
+Views.componentFactory(UserCard.class, UserCard::new)
+     .input("username", "Ada")
+     .on("select", selected -> System.out.println("selected: " + selected));
+```
 
-- Java-based component definitions.
-- Strong typing.
-- Declarative UI composition.
-- Reactive state management.
-- Automatic interface updates.
+What does **not** exist: `@Component`, `@Input`, `@Output`, `@OnInit` and their
+processing. Annotations remain a proposal layered on top of the programmatic
+API — see
+[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
 
 ## Design Principles
 
@@ -272,40 +275,38 @@ The intended developer experience focuses on:
 
 | Phase | Description | Status |
 |---|---|---|
-| 1 | Foundation and JavaScript runtime | Foundation implemented |
+| 1 | Foundation and JavaScript runtime | Implemented |
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
-| 3 | Component System | Planned |
+| 3 | Component System | In progress — Sprint 08 implemented (inputs, outputs, slots, lifecycle, keyed lists, dynamic component swaps); annotations and Context API remain |
 | 4 | Application Framework | Planned |
 | 5 | Compiler and Tooling | Planned |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 07 — Component Model and Composition
+### Next milestone: Sprint 09 — Dependency Injection
 
-The rendering and reactivity foundations are implemented: `Signal<T>`, `Effect`,
-lazy `Computed<T>`, batching, synchronous FIFO scheduling, cleanup and
-`ReactiveScope` ownership, plus a render tree and a reactive renderer that
-reconciles text, attributes, properties, class/style attributes, events and
-children in place. The counter example updates through a signal read by a
-component view; the renderer owns the DOM update and no longer requires
-`Dom.byId`.
+Sprint 08 delivered the component interaction model: typed inputs
+(`input(String, Class)` / `inputOr`) with fail-fast validation, outputs emitted
+to view-registered listeners in registration order, default and named slots
+projected directly into the rendered tree, explicit lifecycle hooks
+(`onInit` / `onUpdate` / `onDestroy`), keyed list reconciliation and dynamic
+component replacement via explicit class tokens
+(`Views.componentFactory(Class, Supplier)`). The `usercard` and `list` showcase
+examples exercise that surface and are covered by Playwright E2E in Chromium.
 
-The remaining Phase 2 refinements are:
+The remaining Phase 2 refinements are still open:
 
 1. Equality short-circuiting so dependents do not rerun when a computed value is
    unchanged.
 2. Optional topological ordering for glitch-free computed propagation.
 
-Neither blocks the component model. Sprint 07 should build component lifecycle,
-ownership and composition on top of `ComponentView`. Keyed list reconciliation
-and fine-grained binding nodes remain future work.
-
 Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 [ADR-0008](docs/ADR/0008-synchronous-signals-and-effects.md),
 [ADR-0009](docs/ADR/0009-lazy-computed-values.md),
-[ADR-0010](docs/ADR/0010-batching-scheduling-and-scopes.md) and
-[ADR-0013](docs/ADR/0013-reactive-rendering-and-reconciliation.md).
+[ADR-0010](docs/ADR/0010-batching-scheduling-and-scopes.md),
+[ADR-0013](docs/ADR/0013-reactive-rendering-and-reconciliation.md) and
+[ADR-0015](docs/ADR/0015-component-interaction-model.md).
 
 ## Build Commands
 
@@ -322,8 +323,8 @@ Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 # Skip tests
 ./mvnw clean package -DskipTests
 
-# Opt-in browser end-to-end test
-./mvnw -Pe2e -pl examples/counter -am verify
+# Opt-in browser end-to-end tests (unit + examples)
+./mvnw -Pe2e -pl examples/counter,examples/showcase -am verify
 ```
 
 The root `pom.xml` declares the modules, centralizes dependency and plugin
@@ -354,9 +355,13 @@ Significant decisions are recorded as ADRs rather than changed silently.
 - Reactive updates are component-scoped: a signal read while rendering reruns
   the component and reconciles its subtree. Fine-grained binding nodes do not
   exist yet.
-- Reconciliation is positional. Moving or reordering children can recreate DOM
-  nodes; there is no keyed diff, public unmount API or hydration.
-- No component abstraction, routing, DI, HTTP client, forms or state management beyond the Sprint 07 component model.
+- Reconciliation is positional, or keyed when children carry `key`. Lists
+  without keys reorder by position; there is no public unmount API or hydration.
+- Unkeyed tokenless views at the same position reuse the mounted instance even
+  if the new view renders a different component class — dynamic swaps require
+  distinct keys or a class token (`componentFactory(Class, Supplier)`).
+- Annotation-based API (`@Component`, `@Input`, `@Output`) and Context API do
+  not exist; the programmatic surface is the supported API.
 - Styling is plain HTML plus `class`/`style` attributes; there is no CSS
   pipeline or CSS-in-JS runtime. Bootstrap, Tailwind CSS and daisyUI are not yet
   covered by automated compatibility tests.
