@@ -19,6 +19,7 @@
 | [0015](0015-component-interaction-model.md) | Component interaction model: inputs, outputs, slots, lifecycle and keyed lists | Accepted |
 | [0016](0016-dependency-injection-model.md) | Dependency injection model: explicit providers, three scopes, hierarchical injectors | Accepted |
 | [0017](0017-routing-model.md) | Client-side routing model: resolve-before-push, keyed component swaps, history adapter | Accepted |
+| [0018](0018-http-client-model.md) | HTTP client model: async delivery, XHR transport, statuses as values | Accepted |
 
 New ADRs use the same structure: context, decision, consequences, alternatives
 and revisit triggers. Superseded decisions keep their record and are linked from

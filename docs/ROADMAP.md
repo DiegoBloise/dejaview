@@ -661,42 +661,62 @@ A multi-page application must be navigable without full browser page reloads. �
 
 **Objective:** Provide a consistent HTTP abstraction for browser applications.
 
+**Status (2026-11-12):** Completed. `dejaview-http` is a platform-independent
+module depending only on `dejaview-core`: immutable `HttpRequest` (`get`/
+`post`/`put`/`patch`/`delete` factories, fluent withers, percent-encoded
+query parameters with `+` for space, `Content-Type`-aware `jsonBody`),
+immutable case-insensitive `HttpHeaders` preserving insertion order and
+multi-valued entries, `HttpResponse` with `ok()` (2xx) and a dependency-free
+`JsonValue` tree/parser/writer (finite numbers, depth cap 512, offsets on
+errors), `HttpClient` with synchronous-delivery-safe once-guarded consumer,
+registration-ordered request and response interceptors (response interceptors
+only observe completed round-trips, HTTP error statuses included), effective
+per-request vs client-level timeout (`-1` = disabled) and credentials
+resolution, and async-only cancellation via `HttpCall`. HTTP semantics
+(deliberate deviation): the browser adapter uses `XMLHttpRequest` from
+`teavm-jso-apis` 0.16.0, **not Fetch** — the typed bindings ship no Fetch API;
+see ADR-0018 for the full rationale and the consequences (e.g. XHR cannot
+omit same-origin cookies; only `INCLUDE` sets `withCredentials`). Verified by
+67 JVM unit tests (fake transports) and a Chromium E2E test in the showcase
+(`?example=http`), which fetches `ping.json` and renders `pong`. See
+ADR-0018.
+
 ### Implementation
 
-- [ ] Implement HTTP request abstractions.
-- [ ] Implement HTTP response abstractions.
-- [ ] Implement GET, POST, PUT, PATCH and DELETE.
-- [ ] Implement request headers.
-- [ ] Implement query parameters.
-- [ ] Implement JSON serialization and deserialization.
-- [ ] Implement request interceptors.
-- [ ] Implement response interceptors.
-- [ ] Implement timeout configuration.
-- [ ] Implement cancellation.
-- [ ] Implement error handling.
-- [ ] Implement credentials and authentication integration.
-- [ ] Implement browser Fetch API adapter.
+- [x] Implement HTTP request abstractions.
+- [x] Implement HTTP response abstractions.
+- [x] Implement GET, POST, PUT, PATCH and DELETE.
+- [x] Implement request headers.
+- [x] Implement query parameters.
+- [x] Implement JSON serialization and deserialization.
+- [x] Implement request interceptors.
+- [x] Implement response interceptors.
+- [x] Implement timeout configuration.
+- [x] Implement cancellation.
+- [x] Implement error handling.
+- [x] Implement credentials and authentication integration. (Policy plumbing with `OMIT`/`SAME_ORIGIN`/`INCLUDE`; XHR sends same-origin cookies regardless — see ADR-0018)
+- [x] Implement browser Fetch API adapter. (Deviation: XMLHttpRequest instead of Fetch — `teavm-jso-apis` 0.16.0 ships no Fetch binding; XHR mapping is documented in ADR-0018)
 
 ### Deliverables
 
 - `dejaview-http`.
 - HTTP client API.
-- Browser Fetch adapter.
+- Browser HTTP adapter (XHR; Fetch deferred until typed Fetch/Promise bindings land in TeaVM — see ADR-0018).
 
 ### Tests
 
-- [ ] HTTP methods work correctly.
-- [ ] JSON requests and responses are processed.
-- [ ] Headers are preserved.
-- [ ] Interceptors execute in the expected order.
-- [ ] Network errors are handled.
-- [ ] Timeouts are respected.
-- [ ] Requests can be cancelled.
-- [ ] Credentials follow the configured policy.
+- [x] HTTP methods work correctly.
+- [x] JSON requests and responses are processed.
+- [x] Headers are preserved.
+- [x] Interceptors execute in the expected order.
+- [x] Network errors are handled.
+- [x] Timeouts are respected.
+- [x] Requests can be cancelled.
+- [x] Credentials follow the configured policy.
 
 ### Acceptance Criteria
 
-Components and services must be able to consume external APIs through a consistent Java API.
+Components and services must be able to consume external APIs through a consistent Java API. ✅ Met — the showcase HTTP example fetches `ping.json` from the browser through `HttpClient`, verified in Chromium by `ShowcaseBrowserIT#httpExampleFetchesPingJson`.
 
 ---
 
@@ -1466,7 +1486,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-12):** Sprints 00 through 10 are complete. The
+**Current status (2026-11-12):** Sprints 00 through 11 are complete. The
 authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -1483,7 +1503,7 @@ authoritative implemented-versus-planned list is
 | 08 | Inputs, Outputs, Templates and Lifecycle | Completed |
 | 09 | Dependency Injection | Completed |
 | 10 | Router | Completed |
-| 11 | HTTP Client | Not Started |
+| 11 | HTTP Client | Completed |
 | 12 | Reactive Forms | Not Started |
 | 13 | State Management | Not Started |
 | 14 | CLI and Development Server | Not Started |

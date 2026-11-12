@@ -84,7 +84,7 @@ treated as available.
 | Source maps | example | `app.js.map` |
 | Browser E2E test | `examples/counter`, `examples/showcase` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, docs, status) | `website/` | Static site served over HTTP; sibling playground iframe |
-| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list) | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
+| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http) | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 | Showcase examples: `usercard` (inputs/outputs/slots/lifecycle) and `list` (keyed reconciliation) | `examples/showcase` | Playwright E2E in Chromium |
 | `InjectionToken<T>` (identity-based; canonical `of(Class)` overload; diagnostic `name()`) | `dejaview-di` | JUnit tests |
@@ -113,6 +113,15 @@ treated as available.
 | `BrowserHistory` (`pushState`/`replaceState` + `popstate` adoption) | `dejaview-router` | Playwright E2E |
 | Router showcase example (`?example=router`): nested navigation, route params, browser back/forward restored by popstate adoption | `examples/showcase` | Playwright E2E |
 | Router example published in the playground | `website/playground` | Static bundle served by the showcase |
+| `HttpRequest` (`get`/`post`/`put`/`patch`/`delete` factories; fluent withers; percent-encoded query parameters, `+` for space) | `dejaview-http` | JUnit tests |
+| `HttpHeaders` (immutable, case-insensitive names, multi-valued entries, insertion order) | `dejaview-http` | JUnit tests |
+| `HttpClient` (async exactly-once delivery; registration-ordered request/response interceptors; per-request vs client timeouts and credentials; once-only guarantee) | `dejaview-http` | JUnit tests |
+| `HttpResult` sealed (`Success`/`Failure`); HTTP error statuses are `Success`; `ok()` is 2xx | `dejaview-http` | JUnit tests |
+| `HttpCall` cancellation (XHR `abort()` → `cancelled`); `isDone()` reflects delivery to the consumer | `dejaview-http` | JUnit tests |
+| `JsonValue` tree + parser/writer (dependency-free; finite numbers; 512-level depth cap; offsets on errors) | `dejaview-http` | JUnit tests |
+| `BrowserHttpTransport` (TeaVM XHR adapter; `timeout`/`withCredentials` via one-line JS interop; status 0 → `network-error`; Fetch deliberately not used — see ADR-0018) | `dejaview-http` | Chromium E2E |
+| HTTP showcase example (`?example=http`), fetches `ping.json` and renders the body | `examples/showcase` | Playwright E2E |
+| HTTP example published in the playground | `website/playground` | Static bundle served by the showcase |
 
 ### End-to-end proof
 
@@ -155,7 +164,7 @@ reconciles the component and updates the existing text node and the counter's
 | Annotations for lifecycle (`@OnInit` etc.) | Not started | `onInit`/`onUpdate`/`onDestroy` are the supported hooks |
 | Hydration | Planned (Phase 6) | |
 | Routing | Implemented (Sprint 10) | See implemented table; bundle-level lazy route loading is deferred to Sprint 15 |
-| HTTP client | Planned (Phase 4) | |
+| HTTP client | Implemented (Sprint 11) | See implemented table; Fetch adapter deferred — XHR transport shipped instead (ADR-0018) |
 | Reactive forms | Planned (Phase 4) | |
 | State management | Planned | |
 | SSR | Planned (Phase 6) | |
@@ -207,9 +216,9 @@ reconciles the component and updates the existing text node and the counter's
    (`componentFactory(Class, Supplier)`) swap the instance; unkeyed tokenless
    views reuse positionally, so dynamic swaps without keys or tokens keep
    the previous instance. There is no state migration.
-10. **Seven examples across two modules.** `examples/counter` (one,
+10. **Eight examples across two modules.** `examples/counter` (one,
     class-based counter) and `examples/showcase` (counter, greeting,
-    composition, conditional, usercard, list, router), plus the conceptual previews in
+    composition, conditional, usercard, list, router, http), plus the conceptual previews in
     the playground that are not executable.
 11. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
     not part of the automated matrix yet.
@@ -233,6 +242,13 @@ reconciles the component and updates the existing text node and the counter's
     previous match.
 17. **The router has no data layer.** Route activation does not fetch data;
     there is no loader or suspense concept.
+18. **HTTP is async-only and XHR-based.** Delivery is consumer-callback
+    exactly once; HTTP error statuses are `Success` (branch on `ok()`); XHR
+    cannot omit same-origin cookies (`OMIT` and `SAME_ORIGIN` both map to
+    `withCredentials=false`); response bodies arrive as text without
+    streaming; `cancel()` settles asynchronously as `cancelled`. The Fetch
+    API is not bound by `teavm-jso-apis` 0.16.0 — XHR is the deliberate
+    transport (ADR-0018).
 
 ---
 
@@ -250,7 +266,24 @@ reconciles the component and updates the existing text node and the counter's
 
 ## Next milestone recommendation
 
-**Sprint 11 — HTTP Client** (see `docs/ROADMAP.md`).
+**Sprint 12 — Reactive Forms** (see `docs/ROADMAP.md`).
+
+Sprint 11 is implemented and tested: `dejaview-http` with immutable
+`HttpRequest` (`get`/`post`/`put`/`patch`/`delete`, fluent withers,
+percent-encoded query parameters with `+` for space), immutable
+case-insensitive multi-valued `HttpHeaders`, `HttpResponse` (`ok()` for 2xx)
+with a dependency-free `JsonValue` tree/parser/writer (finite numbers,
+512-level depth cap, offsets on errors), and `HttpClient` with async
+exactly-once consumer delivery, registration-ordered request and response
+interceptors (response interceptors observe completed round-trips only, HTTP
+error statuses included), per-request vs client-level timeout (`-1` =
+disabled) and credentials (`SAME_ORIGIN` default) resolution, and
+cancellation via `HttpCall`. Transport-level failures carry stable codes
+(`network-error`, `timeout`, `cancelled`, `interceptor-error`,
+`missing-transport`, `json-error`); consumer exceptions are not caught. The
+browser adapter uses XHR — `teavm-jso-apis` 0.16.0 ships no Fetch binding —
+with the documented consequences (same-origin cookies cannot be omitted;
+status 0 means `network-error`; no streaming). See ADR-0018.
 
 Sprint 10 is implemented and tested: `dejaview-router` with immutable `Route`
 definitions (literal, `:param`, `**`; nested and index routes; stable JVM

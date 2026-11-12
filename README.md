@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 4 in progress — Sprint 10 (client-side router) implemented.**
+**Phase 4 in progress — Sprint 11 (HTTP client) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -47,7 +47,7 @@ Java source
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end
-test. HTTP, forms, state management, SSR or tooling do not exist yet.
+test. Forms, state management, SSR or tooling do not exist yet.
 
 | Capability | Status |
 |---|---|
@@ -68,7 +68,8 @@ test. HTTP, forms, state management, SSR or tooling do not exist yet.
 | Dependency injection (`dejaview-di`): tokens, providers, `SINGLETON`/`SCOPED`/`TRANSIENT` scopes, hierarchical injectors, `inject()`/`has()`, `circular-dependency` detection, reverse-order disposal | Implemented and tested |
 | Routing (`dejaview-router`): immutable route definitions, nested routes, query parameters, guards, redirects, not-found routes, route-level metadata, `RouterOutlet` with route params as inputs, browser history, keyed component swaps at a single position | Implemented and tested (Chromium E2E) |
 | Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
-| HTTP, forms, state management | Planned (Phase 4; DI and router done) |
+| HTTP client (`dejaview-http`): immutable `HttpRequest`/`HttpHeaders`/`HttpResponse`, async exactly-once delivery, request/response interceptors, timeouts, credentials, cancellation, dependency-free JSON, XHR browser adapter (statuses as values; Fetch deferred) | Implemented and tested (Chromium E2E) |
+| Forms, state management | Planned (Phase 4; DI, router and HTTP done) |
 | CLI, DevTools, compiler abstraction | Planned |
 | SSR, SSG, hydration | Planned |
 
@@ -151,6 +152,7 @@ created as empty placeholders.
 | `dejaview-dom` | Platform-neutral DOM contracts, render tree, reactive `DomRenderer`, `TreeReconciler` (positional + keyed), TeaVM JSO browser adapter, `DejaView` / `Dom` entry points. | Implemented |
 | `dejaview-di` | Platform-independent dependency injection: `InjectionToken`, `Provider`, scopes, hierarchical injectors, `inject()`/`has()`. No browser or TeaVM imports. | Implemented |
 | `dejaview-router` | Client-side routing: `Route` definitions, matching, parameters, query parameters, nested routes, guards, redirects, `RouterOutlet`, browser/memory history, navigation events. TeaVM JSO only in the browser history adapter. | Implemented |
+| `dejaview-http` | HTTP client: `HttpClient` with async exactly-once delivery, immutable requests and headers, interceptors, timeouts, credentials, cancellation, dependency-free JSON tree. XHR browser adapter behind `HttpTransport`; the API itself has no browser or TeaVM imports. | Implemented |
 | `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Official website, documentation and interactive playground (pre-compiled examples) | Implemented |
 
@@ -158,9 +160,10 @@ Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
-examples/showcase → dejaview-dom, dejaview-router → dejaview-core
+examples/showcase → dejaview-dom, dejaview-router, dejaview-http → dejaview-core
 dejaview-di → dejaview-core
 dejaview-router → dejaview-core, dejaview-reactivity
+dejaview-http → dejaview-core
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -182,6 +185,7 @@ dejaview/
 ├── dejaview-dom/           # DOM contracts, renderer, browser adapter
 ├── dejaview-di/            # Dependency injection (pure Java)
 ├── dejaview-router/        # Client-side router (pure Java + TeaVM history adapter)
+├── dejaview-http/          # HTTP client (pure Java API + TeaVM XHR adapter)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   └── showcase/           # Official website, documentation, playground
@@ -287,27 +291,49 @@ API — see
 | 1 | Foundation and JavaScript runtime | Implemented |
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
-| 4 | Application Framework | In progress — Sprints 09–10 implemented (dependency injection, router); HTTP next |
+| 4 | Application Framework | In progress — Sprints 09–11 implemented (dependency injection, router, HTTP client); reactive forms next |
 | 5 | Compiler and Tooling | Planned |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 11 — HTTP Client
+### Next milestone: Sprint 12 — Reactive Forms
 
-Sprint 10 delivered client-side routing as a platform-independent module
-(`dejaview-router`, depending on `dejaview-core` and `dejaview-reactivity`):
-immutable `Route` definitions with literal, `:param` and `**` segments,
-nested and index routes, fail-fast `invalid-route` validation, resolve-before-push
-navigation (`navigate`/`replace`/`back`/`forward`) that leaves state and
-history unchanged on denial or no-match, root-first guards with
-prefix-accumulated contexts (`Allow`/`Deny`/`Redirect`; ten-hop `redirect-loop`
-budget), an optional `notFound(...)` chain, `NavigationEvent`s with a
-reversible listener, `RouterOutlet` rendering at a chain level keyed by the
-matched route's id (path parameters pushed as inputs), and browser history
-behind the `RouterHistory` seam (`MemoryRouterHistory` for tests,
-`BrowserHistory` for TeaVM). Single-position keyed components now replace the
-mounted instance when the key changes. Lazy route loading is limited to
+Sprint 11 delivered a platform-independent HTTP client (`dejaview-http`,
+depending on `dejaview-core`): immutable `HttpRequest` (`get`/`post`/`put`/
+`patch`/`delete`, fluent withers, percent-encoded query parameters with `+`
+for space), immutable case-insensitive `HttpHeaders` with multi-valued
+entries, `HttpResponse` with `ok()` (2xx) and a dependency-free `JsonValue`
+tree/parser/writer (finite numbers, 512-level depth cap, offsets on errors),
+and `HttpClient` with async exactly-once consumer delivery, registration-ordered
+request and response interceptors (response interceptors observe completed
+round-trips only, HTTP error statuses included), per-request vs client-level
+timeout and credentials resolution, and cancellation via `HttpCall`.
+HTTP error statuses are `Success` values — `Failure` is reserved for
+transport-level failures (`network-error`, `timeout`, `cancelled`,
+`interceptor-error`, `missing-transport`, `json-error`). The browser adapter
+uses `XMLHttpRequest` because `teavm-jso-apis` 0.16.0 ships no Fetch binding;
+the deviation, the XHR mapping (e.g. same-origin cookies cannot be omitted;
+only `INCLUDE` sets `withCredentials`; status 0 means `network-error`) and
+the consequences are recorded in [ADR-0018](docs/ADR/0018-http-client-model.md).
+The playground's HTTP example fetches the showcase's `ping.json` and renders
+the body; the full story is in
+[ADR-0018](docs/ADR/0018-http-client-model.md).
+
+Earlier in this phase, Sprint 10 delivered client-side routing as a
+platform-independent module (`dejaview-router`, depending on `dejaview-core`
+and `dejaview-reactivity`): immutable `Route` definitions with literal,
+`:param` and `**` segments, nested and index routes, fail-fast
+`invalid-route` validation, resolve-before-push navigation
+(`navigate`/`replace`/`back`/`forward`) that leaves state and history
+unchanged on denial or no-match, root-first guards with prefix-accumulated
+contexts (`Allow`/`Deny`/`Redirect`; ten-hop `redirect-loop` budget), an
+optional `notFound(...)` chain, `NavigationEvent`s with a reversible
+listener, `RouterOutlet` rendering at a chain level keyed by the matched
+route's id (path parameters pushed as inputs), and browser history behind
+the `RouterHistory` seam (`MemoryRouterHistory` for tests, `BrowserHistory`
+for TeaVM). Single-position keyed components now replace the mounted
+instance when the key changes. Lazy route loading is limited to
 activation-time factory deferral; bundle-level code splitting is deferred to
 Sprint 15. See [ADR-0017](docs/ADR/0017-routing-model.md).
 
@@ -380,6 +406,11 @@ Significant decisions are recorded as ADRs rather than changed silently.
   require a distinct key or a class token (`componentFactory(Class, Supplier)`).
 - Annotation-based API (`@Component`, `@Input`, `@Output`) and Context API do
   not exist; the programmatic surface is the supported API.
+- HTTP is async-only and XHR-based: HTTP error statuses are `Success` (branch
+  on `ok()`), XHR cannot omit same-origin cookies (`OMIT` and `SAME_ORIGIN`
+  both map to `withCredentials=false`), response bodies arrive as text with
+  no streaming, and `cancelled` arrives asynchronously after `cancel()`.
+  See [ADR-0018](docs/ADR/0018-http-client-model.md).
 - Styling is plain HTML plus `class`/`style` attributes; there is no CSS
   pipeline or CSS-in-JS runtime. Bootstrap, Tailwind CSS and daisyUI are not yet
   covered by automated compatibility tests.
