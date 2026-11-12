@@ -1,0 +1,228 @@
+package io.dejaview.examples.website.docs;
+
+/**
+ * Java snippets shared by the EN and PT versions of the tutorial. Every
+ * snippet mirrors code that exists in {@code examples/counter} or
+ * {@code examples/showcase}, so what the docs show is what actually compiles.
+ */
+public final class Snippets {
+
+    private Snippets() {
+    }
+
+    public static final String REQUIREMENTS = """
+            java -version""";
+
+    public static final String CLONE_BUILD = """
+            git clone https://github.com/dejaview/dejaview.git
+            cd dejaview
+            ./mvnw clean verify""";
+
+    public static final String WEBAPP_LAYOUT = """
+            examples/counter/target/webapp/
+            ├── app.js
+            ├── app.js.map
+            └── index.html""";
+
+    public static final String SERVE = "python3 -m http.server 4280 -d examples/counter/target/webapp";
+
+    public static final String COUNTER_COMPONENT = """
+            package io.dejaview.examples.counter;
+
+            import io.dejaview.core.AbstractComponent;
+            import io.dejaview.core.View;
+            import io.dejaview.core.Views;
+            import io.dejaview.reactivity.Signal;
+
+            final class CounterComponent extends AbstractComponent {
+
+                private final Signal<Integer> count = new Signal<>(0);
+
+                @Override
+                public View render() {
+                    int current = count.get();
+                    return Views.div(
+                                    Views.h1("DejaView"),
+                                    Views.p("Count: " + current)
+                                            .id("count")
+                                            .attr("data-count", Integer.toString(current)),
+                                    Views.button("Increment").onClick(this::increment),
+                                    Views.p("Java. Reimagined for the Web.").classes("tagline"))
+                            .classes("counter");
+                }
+
+                private void increment() {
+                    count.update(value -> value + 1);
+                }
+            }""";
+
+    public static final String SIGNALS_AND_COMPUTED = """
+            private final Signal<Integer> count = new Signal<>(0);
+            private final Computed<Integer> doubled = new Computed<>(() -> count.get() * 2);
+
+            @Override
+            public View render() {
+                return Views.div(
+                        Views.p("Count: " + count.get()),
+                        Views.p("Double: " + doubled.get()),
+                        Views.button("Increment").onClick(() -> count.update(v -> v + 1)));
+            }""";
+
+    public static final String CONDITIONAL = """
+            private final Signal<Boolean> show = new Signal<>(true);
+
+            @Override
+            public View render() {
+                return Views.div(
+                        Views.h1("Conditional"),
+                        Views.button("Toggle").onClick(() -> show.update(v -> !v)),
+                        show.get()
+                                ? Views.p("Visible")
+                                : Views.fragment(Views.p("Hidden")));
+            }""";
+
+    public static final String KEYED_LIST = """
+            private final Signal<List<String>> order =
+                    new Signal<>(List.of("Alpha", "Beta", "Gamma"));
+
+            @Override
+            public View render() {
+                List<View> rows = new ArrayList<>();
+                for (String label : order.get()) {
+                    rows.add(Views.li(label).key(label));
+                }
+                return Views.div(
+                        Views.h1("Keyed list"),
+                        Views.button("Rotate").onClick(this::rotate),
+                        Views.ul(rows.toArray(View[]::new)));
+            }
+
+            private void rotate() {
+                List<String> current = new ArrayList<>(order.get());
+                current.add(0, current.remove(current.size() - 1));
+                order.set(List.copyOf(current));
+            }""";
+
+    public static final String INPUTS = """
+            // Parent: pushes an input into the child component.
+            Views.componentFactory(UserCard.class, UserCard::new)
+                    .input("username", name)
+                    .on("select", selected -> lastEvent.set("Selected " + selected))
+                    .slot("header", Views.strong(ada ? "Core team" : "Guest"))
+                    .slot(Views.p(ada ? "Writes the renderer." : "Reviews every PR."))""";
+
+    public static final String CHILD = """
+            final class UserCard extends AbstractComponent {
+
+                @Override
+                public View render() {
+                    String username = input("username", String.class);
+                    View bio = slot().isEmpty() ? Views.p("No bio yet.") : slot().get(0);
+                    return Views.div(
+                            Views.element("header")
+                                    .addChildren(slot("header").toArray(View[]::new)),
+                            Views.h3("@" + username),
+                            bio,
+                            Views.button("Select " + username)
+                                    .onClick(() -> emit("select", username)))
+                            .classes("usercard");
+                }
+            }""";
+
+    public static final String LIFECYCLE = """
+            @Override
+            public void onInit() {
+                // Invoked once per mounted node, before the first render.
+            }
+
+            @Override
+            public void onUpdate() {
+                // Invoked after each re-render of this component.
+            }
+
+            @Override
+            public void onDestroy() {
+                // Invoked when the component is removed from the tree.
+            }""";
+
+    public static final String DI = """
+            public final class ApiClient {
+                public String get(String path) {
+                    return "response from " + path;
+                }
+            }
+
+            Injector injector = Injector.builder()
+                    .bind(ApiClient.class)
+                    .to(injector -> new ApiClient())
+                    .build();
+
+            ApiClient api = injector.inject(ApiClient.class);""";
+
+    public static final String ROUTER = """
+            AtomicReference<Router> ref = new AtomicReference<>();
+            Router router = Router.builder()
+                    .routes(
+                            Route.path("/users/:id")
+                                    .component(() -> new UserScreen(ref.get()))
+                                    .build(),
+                            Route.path("/about")
+                                    .component(() -> new AboutScreen())
+                                    .build(),
+                            Route.path("**")
+                                    .component(() -> new HomeScreen(ref.get()))
+                                    .build())
+                    .history(RouterHistory.browser())
+                    .build();
+            ref.set(router);
+
+            // In a component:
+            public View render() {
+                return Views.div(
+                        Views.componentFactory(() -> new RouterOutlet(router)));
+            }
+
+            // Navigate from anywhere you hold the router:
+            router.navigate("/users/42");""";
+
+    public static final String ROUTE_PARAMS = """
+            public View render() {
+                // The outlet pushes :id from the URL as an input.
+                String id = input("id", String.class);
+                return Views.p("User id: " + id);
+            }""";
+
+    public static final String HTTP_PING = """
+            private final Signal<String> result = new Signal<>("—");
+            private final HttpClient client = HttpClient.builder().build();
+
+            @Override
+            public View render() {
+                return Views.div(
+                        Views.button("GET ping.json")
+                                .id("http-ping")
+                                .onClick(this::ping),
+                        Views.p(result.get()).id("http-result"));
+            }
+
+            private void ping() {
+                client.get("ping.json", this::renderOutcome);
+            }
+
+            private void renderOutcome(HttpResult outcome) {
+                if (outcome instanceof HttpResult.Success success) {
+                    result.set(success.response().body());
+                } else {
+                    result.set("error: " + outcome.failure().code());
+                }
+            }""";
+
+    public static final String STYLING = """
+            Views.button("Save").classes("btn", "btn-primary");
+            Views.p("Tagline").classes("text-muted", "small");""";
+
+    public static final String JAVA_MAIN = """
+            public static void main(String[] args) {
+                DejaView.mount(Views.componentFactory(CounterComponent::new), "app");
+            }""";
+}

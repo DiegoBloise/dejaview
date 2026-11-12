@@ -22,6 +22,7 @@
         <module>dejaview-http</module>
         <module>examples/counter</module>
         <module>examples/showcase</module>
+        <module>examples/website</module>
     </modules>
 
     <properties>

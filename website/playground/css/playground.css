@@ -12,9 +12,6 @@
     --accent: #8b7cf8;
     --accent-cyan: #22d3ee;
     --ok: #34d399;
-    --ok-bg: rgba(52, 211, 153, 0.12);
-    --planned: #fbbf24;
-    --planned-bg: rgba(251, 191, 36, 0.1);
     --radius: 14px;
     --radius-sm: 8px;
     --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
@@ -47,10 +44,9 @@ body {
 .brand-name { font-weight: 800; letter-spacing: -0.02em; font-size: 1.02rem; }
 .pg-title { font-family: var(--font-mono); color: var(--text-dim); font-size: 0.88rem; border-left: 1px solid var(--border-strong); padding-left: 1rem; }
 
-.pill { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; border-radius: 999px; padding: 0.22rem 0.65rem; }
-.pill-info { color: var(--accent-cyan); background: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.35); margin-left: auto; }
-.pill-ok { color: var(--ok); background: var(--ok-bg); border: 1px solid rgba(52, 211, 153, 0.35); }
-.pill-planned { color: var(--planned); background: var(--planned-bg); border: 1px solid rgba(251, 191, 36, 0.35); }
+/* DejaView app mount */
+#app { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#app > #main { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* Layout */
 .pg-main { flex: 1; display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 0; }
@@ -67,6 +63,7 @@ body {
 .example-item:hover { background: var(--surface); }
 .example-item.active { background: var(--surface-2); border-color: var(--border-strong); }
 .example-item-top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.example-entry { margin: 0; }
 .example-item-name { font-weight: 700; font-size: 0.9rem; }
 .example-item-desc { color: var(--text-dim); font-size: 0.76rem; margin-top: 0.15rem; }
 
@@ -119,12 +116,6 @@ body {
 .preview-body { position: relative; flex: 1; min-height: 0; }
 .preview-iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #0f1117; }
 
-.conceptual-banner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6rem; padding: 2rem; text-align: center; background: var(--bg-raised); }
-.conceptual-banner[hidden] { display: none; }
-.conceptual-title { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--planned); background: var(--planned-bg); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 999px; padding: 0.3rem 1rem; }
-.conceptual-banner p { color: var(--text-dim); font-size: 0.9rem; max-width: 32rem; }
-.conceptual-banner strong { color: var(--planned); }
-.conceptual-banner a { color: var(--accent-cyan); }
 
 /* Responsive */
 @media (max-width: 1100px) {
@@ -138,7 +129,6 @@ body {
     .pg-sidebar { max-height: 32vh; }
     .pg-workspace { min-height: 120vh; }
     .pg-header { flex-wrap: wrap; }
-    .pill-info { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

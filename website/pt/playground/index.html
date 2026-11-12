@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Experimente o DejaView no seu navegador: escolha um exemplo, leia o código Java e veja-o executar — o framework de verdade, compilado para JavaScript." />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>Playground — DejaView</title>
+    <link rel="icon" type="image/svg+xml" href="/website/favicon.svg" />
+    <link rel="stylesheet" href="/website/css/styles.css" />
+    <link rel="stylesheet" href="/website/playground/css/playground.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Pular para o conteúdo</a>
+<div id="app"></div>
+<noscript>
+    <main id="main" class="container docs-content">
+        <h1>Playground DejaView</h1>
+        <p>Esta página é renderizada pelo próprio framework DejaView e precisa de JavaScript habilitado.</p>
+        <p>Exemplos: contador, saudação, composição, renderização condicional, inputs/outputs/slots,
+            listas com chaves, rotas e HTTP — todos escritos em Java e compilados para JavaScript.</p>
+    </main>
+</noscript>
+<script>
+    window.DEJAVIEW_PAGE = 'playground';
+    window.DEJAVIEW_LANG = 'pt';
+</script>
+<script src="/website/js/highlight.js"></script>
+<script src="/examples/website/target/webapp/app.js"></script>
+<script>main();</script>
+</body>
+</html>

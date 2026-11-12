@@ -109,10 +109,10 @@ examples/counter/target/webapp/
 Serve the generated directory over HTTP and open it in a browser:
 
 ```bash
-python3 -m http.server 8080 -d examples/counter/target/webapp
+python3 -m http.server 4280 -d examples/counter/target/webapp
 ```
 
-Then open <http://localhost:8080>. Clicking **Increment** updates the counter.
+Then open <http://localhost:4280>. Clicking **Increment** updates the counter.
 
 ### Browser end-to-end test
 
@@ -126,19 +126,26 @@ On Windows, use `mvnw.cmd` instead of `./mvnw`.
 
 ## Website and interactive playground
 
-The official website and playground live in `website/` and are served as static
-files (no build step required). The playground examples execute the same
-pre-compiled TeaVM bundle that the counter E2E test validates.
+The official website lives in `website/` and is itself a DejaView application
+(`examples/website`), compiled to JavaScript and loaded by small static shells.
+The playground examples execute the same pre-compiled TeaVM showcase bundle that
+the counter E2E test validates.
 
 ```bash
-# Build the showcase example bundle
-./mvnw -pl examples/showcase -am package
+# Build the showcase and website bundles
+./mvnw -pl examples/showcase,examples/website -am package
 
 # Serve the website (repository root)
-python3 -m http.server 8099
+python3 -m http.server 4280
 ```
 
-Then open <http://localhost:8099/website/> and <http://localhost:8099/website/playground/>.
+Then open <http://localhost:4280/website/> (English) or
+<http://localhost:4280/website/pt/> (Português), and
+<http://localhost:4280/website/playground/> or
+<http://localhost:4280/website/pt/playground/> for the playground.
+
+The site is a demonstration: it is rendered by DejaView itself, in both
+languages, straight from the compiled bundle — no manual DOM edits.
 
 ## Modules
 
@@ -153,14 +160,16 @@ created as empty placeholders.
 | `dejaview-di` | Platform-independent dependency injection: `InjectionToken`, `Provider`, scopes, hierarchical injectors, `inject()`/`has()`. No browser or TeaVM imports. | Implemented |
 | `dejaview-router` | Client-side routing: `Route` definitions, matching, parameters, query parameters, nested routes, guards, redirects, `RouterOutlet`, browser/memory history, navigation events. TeaVM JSO only in the browser history adapter. | Implemented |
 | `dejaview-http` | HTTP client: `HttpClient` with async exactly-once delivery, immutable requests and headers, interceptors, timeouts, credentials, cancellation, dependency-free JSON tree. XHR browser adapter behind `HttpTransport`; the API itself has no browser or TeaVM imports. | Implemented |
-| `examples/counter` | End-to-end example compiled to JavaScript and tested in Chromium. | Implemented |
-| `examples/showcase` | Official website, documentation and interactive playground (pre-compiled examples) | Implemented |
+| `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
+| `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
+| `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
 
 Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
 examples/showcase → dejaview-dom, dejaview-router, dejaview-http → dejaview-core
+examples/website → dejaview-dom, dejaview-reactivity → dejaview-core
 dejaview-di → dejaview-core
 dejaview-router → dejaview-core, dejaview-reactivity
 dejaview-http → dejaview-core
@@ -188,8 +197,9 @@ dejaview/
 ├── dejaview-http/          # HTTP client (pure Java API + TeaVM XHR adapter)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
-│   └── showcase/           # Official website, documentation, playground
-├── website/                # Static website served from this directory
+│   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
+│   └── website/            # Website, documentation and playground, rendered by DejaView
+├── website/                # Static shells, styles and assets served from this directory
 ├── docs/
 │   ├── ARCHITECTURE.md     # Long-term architecture specification
 │   ├── COMPILER.md         # TeaVM feasibility report and constraints
@@ -366,7 +376,7 @@ Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 ./mvnw clean package -DskipTests
 
 # Opt-in browser end-to-end tests (unit + examples)
-./mvnw -Pe2e -pl examples/counter,examples/showcase -am verify
+./mvnw -Pe2e -pl examples/counter,examples/showcase,examples/website -am verify
 ```
 
 The root `pom.xml` declares the modules, centralizes dependency and plugin

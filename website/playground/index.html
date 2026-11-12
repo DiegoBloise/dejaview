@@ -3,75 +3,30 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Interactive DejaView playground — real Java components compiled by TeaVM, executed live in your browser." />
+    <meta name="description" content="Try DejaView in your browser: pick an example, read the Java source, and watch it run — the real framework, compiled to JavaScript." />
     <meta name="theme-color" content="#0b0e14" />
-    <title>DejaView Playground</title>
-    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
-    <link rel="stylesheet" href="css/playground.css" />
+    <title>Playground — DejaView</title>
+    <link rel="icon" type="image/svg+xml" href="/website/favicon.svg" />
+    <link rel="stylesheet" href="/website/css/styles.css" />
+    <link rel="stylesheet" href="/website/playground/css/playground.css" />
 </head>
 <body>
-<a class="skip-link" href="#workspace">Skip to editor</a>
-
-<header class="pg-header">
-    <a class="brand" href="/website/" aria-label="Back to DejaView home">
-        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-            <rect x="4" y="4" width="56" height="56" rx="13" fill="none" stroke="#8b7cf8" stroke-width="3" opacity="0.45"/>
-            <rect x="11.5" y="11.5" width="41" height="41" rx="8" fill="none" stroke="#22d3ee" stroke-width="3" opacity="0.7"/>
-            <path d="M18 41h11l4-13 5 17 4-9h9" fill="none" stroke="#f5f7fb" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="brand-name">DejaView</span>
-    </a>
-    <p class="pg-title">Playground</p>
-    <span class="pill pill-info" title="The playground executes the same TeaVM bundle verified by the E2E suite">Pre-compiled execution</span>
-</header>
-
-<main class="pg-main" id="workspace">
-
-    <aside class="pg-sidebar" aria-label="Example picker">
-        <h2>Examples</h2>
-        <ul class="example-list" id="example-list"></ul>
-
-        <div class="pg-note">
-            <p><strong>How this works.</strong> Examples are written in Java against the real DejaView API, compiled to JavaScript with TeaVM at build time, and executed in the preview iframe exactly like a production deployment.</p>
-            <p class="pg-note-sub">In-browser editing and recompilation arrive with the development-server milestone (see <a href="/docs/ROADMAP.md">ROADMAP</a>). Until then the editor is an interactive viewer: you may edit freely — <strong>Run</strong> executes the last compiled build.</p>
-        </div>
-    </aside>
-
-    <section class="pg-workspace" aria-label="Editor and preview">
-        <div class="pg-toolbar">
-            <button id="btn-run" class="btn btn-primary" type="button">&#9654; Run example</button>
-            <button id="btn-copy" class="btn btn-ghost" type="button">Copy source</button>
-            <span class="toolbar-spacer"></span>
-            <span class="current-example" id="current-example">counter</span>
-        </div>
-
-        <div class="pg-columns">
-            <div class="editor-wrap" role="group" aria-label="Java source editor">
-                <div class="editor-stack">
-                    <pre class="editor-highlight" aria-hidden="true"><code id="highlight-code"></code></pre>
-                    <textarea id="editor-input" class="editor-input" spellcheck="false" autocorrect="off" autocapitalize="off" aria-label="Java source code" wrap="off"></textarea>
-                </div>
-            </div>
-
-            <div class="preview-wrap">
-                <div class="preview-head">
-                    <h3>Preview</h3>
-                    <p class="preview-status" id="preview-status" role="status" aria-live="polite">Select an example and press Run.</p>
-                </div>
-                <div class="preview-body">
-                    <iframe id="preview-iframe" class="preview-iframe" title="DejaView example preview" src="about:blank"></iframe>
-                    <div class="conceptual-banner" id="conceptual-banner" hidden>
-                        <p class="conceptual-title">Conceptual preview</p>
-                        <p>This capability is <strong>not implemented yet</strong>. The source above is an illustrative sketch of a planned API, shown to document where the framework is heading — it does not compile or run. See <a href="/docs/ROADMAP.md">docs/ROADMAP.md</a>.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-</main>
-
-<script src="../js/highlight.js" defer></script>
-<script src="js/playground.js" defer></script>
+<a class="skip-link" href="#main">Skip to content</a>
+<div id="app"></div>
+<noscript>
+    <main id="main" class="container docs-content">
+        <h1>DejaView Playground</h1>
+        <p>This page is rendered by the DejaView framework itself and needs JavaScript enabled.</p>
+        <p>Examples: counter, greeting, composition, conditional rendering, inputs/outputs/slots,
+            keyed lists, routing and HTTP — all written in Java and compiled to JavaScript.</p>
+    </main>
+</noscript>
+<script>
+    window.DEJAVIEW_PAGE = 'playground';
+    window.DEJAVIEW_LANG = 'en';
+</script>
+<script src="/website/js/highlight.js"></script>
+<script src="/examples/website/target/webapp/app.js"></script>
+<script>main();</script>
 </body>
 </html>

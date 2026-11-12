@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Learn DejaView step by step: from zero to a running app — prerequisites, components, signals, composition, routing, dependency injection and HTTP." />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>Get started — DejaView</title>
+    <link rel="icon" type="image/svg+xml" href="/website/favicon.svg" />
+    <link rel="stylesheet" href="/website/css/styles.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div id="app"></div>
+<noscript>
+    <main id="main" class="container docs-content">
+        <h1>Get started with DejaView</h1>
+        <p>This page is rendered by the DejaView framework itself and needs JavaScript enabled.</p>
+        <p>Prerequisites: JDK 25 and Git. Clone <code>https://github.com/dejaview/dejaview.git</code>,
+            run <code>./mvnw clean verify</code>, then serve
+            <code>examples/counter/target/webapp</code> on any static file server and open it in your browser.</p>
+    </main>
+</noscript>
+<script>
+    window.DEJAVIEW_PAGE = 'get-started';
+    window.DEJAVIEW_LANG = 'en';
+</script>
+<script src="/website/js/highlight.js"></script>
+<script src="/examples/website/target/webapp/app.js"></script>
+<script>main();</script>
+</body>
+</html>

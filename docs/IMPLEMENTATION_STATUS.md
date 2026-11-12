@@ -77,14 +77,15 @@ treated as available.
 | Batched reactive reconciliation | `dejaview-dom`, `dejaview-reactivity` | JUnit tests |
 | Effect and listener cleanup on disposal | `dejaview-dom` | JUnit tests via fake DOM |
 | Reactive renderer with in-place reconciliation | `dejaview-dom` | JUnit tests |
+| Stable attribute/property reconciliation (unchanged attributes are not re-applied, so unrelated re-renders never reload embedded frames or reset form state) | `dejaview-dom` | JUnit tests |
 | Browser DOM adapter | `dejaview-dom` | Playwright E2E |
 | Browser rendering | example | Playwright E2E |
 | Click event handling | example | Playwright E2E |
 | Generated browser bundle | example | `target/webapp/app.js` |
 | Source maps | example | `app.js.map` |
-| Browser E2E test | `examples/counter`, `examples/showcase` | `-Pe2e` Failsafe test (Chromium via Playwright) |
-| Official website (landing, docs, status) | `website/` | Static site served over HTTP; sibling playground iframe |
-| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http) | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
+| Browser E2E test | `examples/counter`, `examples/showcase`, `examples/website` | `-Pe2e` Failsafe test (Chromium via Playwright) |
+| Official website (landing, user guide, playground) rendered by DejaView itself, in English and Portuguese | `examples/website` + `website/` | `WebsiteBrowserIT` (`-Pe2e`); static shells load the compiled bundle |
+| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 | Showcase examples: `usercard` (inputs/outputs/slots/lifecycle) and `list` (keyed reconciliation) | `examples/showcase` | Playwright E2E in Chromium |
 | `InjectionToken<T>` (identity-based; canonical `of(Class)` overload; diagnostic `name()`) | `dejaview-di` | JUnit tests |
