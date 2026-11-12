@@ -19,6 +19,18 @@ public sealed interface RenderNode
     List<DomNode> nodes();
 
     /**
+     * Returns the reconciliation key carried by the view this node was built
+     * from, or {@code null} when the node is unkeyed.
+     */
+    String key();
+
+    /**
+     * Updates the reconciliation key after the node was reconciled with a view.
+     * {@code null} clears the key.
+     */
+    void setKey(String key);
+
+    /**
      * Releases listeners and child nodes owned by this render node. The caller
      * is responsible for detaching {@link #nodes()} from the parent.
      */

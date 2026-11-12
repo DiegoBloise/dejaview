@@ -1,5 +1,7 @@
 package io.dejaview.core;
 
+import io.dejaview.core.internal.Preconditions;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -26,13 +28,15 @@ import java.util.Objects;
  * @param properties DOM properties in render order
  * @param children   child views in render order
  * @param events     event bindings in registration order
+ * @param key        optional reconciliation key, or {@code null} when unkeyed
  */
 public record ElementView(
         String tagName,
         List<Attribute> attributes,
         List<Property> properties,
         List<View> children,
-        List<EventBinding> events) implements View {
+        List<EventBinding> events,
+        String key) implements View {
 
     public ElementView {
         Objects.requireNonNull(tagName, "tagName");
@@ -47,6 +51,7 @@ public record ElementView(
         properties = List.copyOf(properties);
         children = List.copyOf(children);
         events = List.copyOf(events);
+        Preconditions.requireKey(key, "key");
         rejectDuplicateAttributes(attributes);
         rejectDuplicateProperties(properties);
     }
@@ -60,7 +65,19 @@ public record ElementView(
             List<Attribute> attributes,
             List<View> children,
             List<EventBinding> events) {
-        this(tagName, attributes, List.of(), children, events);
+        this(tagName, attributes, List.of(), children, events, null);
+    }
+
+    /**
+     * Creates an unkeyed element with explicit properties.
+     */
+    public ElementView(
+            String tagName,
+            List<Attribute> attributes,
+            List<Property> properties,
+            List<View> children,
+            List<EventBinding> events) {
+        this(tagName, attributes, properties, children, events, null);
     }
 
     /**
@@ -71,7 +88,7 @@ public record ElementView(
     public ElementView attr(String name, String value) {
         List<Attribute> updated = new ArrayList<>(attributes);
         updated.add(new Attribute(name, value));
-        return new ElementView(tagName, updated, properties, children, events);
+        return new ElementView(tagName, updated, properties, children, events, key);
     }
 
     /**
@@ -82,7 +99,7 @@ public record ElementView(
     public ElementView prop(String name, String value) {
         List<Property> updated = new ArrayList<>(properties);
         updated.add(new Property(name, value));
-        return new ElementView(tagName, attributes, updated, children, events);
+        return new ElementView(tagName, attributes, updated, children, events, key);
     }
 
     /**
@@ -127,7 +144,7 @@ public record ElementView(
         Objects.requireNonNull(child, "child");
         List<View> updated = new ArrayList<>(children);
         updated.add(child);
-        return new ElementView(tagName, attributes, properties, updated, events);
+        return new ElementView(tagName, attributes, properties, updated, events, key);
     }
 
     /**
@@ -143,7 +160,7 @@ public record ElementView(
         for (View child : newChildren) {
             updated.add(Objects.requireNonNull(child, "child"));
         }
-        return new ElementView(tagName, attributes, properties, updated, events);
+        return new ElementView(tagName, attributes, properties, updated, events, key);
     }
 
     /**
@@ -153,7 +170,7 @@ public record ElementView(
     public ElementView on(String eventType, Runnable handler) {
         List<EventBinding> updated = new ArrayList<>(events);
         updated.add(new EventBinding(eventType, handler));
-        return new ElementView(tagName, attributes, properties, children, updated);
+        return new ElementView(tagName, attributes, properties, children, updated, key);
     }
 
     /**
@@ -161,6 +178,13 @@ public record ElementView(
      */
     public ElementView onClick(Runnable handler) {
         return on("click", handler);
+    }
+
+    /**
+     * Returns a copy of this element with the given reconciliation key.
+     */
+    public ElementView key(String key) {
+        return new ElementView(tagName, attributes, properties, children, events, key);
     }
 
     private static void rejectDuplicateAttributes(List<Attribute> attributes) {

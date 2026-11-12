@@ -22,6 +22,7 @@ final class ElementRenderNode implements RenderNode {
     private List<EventBinding> events;
     private List<DomEventRegistration> registrations;
     private List<RenderNode> children;
+    private String key;
 
     private boolean disposed;
 
@@ -111,6 +112,16 @@ final class ElementRenderNode implements RenderNode {
     @Override
     public List<DomNode> nodes() {
         return List.of(element);
+    }
+
+    @Override
+    public String key() {
+        return key;
+    }
+
+    @Override
+    public void setKey(String key) {
+        this.key = key;
     }
 
     @Override

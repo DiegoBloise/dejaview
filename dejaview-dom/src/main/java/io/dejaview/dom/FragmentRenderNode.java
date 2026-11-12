@@ -9,6 +9,7 @@ import java.util.List;
 final class FragmentRenderNode implements RenderNode {
 
     private List<RenderNode> children;
+    private String key;
 
     private boolean disposed;
 
@@ -31,6 +32,16 @@ final class FragmentRenderNode implements RenderNode {
             nodes.addAll(child.nodes());
         }
         return List.copyOf(nodes);
+    }
+
+    @Override
+    public String key() {
+        return key;
+    }
+
+    @Override
+    public void setKey(String key) {
+        this.key = key;
     }
 
     @Override

@@ -49,9 +49,27 @@ public final class Views {
      * <p>Use this for class-based components. To mount an existing instance,
      * use {@link ComponentView#of(Component)} or return the instance from the
      * factory.</p>
+     *
+     * <p>When the same template position can render different component
+     * classes across renders, give the views distinct keys or use
+     * {@link #componentFactory(Class, Supplier)} to carry a class token.</p>
      */
     public static ComponentView componentFactory(Supplier<? extends Component> factory) {
         return ComponentView.ofFactory(factory);
+    }
+
+    /**
+     * Creates a view that instantiates one component per mounted node and
+     * carries an explicit class token.
+     *
+     * <p>When two views at the same template position carry different class
+     * tokens, the reconciler replaces the mounted node instead of reusing the
+     * instance, which makes dynamic component swapping safe without
+     * keys.</p>
+     */
+    public static ComponentView componentFactory(
+            Class<? extends Component> componentType, Supplier<? extends Component> factory) {
+        return ComponentView.ofFactory(componentType, factory);
     }
 
     public static ElementView element(String tagName, View... children) {
@@ -84,6 +102,30 @@ public final class Views {
 
     public static ElementView p(String value) {
         return p(text(value));
+    }
+
+    public static ElementView h2(String value) {
+        return h2(text(value));
+    }
+
+    public static ElementView h2(View... children) {
+        return element("h2", children);
+    }
+
+    public static ElementView h3(String value) {
+        return h3(text(value));
+    }
+
+    public static ElementView h3(View... children) {
+        return element("h3", children);
+    }
+
+    public static ElementView strong(String value) {
+        return strong(text(value));
+    }
+
+    public static ElementView strong(View... children) {
+        return element("strong", children);
     }
 
     public static ElementView button(View... children) {

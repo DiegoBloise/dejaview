@@ -19,6 +19,10 @@ import java.util.Objects;
  *
  * <p>The builder is shared by the initial mount and by replacement during
  * reconciliation. It never mutates an existing tree.</p>
+ *
+ * <p>A mounted component receives its bindings and its {@code onInit()} hook
+ * before its first render; see {@link ComponentView} and the lifecycle
+ * contract on {@link Component}.</p>
  */
 final class RenderTreeBuilder {
 
@@ -26,19 +30,22 @@ final class RenderTreeBuilder {
     }
 
     static RenderNode build(View view, DomDocument document) {
-        return switch (view) {
+        Objects.requireNonNull(view, "view");
+        RenderNode node = switch (view) {
             case TextView text -> new TextRenderNode(document.createText(text.value()), text.value());
             case FragmentView fragment -> buildFragment(fragment, document);
             case ComponentView component -> {
                 Component instance = component.create();
-                yield new ComponentRenderNode(
-                        instance,
-                        build(
-                                Objects.requireNonNull(instance.render(), "component view"),
-                                document));
+                instance.bind(component.bindings());
+                instance.onInit();
+                View rendered = Objects.requireNonNull(instance.render(), "component view");
+                yield new ComponentRenderNode(instance, build(rendered, document),
+                        component.factory(), component.componentType());
             }
             case ElementView element -> buildElement(element, document);
         };
+        node.setKey(view.key());
+        return node;
     }
 
     private static RenderNode buildFragment(FragmentView fragment, DomDocument document) {

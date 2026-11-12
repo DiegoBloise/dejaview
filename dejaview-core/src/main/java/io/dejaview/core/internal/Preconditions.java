@@ -32,4 +32,18 @@ public final class Preconditions {
         }
         return value;
     }
+
+    /**
+     * Validates an optional reconciliation key. {@code null} means unkeyed;
+     * blank keys are rejected.
+     */
+    public static String requireKey(String value, String name) {
+        if (value == null) {
+            return null;
+        }
+        if (value.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be blank");
+        }
+        return value;
+    }
 }

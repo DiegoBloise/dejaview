@@ -10,6 +10,7 @@ final class TextRenderNode implements RenderNode {
 
     private final DomText node;
     private String text;
+    private String key;
 
     TextRenderNode(DomText node, String text) {
         this.node = Objects.requireNonNull(node, "node");
@@ -30,6 +31,16 @@ final class TextRenderNode implements RenderNode {
     @Override
     public List<DomNode> nodes() {
         return List.of(node);
+    }
+
+    @Override
+    public String key() {
+        return key;
+    }
+
+    @Override
+    public void setKey(String key) {
+        this.key = key;
     }
 
     @Override

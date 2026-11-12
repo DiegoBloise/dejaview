@@ -123,6 +123,9 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     @Override
     public void insertBefore(DomNode child, DomNode reference) {
         Objects.requireNonNull(child, "child");
+        // Like the platform DOM, inserting a node that is already a child
+        // moves it instead of duplicating it.
+        children.remove(child);
         if (reference == null) {
             children.add(child);
             return;
