@@ -25,7 +25,10 @@
 > application context, resource registry, logging and lifecycle contracts),
 > `dejaview-reactivity` (`Signal`, `Effect`, `Computed`, batching and scopes),
 > `dejaview-dom` (DOM contracts, render tree, reactive renderer, positional
-> reconciler, TeaVM JSO adapter) and `examples/counter`. TeaVM 0.16.0 with Java 25
+> reconciler, TeaVM JSO adapter) and `dejaview-di` (dependency injection:
+> `InjectionToken`, `Provider`, scopes, hierarchical injectors; see
+> [ADR-0016](ADR/0016-dependency-injection-model.md)), and `examples/counter`.
+> TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
 > [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). Modules and
@@ -706,7 +709,19 @@ A persistência deverá ser configurável e independente da implementação cent
 
 Implementar um container próprio de Dependency Injection.
 
-Características:
+> **Implementation note (2026-11-12).** O modelo implementado difere desta
+> proposta original no mecanismo: factories explícitas `Provider<T>` (sem
+> reflection, sem classpath scanning — seguro para TeaVM), tokens baseados em
+> identidade (`InjectionToken.of(Class)` canônico), escopos
+> `SINGLETON`/`SCOPED`/`TRANSIENT`, injectors hierárquicos com
+> nearest-wins e shadowing vivo, detecção de ciclos por caminho de resolução
+> thread-local e disposição via `ResourceRegistry`. A API de anotações
+> (`@Service`, `@Inject`), qualifiers, optional dependencies e lazy loading de
+> beans anotados continuam propostas. Detalhes em
+> [ADR-0016](ADR/0016-dependency-injection-model.md) e
+> [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+
+Características (proposta original, para referência):
 
 - Singleton.
 - Transient.
@@ -1344,7 +1359,7 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 
 ## Phase 4 — Application Framework
 
-- [ ] Dependency Injection.
+- [x] Dependency Injection.
 - [ ] Router.
 - [ ] Route Guards.
 - [ ] Lazy Loading.
@@ -1430,9 +1445,10 @@ ADRs aceitos:
 | [0013](ADR/0013-reactive-rendering-and-reconciliation.md) | Renderização reativa e reconciliação posicional | Accepted |
 | [0014](ADR/0014-component-model-and-ownership.md) | Modelo de componentes e propriedade de recursos | Accepted |
 | [0015](ADR/0015-component-interaction-model.md) | Modelo de interação de componentes: inputs, outputs, slots, lifecycle e listas com chaves | Accepted |
+| [0016](ADR/0016-dependency-injection-model.md) | Modelo de injeção de dependência: providers explícitos, três escopos, injectors hierárquicos | Accepted |
 
-Decisões futuras (Dependency Injection, Hydration, estratégia de renderização,
-etc.) ainda não possuem ADR e permanecem propostas até serem registradas.
+Decisões futuras (Hydration, estratégia de renderização, etc.) ainda não
+possuem ADR e permanecem propostas até serem registradas.
 
 Cada ADR deverá registrar:
 

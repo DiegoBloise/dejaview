@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 3 — Component system  
+**Milestone:** Phase 4 — Application Framework  
 **Last updated:** 2026-11-12
 
 This document separates what is implemented and tested from what is designed
@@ -87,6 +87,16 @@ treated as available.
 | Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list) | `website/playground/` | Static HTML/CSS/JS, zero CDN dependencies; Java highlighting and overlay editor are inlined; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 | Showcase examples: `usercard` (inputs/outputs/slots/lifecycle) and `list` (keyed reconciliation) | `examples/showcase` | Playwright E2E in Chromium |
+| `InjectionToken<T>` (identity-based; canonical `of(Class)` overload; diagnostic `name()`) | `dejaview-di` | JUnit tests |
+| `InjectorBuilder` / live `injector.bind(...)` with fail-fast `duplicate-binding` | `dejaview-di` | JUnit tests |
+| `InjectorBuilder.build()` copies registrations; builder reuse yields independent injectors | `dejaview-di` | JUnit tests |
+| Three scopes: `SINGLETON` (one per registering injector), `SCOPED` (one per resolving injector), `TRANSIENT` (never cached) | `dejaview-di` | JUnit tests |
+| Hierarchical injectors: `child(String)`/`child()`, nearest registration wins, live shadowing, no cross-sibling visibility | `dejaview-di` | JUnit tests |
+| `inject()`/`has()` API (class-token and explicit-token resolution) | `dejaview-di` | JUnit tests |
+| Circular dependency detection on a thread-local resolution path (`circular-dependency`, chain `A -> B -> A`, fails before cache mutation, works across injectors) | `dejaview-di` | JUnit tests |
+| `missing-provider` errors naming token, injector and in-flight chain; `provider-error` wrapping with preserved cause | `dejaview-di` | JUnit tests |
+| `AutoCloseable` disposal in reverse creation order through `ResourceRegistry`; children close before parent; idempotent `close()`; transients and `toInstance(...)` constants never injector-disposed | `dejaview-di` | JUnit tests |
+| Explicit constructor-injection strategy via `Provider<T>` factories (`Injector -> T`); TeaVM-safe, no reflection | `dejaview-di` | JUnit tests |
 
 ### End-to-end proof
 
@@ -129,7 +139,6 @@ reconciles the component and updates the existing text node and the counter's
 | Annotations for lifecycle (`@OnInit` etc.) | Not started | `onInit`/`onUpdate`/`onDestroy` are the supported hooks |
 | Hydration | Planned (Phase 6) | |
 | Routing | Planned (Phase 4) | |
-| Dependency injection | Planned (Phase 4) | |
 | HTTP client | Planned (Phase 4) | |
 | Reactive forms | Planned (Phase 4) | |
 | State management | Planned | |
@@ -140,6 +149,7 @@ reconciles the component and updates the existing text node and the counter's
 | DevTools | Planned | |
 | Spring Boot integration | Planned (Phase 8) | |
 | Testing utilities | Planned | JUnit/Playwright are used directly |
+| Field/annotation injection (`@Inject`, qualifiers) | Not started | The supported DI surface is the programmatic factory API (ADR-0016) |
 | Annotation processing | Not started | |
 | Compiler abstraction layer | Not started | TeaVM is configured directly in Maven |
 
@@ -194,6 +204,11 @@ reconciles the component and updates the existing text node and the counter's
     benchmarked.
 14. **E2E requires network on first run.** Playwright downloads Chromium into
     the user's cache. The profile is opt-in for that reason.
+15. **Dependency injection is not wired into the component system yet.**
+    Components receive dependencies through plain constructor parameters
+    resolved at the composition root. The injector is lazy, not
+    thread-safe, and has no `validate()` startup check; components cannot
+    create automatic child scopes per view.
 
 ---
 
@@ -211,21 +226,23 @@ reconciles the component and updates the existing text node and the counter's
 
 ## Next milestone recommendation
 
-**Sprint 09 — Dependency Injection** (see `docs/ROADMAP.md`).
+**Sprint 10 — Router** (see `docs/ROADMAP.md`).
 
-Sprint 08 is implemented and tested: typed inputs (`input(String, Class)` /
-`inputOr`, fail-fast with `missing-input`/`invalid-input`), outputs (`emit` +
-`ComponentView#on`, registration order, no-op when unlistened), default and
-named slots (direct splice, no `SlotView`), explicit lifecycle
-(`onInit`/`onUpdate`/`onDestroy` in mount/re-render/unmount order) and keyed
-list reconciliation with token-based dynamic component replacement
-(`componentFactory(Class, Supplier)`). The `usercard` and `list` showcase
-examples exercise the new surface and are covered by Playwright E2E.
-
-Fine-grained binding nodes and annotation-based `@Input`/`@Output` remain
-future work; annotations should be layered on the programmatic API now in
-place, not on a parallel surface.
+Sprint 09 is implemented and tested: `dejaview-di` with identity-based
+`InjectionToken<T>` (canonical `of(Class)` overload), explicit `Provider<T>`
+factories (no reflection — TeaVM-safe), three scopes
+(`SINGLETON`/`SCOPED`/`TRANSIENT`) with explicit disposal ownership,
+hierarchical child injectors with nearest-registration-wins and live shadowing,
+`inject()`/`has()`, `AutoCloseable` disposal in reverse creation order (children
+before parent), and fail-fast errors with stable codes (`missing-provider`,
+`circular-dependency`, `provider-error`, `duplicate-binding`,
+`closed-injector`). Constructor injection is the supported strategy;
+field/annotation injection (`@Inject`) remains a proposal. The component system
+is not wired to the injector yet — components receive dependencies through plain
+constructor parameters resolved at the composition root. See ADR-0016.
 
 Open items carried forward: documented wrong-type-listener failure mode for
 outputs, and the absence of an `onMount()` hook (`onInit()` covers
-pre-render; anything DOM-effectful must wait for a re-render hook).
+pre-render; anything DOM-effectful must wait for a re-render hook); and the
+question of how the injector reaches the mounted tree once routing and
+application bootstrapping exist (manual construction today).

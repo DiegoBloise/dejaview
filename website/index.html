@@ -182,6 +182,7 @@
                     <li>Sealed <code>RenderNode</code> tree: positional reconciliation, plus keyed lists when a child carries a <code>key</code></li>
                     <li>Component interaction: <code>input(String, Class)</code>/<code>inputOr</code>, outputs via <code>emit</code>/<code>ComponentView#on</code>, named slots, <code>onInit</code>/<code>onUpdate</code>/<code>onDestroy</code> hooks</li>
                     <li>Component model: <code>Component</code>, <code>AbstractComponent</code>, <code>ResourceRegistry</code>, functional components</li>
+                    <li>Dependency injection (<code>dejaview-di</code>): explicit providers, <code>SINGLETON</code>/<code>SCOPED</code>/<code>TRANSIENT</code> scopes, hierarchical injectors, reverse-order disposal</li>
                     <li>Plain <code>class</code>/<code>style</code> attributes — Bootstrap, Tailwind CSS, daisyUI markup just works</li>
                     <li>Browser examples (counter, showcase) compiled by TeaVM and verified in Chromium</li>
                 </ul>
@@ -191,7 +192,7 @@
                 <ul>
                     <li>Fine-grained DOM binding nodes (render-time optimization, not scheduled)</li>
                     <li>Component annotations (<code>@Component</code>, <code>@Input</code>, <code>@Output</code>) — the programmatic API is the supported surface; annotations remain proposals</li>
-                    <li>Client-side router, forms, HTTP client, dependency injection</li>
+                    <li>Client-side router, forms, HTTP client</li>
                     <li>SSR/SSG and hydration</li>
                     <li>In-browser compilation for the playground (needs the dev-server milestone)</li>
                     <li>Automated Bootstrap/Tailwind/daisyUI compatibility suite</li>
@@ -215,7 +216,7 @@
             <div class="arch-arrow" aria-hidden="true">&#8595;</div>
             <div class="arch-layer arch-core"><span class="arch-label">dejaview-core</span>immutable view model &middot; Component &middot; ResourceRegistry</div>
         </div>
-        <p class="arch-note">Dependencies point inward only. <code>dejaview-core</code> has no browser, DOM or TeaVM imports — it compiles and tests on plain JVM 25. The full design lives in <a href="/docs/ARCHITECTURE.md">ARCHITECTURE.md</a>; significant decisions are recorded in <a href="/docs/ADR/README.md">ADRs 0001–0015</a>.</p>
+        <p class="arch-note">Dependencies point inward only. <code>dejaview-core</code> has no browser, DOM or TeaVM imports — it compiles and tests on plain JVM 25. The full design lives in <a href="/docs/ARCHITECTURE.md">ARCHITECTURE.md</a>; significant decisions are recorded in <a href="/docs/ADR/README.md">ADRs 0001–0016</a>.</p>
     </section>
 
     <!-- Getting started -->

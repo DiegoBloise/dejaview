@@ -543,19 +543,33 @@ The component system must support reusable, composable and reactive components w
 
 **Objective:** Implement the dependency injection system.
 
+**Status (2026-11-12):** Completed. `dejaview-di` is a platform-independent
+module depending only on `dejaview-core`: explicit `Provider<T>` factories (no
+reflection, TeaVM-safe), identity-based `InjectionToken<T>` with a canonical
+`of(Class)` overload, three scopes (`SINGLETON` per registering injector /
+`SCOPED` per resolving injector / `TRANSIENT` uncached), hierarchical child
+injectors with nearest-registration-wins and live shadowing via
+`injector.bind(...)`, `inject()`/`has()` API, `AutoCloseable` disposal in
+reverse creation order through `ResourceRegistry` (children before parent;
+idempotent `close()`), and `circular-dependency` detection on a thread-local
+resolution path (`missing-provider`, `provider-error`, `duplicate-binding` and
+`closed-injector` complete the failure model). Field/annotation injection does
+not exist yet; components consume dependencies through plain constructor
+parameters resolved at the composition root. See ADR-0016.
+
 ### Implementation
 
-- [ ] Define injection tokens.
-- [ ] Implement providers.
-- [ ] Implement singleton providers.
-- [ ] Implement transient providers.
-- [ ] Implement scoped providers.
-- [ ] Implement hierarchical injectors.
-- [ ] Implement constructor or field injection strategy.
-- [ ] Implement `inject()` API.
-- [ ] Implement dependency resolution.
-- [ ] Implement circular dependency detection.
-- [ ] Implement provider disposal.
+- [x] Define injection tokens.
+- [x] Implement providers.
+- [x] Implement singleton providers.
+- [x] Implement transient providers.
+- [x] Implement scoped providers.
+- [x] Implement hierarchical injectors.
+- [x] Implement constructor or field injection strategy. (Constructor strategy via explicit factories; field injection deferred as proposal)
+- [x] Implement `inject()` API.
+- [x] Implement dependency resolution.
+- [x] Implement circular dependency detection.
+- [x] Implement provider disposal.
 
 ### Deliverables
 
@@ -565,13 +579,13 @@ The component system must support reusable, composable and reactive components w
 
 ### Tests
 
-- [ ] Dependencies resolve correctly.
-- [ ] Singleton instances are reused.
-- [ ] Transient instances are independent.
-- [ ] Child scopes resolve inherited providers.
-- [ ] Circular dependencies are detected.
-- [ ] Missing providers produce useful errors.
-- [ ] Scoped resources are disposed correctly.
+- [x] Dependencies resolve correctly.
+- [x] Singleton instances are reused.
+- [x] Transient instances are independent.
+- [x] Child scopes resolve inherited providers.
+- [x] Circular dependencies are detected.
+- [x] Missing providers produce useful errors.
+- [x] Scoped resources are disposed correctly.
 
 ### Acceptance Criteria
 
@@ -1433,7 +1447,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-12):** Sprints 00 through 07 are complete. The
+**Current status (2026-11-12):** Sprints 00 through 09 are complete. The
 authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -1447,8 +1461,8 @@ authoritative implemented-versus-planned list is
 | 05 | Rendering Engine Foundation | Completed |
 | 06 | DOM Rendering and Reactive Updates | Completed |
 | 07 | Component Model and Composition | Completed |
-| 08 | Inputs, Outputs, Templates and Lifecycle | Not Started |
-| 09 | Dependency Injection | Not Started |
+| 08 | Inputs, Outputs, Templates and Lifecycle | Completed |
+| 09 | Dependency Injection | Completed |
 | 10 | Router | Not Started |
 | 11 | HTTP Client | Not Started |
 | 12 | Reactive Forms | Not Started |
