@@ -63,6 +63,7 @@ no component system, routing, SSR or tooling.
 | Lazy `Computed` with cache, invalidation and cycle detection | Implemented and tested |
 | Batching, FIFO scheduling, cleanup and `ReactiveScope` disposal | Implemented and tested |
 | Component-scoped reactive rendering and positional reconciliation | Implemented and tested |
+| Plain `class`/`style` attributes usable with Bootstrap, Tailwind CSS and daisyUI | Implemented; library compatibility suite planned |
 | Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
 | Components, lifecycle, inputs/outputs/slots | Planned (Phase 3) |
 | Routing, DI, HTTP, forms, state management | Planned (Phase 4) |
@@ -337,6 +338,9 @@ Significant decisions are recorded as ADRs rather than changed silently.
 - Reconciliation is positional. Moving or reordering children can recreate DOM
   nodes; there is no keyed diff, public unmount API or hydration.
 - No component abstraction, routing, DI, HTTP client, forms or state management.
+- Styling is plain HTML plus `class`/`style` attributes; there is no CSS
+  pipeline or CSS-in-JS runtime. Bootstrap, Tailwind CSS and daisyUI are not yet
+  covered by automated compatibility tests.
 - Browser E2E coverage is Chromium only.
 - Only the JDK/TeaVM APIs exercised by the current code are validated.
 - The example emits readable, non-minified JavaScript; production optimization

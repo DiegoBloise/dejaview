@@ -57,6 +57,7 @@ treated as available.
 | Component-scoped reactive rendering | `dejaview-dom` | JUnit tests via fake DOM |
 | In-place text, attribute and property updates | `dejaview-dom` | JUnit tests via fake DOM |
 | Class and style attribute updates | `dejaview-dom` | JUnit tests via fake DOM |
+| Plain `class`/`style` attributes for external CSS libraries | `dejaview-core`, `dejaview-dom` | JUnit tests via fake DOM |
 | Child removal and node replacement | `dejaview-dom` | JUnit tests via fake DOM |
 | Batched reactive reconciliation | `dejaview-dom`, `dejaview-reactivity` | JUnit tests |
 | Effect and listener cleanup on disposal | `dejaview-dom` | JUnit tests via fake DOM |
@@ -100,6 +101,7 @@ and the counter's `data-count` attribute.
 | Topological dependency ordering | Planned (Phase 2 refinement) | FIFO scheduling is implemented; glitch-free topological propagation is not |
 | Equality short-circuit for computed values | Planned (Phase 2 refinement) | Invalidated computeds always notify dependents |
 | Keyed list reconciliation | Planned | Positional matching preserves nodes for unchanged positions, but moving or reordering children can recreate them |
+| Styling library compatibility suite | Planned (Sprint 23) | Elements already emit plain `class`/`style` attributes; Bootstrap, Tailwind and daisyUI are not covered by automated tests yet |
 | Fine-grained binding nodes | Not planned yet | Reactive updates are component-scoped: a signal read while rendering reruns the component and reconciles its subtree |
 | Automatic ownership tree | Planned (Sprint 07) | `ReactiveScope` is explicit; components do not own scopes yet |
 | Component system / lifecycle | Planned (Sprint 07) | No `@Component` yet |

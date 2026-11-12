@@ -79,6 +79,31 @@ A feature is considered complete only when:
 - [ ] Code follows the project's engineering guidelines.
 - [ ] All changes are integrated into the Maven build.
 
+## 2.4. Styling Compatibility
+
+Styling is not owned by the framework. DejaView must emit ordinary HTML and
+must not impose a CSS-in-JS runtime or a proprietary styling pipeline.
+
+Mandatory compatibility requirements:
+
+- Elements support arbitrary `class` and `style` attributes, including multiple
+  classes and utility-class combinations.
+- External stylesheets (CDN or bundled) work without framework changes.
+- CSS utility and component libraries such as Bootstrap, Tailwind CSS and
+  daisyUI can be used directly.
+- Class names are not rewritten, scoped or hashed by default.
+- Component markup follows the library's expected DOM structure and attribute
+  names; shadcn-style component patterns are supported as ordinary
+  Tailwind-based markup.
+- Reactive class/style updates preserve unrelated classes and attributes.
+- Styling libraries that require JavaScript behavior (for example Bootstrap
+  dropdowns) can be integrated without conflicting with DejaView's event
+  handling.
+
+These requirements apply to every sprint. A dedicated styling integration
+sprint may be added later if a concrete need appears; the framework must not
+block library adoption before then.
+
 # 3. Sprint Roadmap
 
 The roadmap is organized into 22 sequential sprints.
@@ -1130,6 +1155,10 @@ The framework must provide a documented and tested baseline for accessibility, s
 - [ ] Optimize compilation output where supported.
 - [ ] Validate production bundle behavior.
 - [ ] Validate browser compatibility.
+- [ ] Validate compatibility with Bootstrap.
+- [ ] Validate compatibility with Tailwind CSS utility classes.
+- [ ] Validate compatibility with daisyUI components.
+- [ ] Verify external stylesheets and class names pass through unchanged.
 - [ ] Validate server rendering compatibility.
 - [ ] Validate hydration consistency.
 - [ ] Perform security review.
@@ -1154,6 +1183,7 @@ The framework must provide a documented and tested baseline for accessibility, s
 - [ ] SSR and SSG tests pass.
 - [ ] Hydration tests pass.
 - [ ] Security tests pass.
+- [ ] Styling library compatibility tests pass.
 - [ ] Performance benchmarks are recorded.
 - [ ] No known critical defects remain.
 
