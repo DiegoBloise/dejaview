@@ -103,7 +103,7 @@
             <article class="card">
                 <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11l8-4.5M12 11v9M12 11L4 6.5"/></svg></div>
                 <h3>Component model</h3>
-                <p><code>Component</code>, <code>AbstractComponent</code> with <code>ResourceRegistry</code> ownership, class-based and functional components via <code>Views.componentFactory</code>.</p>
+                <p><code>Component</code> and <code>AbstractComponent</code> with <code>ResourceRegistry</code> ownership, typed inputs with fail-fast validation, outputs, named slots, lifecycle hooks and keyed lists.</p>
                 <span class="pill pill-ok">Implemented</span>
             </article>
             <article class="card">
@@ -179,7 +179,8 @@
                     <li>Maven multi-module build, Maven Wrapper, Java 25 baseline</li>
                     <li>Immutable view model (<code>Views.div</code>, <code>h1</code>, <code>button</code>…) and attributes/properties/events</li>
                     <li><code>Signal</code>, <code>Effect</code>, <code>Computed</code>, batching, FIFO scheduler, <code>ReactiveScope</code></li>
-                    <li>Sealed <code>RenderNode</code> tree with positional reconciliation and reactive DOM updates</li>
+                    <li>Sealed <code>RenderNode</code> tree: positional reconciliation, plus keyed lists when a child carries a <code>key</code></li>
+                    <li>Component interaction: <code>input(String, Class)</code>/<code>inputOr</code>, outputs via <code>emit</code>/<code>ComponentView#on</code>, named slots, <code>onInit</code>/<code>onUpdate</code>/<code>onDestroy</code> hooks</li>
                     <li>Component model: <code>Component</code>, <code>AbstractComponent</code>, <code>ResourceRegistry</code>, functional components</li>
                     <li>Plain <code>class</code>/<code>style</code> attributes — Bootstrap, Tailwind CSS, daisyUI markup just works</li>
                     <li>Browser examples (counter, showcase) compiled by TeaVM and verified in Chromium</li>
@@ -188,8 +189,8 @@
             <div class="status-col status-col-planned">
                 <h3>Planned, not built yet</h3>
                 <ul>
-                    <li>Inputs, outputs, named slots and lifecycle hooks for components (Sprint 08)</li>
-                    <li>Fine-grained DOM binding nodes and keyed reconciliation</li>
+                    <li>Fine-grained DOM binding nodes (render-time optimization, not scheduled)</li>
+                    <li>Component annotations (<code>@Component</code>, <code>@Input</code>, <code>@Output</code>) — the programmatic API is the supported surface; annotations remain proposals</li>
                     <li>Client-side router, forms, HTTP client, dependency injection</li>
                     <li>SSR/SSG and hydration</li>
                     <li>In-browser compilation for the playground (needs the dev-server milestone)</li>
@@ -214,7 +215,7 @@
             <div class="arch-arrow" aria-hidden="true">&#8595;</div>
             <div class="arch-layer arch-core"><span class="arch-label">dejaview-core</span>immutable view model &middot; Component &middot; ResourceRegistry</div>
         </div>
-        <p class="arch-note">Dependencies point inward only. <code>dejaview-core</code> has no browser, DOM or TeaVM imports — it compiles and tests on plain JVM 25. The full design lives in <a href="/docs/ARCHITECTURE.md">ARCHITECTURE.md</a>; significant decisions are recorded in <a href="/docs/ADR/README.md">ADRs 0001–0014</a>.</p>
+        <p class="arch-note">Dependencies point inward only. <code>dejaview-core</code> has no browser, DOM or TeaVM imports — it compiles and tests on plain JVM 25. The full design lives in <a href="/docs/ARCHITECTURE.md">ARCHITECTURE.md</a>; significant decisions are recorded in <a href="/docs/ADR/README.md">ADRs 0001–0015</a>.</p>
     </section>
 
     <!-- Getting started -->
