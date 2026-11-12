@@ -1,6 +1,7 @@
 package io.dejaview.dom;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,9 +88,13 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
         this.tagName = Objects.requireNonNull(tagName, "tagName");
     }
 
+    private final Map<String, Integer> attributeSetCounts = new HashMap<>();
+    private final Map<String, Integer> propertySetCounts = new HashMap<>();
+
     @Override
     public void setAttribute(String name, String value) {
         attributes.put(name, value);
+        attributeSetCounts.merge(name, 1, Integer::sum);
         if ("id".equals(name)) {
             document.registerId(value, this);
         }
@@ -103,6 +108,7 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     @Override
     public void setProperty(String name, String value) {
         properties.put(name, value);
+        propertySetCounts.merge(name, 1, Integer::sum);
     }
 
     @Override
@@ -162,6 +168,14 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
 
     Map<String, String> properties() {
         return Map.copyOf(properties);
+    }
+
+    int attributeSetCount(String name) {
+        return attributeSetCounts.getOrDefault(name, 0);
+    }
+
+    int propertySetCount(String name) {
+        return propertySetCounts.getOrDefault(name, 0);
     }
 
     List<DomNode> children() {

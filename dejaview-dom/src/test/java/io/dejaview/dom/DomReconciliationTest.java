@@ -221,6 +221,38 @@ class DomReconciliationTest {
         assertEquals(3, renders.get());
     }
 
+    @Test
+    void unchangedAttributesAndPropertiesAreNotReapplied() {
+        // Re-setting an unchanged attribute is observably different from leaving it
+        // alone: an iframe's src reloads the frame on every identical set. The
+        // renderer must skip attributes and properties whose value did not change.
+        Signal<Integer> tick = new Signal<>(0);
+        MountedDom mounted = renderer.render(
+                Views.component(() -> Views.element("iframe")
+                        .attr("src", "example.html?example=counter")
+                        .attr("title", "Preview")
+                        .attr("data-tick", String.valueOf(tick.get()))
+                        .prop("value", "stable")
+                        .classes("frame")),
+                document,
+                container);
+
+        FakeDomElement frame = elementAt(container, 0);
+        assertEquals(1, frame.attributeSetCount("src"));
+        assertEquals(1, frame.attributeSetCount("class"));
+        assertEquals(1, frame.propertySetCount("value"));
+
+        tick.set(1);
+        tick.set(2);
+
+        assertEquals(1, frame.attributeSetCount("src"));
+        assertEquals(1, frame.attributeSetCount("title"));
+        assertEquals(1, frame.attributeSetCount("class"));
+        assertEquals(1, frame.propertySetCount("value"));
+        assertEquals(3, frame.attributeSetCount("data-tick"));
+        mounted.dispose();
+    }
+
     private static FakeDomElement elementAt(FakeDomElement parent, int index) {
         return assertInstanceOf(FakeDomElement.class, parent.children().get(index));
     }

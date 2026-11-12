@@ -77,7 +77,14 @@ final class ElementRenderNode implements RenderNode {
             }
         }
         for (Attribute attribute : next) {
-            element.setAttribute(attribute.name(), attribute.value());
+            // Re-setting an unchanged attribute is observably different from
+            // leaving it alone for some attributes (for example, an iframe's
+            // src reloads the frame). Only apply values that actually changed.
+            Attribute current = attribute;
+            boolean unchanged = attributes.stream().anyMatch(current::equals);
+            if (!unchanged) {
+                element.setAttribute(attribute.name(), attribute.value());
+            }
         }
         attributes = List.copyOf(next);
     }
@@ -90,7 +97,11 @@ final class ElementRenderNode implements RenderNode {
             }
         }
         for (Property property : next) {
-            element.setProperty(property.name(), property.value());
+            Property current = property;
+            boolean unchanged = properties.stream().anyMatch(current::equals);
+            if (!unchanged) {
+                element.setProperty(property.name(), property.value());
+            }
         }
         properties = List.copyOf(next);
     }
