@@ -1,5 +1,6 @@
 package io.dejaview.dom;
 
+import io.dejaview.core.DejaViewException;
 import io.dejaview.core.View;
 
 import java.util.ArrayList;
@@ -94,7 +95,7 @@ public final class DejaViewRuntime implements AutoCloseable {
                 mounts.get(index).dispose();
             } catch (RuntimeException disposalFailure) {
                 if (failure == null) {
-                    failure = new IllegalStateException(
+                    failure = new DejaViewException(
                             "Failed to dispose a mounted view", disposalFailure);
                 } else {
                     failure.addSuppressed(disposalFailure);

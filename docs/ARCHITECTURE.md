@@ -19,7 +19,8 @@
 > [ADR-0008](ADR/0008-synchronous-signals-and-effects.md),
 > [ADR-0009](ADR/0009-lazy-computed-values.md) and
 > [ADR-0010](ADR/0010-batching-scheduling-and-scopes.md):
-> `dejaview-core` (immutable view model), `dejaview-reactivity` (`Signal`,
+> `dejaview-core` (immutable view model, framework configuration, application
+> context, resource registry, logging and lifecycle contracts), `dejaview-reactivity` (`Signal`,
 > `Effect`, `Computed`, batching and scopes), `dejaview-dom` (DOM contracts,
 > first-mount renderer, TeaVM JSO adapter) and `examples/counter`. TeaVM 0.16.0
 > with Java 25 has been validated; see [`COMPILER.md`](COMPILER.md). The
@@ -1198,13 +1199,19 @@ O desenvolvimento deverá ocorrer incrementalmente.
 - [x] Implementar DOM adapter.
 - [x] Renderizar primeira árvore de views (primeiro mount; sistema de componentes é Phase 3).
 - [x] Implementar event handling básico (listeners de click).
+- [x] Implementar configuração do runtime e detecção de ambiente.
+- [x] Implementar inserção/remoção de nós e listeners.
+- [x] Implementar ciclo de vida e shutdown do runtime.
+- [x] Implementar abstrações de core (configuração, contexto, disposal, logging e exceções).
 
 **Objetivo:** executar uma aplicação Java no navegador utilizando DejaView.
 
 **Estado:** o primeiro milestone foi implementado e é validado por testes JVM e
-por um teste E2E em Chromium. O escopo exato — primeiro mount apenas, sem
-diffing, reatividade ou hidratação — está em
-[ADR-0007](ADR/0007-first-milestone-scope.md) e
+por um teste E2E em Chromium. O runtime possui configuração, detecção de
+ambiente, registro/remoção de listeners e shutdown explícito. O escopo exato do
+primeiro mount — sem diffing, reatividade ou hidratação — está em
+[ADR-0007](ADR/0007-first-milestone-scope.md), as abstrações de core em
+[ADR-0011](ADR/0011-core-application-abstractions.md) e o estado detalhado em
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 ## Phase 2 — Reactivity Engine
@@ -1330,6 +1337,7 @@ ADRs aceitos:
 | [0008](ADR/0008-synchronous-signals-and-effects.md) | Signals e effects síncronos na primeira fatia reativa | Accepted |
 | [0009](ADR/0009-lazy-computed-values.md) | Computed lazy, cacheado e invalidado por push | Accepted |
 | [0010](ADR/0010-batching-scheduling-and-scopes.md) | Batching, agendamento síncrono e escopos reativos | Accepted |
+| [0011](ADR/0011-core-application-abstractions.md) | Abstrações de aplicação no core | Accepted |
 
 Decisões futuras (Component API, Dependency Injection, Hydration, estratégia de
 renderização, etc.) ainda não possuem ADR e permanecem propostas até serem

@@ -1,7 +1,7 @@
 package io.dejaview.reactivity;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.dejaview.core.ResourceRegistry;
+
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -14,14 +14,13 @@ import java.util.function.Supplier;
  * Resources added with {@link #add(AutoCloseable)} are disposed too, in reverse
  * creation order.</p>
  *
- * <p>Scopes are not thread-safe and must be used from the same single thread as
- * the rest of the reactivity primitives.</p>
+ * <p>Disposal delegates to {@link ResourceRegistry}, which is shared with the
+ * application context. Scopes are not thread-safe and must be used from the
+ * same single thread as the rest of the reactivity primitives.</p>
  */
 public final class ReactiveScope implements AutoCloseable {
 
-    private final List<AutoCloseable> owned = new ArrayList<>();
-
-    private boolean disposed;
+    private final ResourceRegistry resources = new ResourceRegistry();
 
     /**
      * Creates and immediately runs an effect owned by this scope.
@@ -31,9 +30,7 @@ public final class ReactiveScope implements AutoCloseable {
     public Effect effect(Runnable body) {
         Objects.requireNonNull(body, "body");
         ensureActive();
-        Effect effect = new Effect(body);
-        owned.add(effect);
-        return effect;
+        return resources.register(new Effect(body));
     }
 
     /**
@@ -44,9 +41,7 @@ public final class ReactiveScope implements AutoCloseable {
     public <T> Computed<T> computed(Supplier<T> computation) {
         Objects.requireNonNull(computation, "computation");
         ensureActive();
-        Computed<T> computed = new Computed<>(computation);
-        owned.add(computed);
-        return computed;
+        return resources.register(new Computed<>(computation));
     }
 
     /**
@@ -56,9 +51,7 @@ public final class ReactiveScope implements AutoCloseable {
      */
     public ReactiveScope scope() {
         ensureActive();
-        ReactiveScope child = new ReactiveScope();
-        owned.add(child);
-        return child;
+        return resources.register(new ReactiveScope());
     }
 
     /**
@@ -70,7 +63,7 @@ public final class ReactiveScope implements AutoCloseable {
     public void add(AutoCloseable disposable) {
         Objects.requireNonNull(disposable, "disposable");
         ensureActive();
-        owned.add(disposable);
+        resources.register(disposable);
     }
 
     /**
@@ -82,36 +75,14 @@ public final class ReactiveScope implements AutoCloseable {
      * as suppressed exceptions.</p>
      */
     public void dispose() {
-        if (disposed) {
-            return;
-        }
-        disposed = true;
-
-        RuntimeException failure = null;
-        for (int index = owned.size() - 1; index >= 0; index--) {
-            try {
-                owned.get(index).close();
-            } catch (Exception exception) {
-                if (failure == null) {
-                    failure = new IllegalStateException(
-                            "Failed to dispose a reactive scope resource", exception);
-                } else {
-                    failure.addSuppressed(exception);
-                }
-            }
-        }
-        owned.clear();
-
-        if (failure != null) {
-            throw failure;
-        }
+        resources.dispose();
     }
 
     /**
      * Returns whether this scope has been disposed.
      */
     public boolean isDisposed() {
-        return disposed;
+        return resources.isDisposed();
     }
 
     @Override
@@ -120,7 +91,7 @@ public final class ReactiveScope implements AutoCloseable {
     }
 
     private void ensureActive() {
-        if (disposed) {
+        if (resources.isDisposed()) {
             throw new IllegalStateException("Reactive scope is disposed");
         }
     }

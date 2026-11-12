@@ -186,24 +186,22 @@ A Java application compiled to JavaScript must initialize DejaView and manipulat
 
 **Objective:** Implement the framework's foundational abstractions without coupling the core to the browser.
 
-**Status (2026-11-11):** In progress. Implemented: module boundaries,
-platform-independent rendering contracts (immutable view model) and platform
-adapter contracts (`Dom*` interfaces). Pending: application context, framework
-configuration, lifecycle contracts, core disposal abstractions, framework
-exceptions, utility abstractions and logging abstractions.
+**Status (2026-11-12):** Completed. Core now provides framework configuration,
+an application context, lifecycle contracts, a shared resource registry,
+framework exceptions, logging contracts and internal argument checks.
 
 ### Implementation
 
 - [x] Establish core module boundaries.
-- [ ] Implement application context.
-- [ ] Implement framework configuration.
-- [ ] Implement common lifecycle contracts.
-- [ ] Implement resource disposal abstractions.
-- [ ] Implement framework exceptions.
-- [ ] Implement internal utility abstractions.
+- [x] Implement application context.
+- [x] Implement framework configuration.
+- [x] Implement common lifecycle contracts.
+- [x] Implement resource disposal abstractions.
+- [x] Implement framework exceptions.
+- [x] Implement internal utility abstractions.
 - [x] Define platform-independent rendering contracts.
 - [x] Define platform adapter contracts.
-- [ ] Establish common logging abstractions.
+- [x] Establish common logging abstractions.
 
 ### Deliverables
 
@@ -217,8 +215,8 @@ exceptions, utility abstractions and logging abstractions.
 - [x] Core tests execute without browser dependencies.
 - [x] Core can be instantiated independently.
 - [x] Platform adapters can be substituted.
-- [ ] Resource disposal behaves consistently.
-- [ ] Exceptions preserve useful diagnostic information.
+- [x] Resource disposal behaves consistently.
+- [x] Exceptions preserve useful diagnostic information.
 
 ### Acceptance Criteria
 
@@ -1398,7 +1396,7 @@ their acceptance criteria. The authoritative implemented-versus-planned list is
 |---|---|---|
 | 00 | Technical Validation and Foundation | Completed |
 | 01 | JavaScript Runtime Bootstrap | Completed |
-| 02 | Core Abstractions | In Progress — module boundaries and rendering contracts exist; application context, lifecycle contracts, exceptions and logging pending |
+| 02 | Core Abstractions | Completed |
 | 03 | Signals and Reactive Primitives | Completed |
 | 04 | Computed, Effects and Scheduling | Completed |
 | 05 | Rendering Engine Foundation | In Progress — immutable view model, platform contracts and first-mount DOM renderer exist; renderer module, render tree, reconciliation and disposal pending |

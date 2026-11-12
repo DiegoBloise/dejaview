@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 2 — Reactivity (signals, effects, computed, scheduling, scopes)  
+**Milestone:** Phase 2 — Reactivity and rendering foundations  
 **Last updated:** 2026-11-12
 
 This document separates what is implemented and tested from what is designed
@@ -20,6 +20,13 @@ treated as available.
 | Java 25 compilation | all | `maven.compiler.release=25` |
 | Java → JavaScript compilation | example | TeaVM 0.16.0, `package` phase |
 | Immutable view model | `dejaview-core` | JUnit tests |
+| Framework configuration (`FrameworkConfig`) | `dejaview-core` | JUnit tests |
+| Application context with owned resources | `dejaview-core` | JUnit tests |
+| Shared `ResourceRegistry` with reverse-order disposal | `dejaview-core` | JUnit tests |
+| Lifecycle contracts | `dejaview-core` | JUnit tests |
+| `DejaViewException` with code and preserved cause | `dejaview-core` | JUnit tests |
+| Logging contracts (`Logger`, `Loggers`) | `dejaview-core` | JUnit tests |
+| Internal argument checks | `dejaview-core` | JUnit tests |
 | Element, text and fragment nodes | `dejaview-core` | JUnit tests |
 | Attribute and event bindings | `dejaview-core` | JUnit tests |
 | `Signal<T>` (`get`, `set`, `update`, equality no-op) | `dejaview-reactivity` | JUnit tests |
@@ -34,6 +41,7 @@ treated as available.
 | Infinite reactive loop protection | `dejaview-reactivity` | JUnit tests |
 | Effect cleanup callbacks before re-execution and disposal | `dejaview-reactivity` | JUnit tests |
 | `ReactiveScope` ownership and grouped disposal | `dejaview-reactivity` | JUnit tests |
+| Shared disposal behavior between contexts and scopes | `dejaview-core`, `dejaview-reactivity` | JUnit tests |
 | Error propagation without corrupting the scheduler | `dejaview-reactivity` | JUnit tests |
 | Reactive counter update in the browser | example | Playwright E2E |
 | Platform-neutral DOM contracts | `dejaview-dom` | JUnit tests via fake DOM |
