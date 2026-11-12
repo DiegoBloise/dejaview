@@ -2,19 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DejaView Showcase</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: #0f1117;
+            color: #f5f7fb;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+    </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app" class="dejaview-example"></div>
 <script src="app.js"></script>
 <script>
-    // Run the example selected via the ?example= query parameter.
-    // The default is "counter".
-    if (typeof io !== "undefined" &&
-        typeof io.dejaview !== "undefined" &&
-        typeof io.dejaview.examples !== "undefined") {
-        io.dejaview.examples.showcase.ShowcaseApp.main();
-    }
+    // The bundle exposes a single global entry point, main(), which reads
+    // the "example" query parameter and mounts the matching example.
+    main();
 </script>
 </body>
 </html>

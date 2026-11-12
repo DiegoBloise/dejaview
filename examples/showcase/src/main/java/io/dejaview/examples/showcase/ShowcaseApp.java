@@ -1,7 +1,6 @@
 package io.dejaview.examples.showcase;
 
 import io.dejaview.core.AbstractComponent;
-import io.dejaview.core.Component;
 import io.dejaview.core.View;
 import io.dejaview.core.Views;
 import io.dejaview.dom.DejaView;
@@ -71,29 +70,29 @@ public final class ShowcaseApp {
                 hostId);
     }
 
-    /** Functional component that owns state through a closure-captured signal. */
+    /** Functional component: the content supplier runs on every render. */
     public static void mountGreeting(String hostId) {
-        DejaView.mount(
-                Views.componentFactory(() -> new GreetingComponent()),
+        Signal<String> name = new Signal<>("");
+        DejaView.mount(Views.component(() ->
+                Views.div(
+                        Views.h1("Hello, " + name.get()),
+                        Views.button("Set name")
+                                .onClick(() -> name.set("DejaView")))
+                        .classes("example")),
                 hostId);
     }
 
     /** Nested components demonstrating composition and isolated state. */
     public static void mountComposition(String hostId) {
         DejaView.mount(
-                Views.div(
-                        Views.h1("Composition"),
-                        Views.componentFactory(() -> new ParentComponent()),
-                        Views.componentFactory(() -> new ChildComponent())),
+                Views.componentFactory(ParentComponent::new),
                 hostId);
     }
 
     /** Conditional rendering through a fragment. */
     public static void mountConditional(String hostId) {
         DejaView.mount(
-                Views.div(
-                        Views.h1("Conditional"),
-                        Views.componentFactory(() -> new ConditionalComponent())),
+                Views.componentFactory(ConditionalComponent::new),
                 hostId);
     }
 
@@ -112,21 +111,6 @@ public final class ShowcaseApp {
                                     .attr("data-count", Integer.toString(current)),
                             Views.button("Increment")
                                     .onClick(() -> count.update(v -> v + 1)))
-                    .classes("example");
-        }
-    }
-
-    /** Functional component that owns state through a closure-captured signal. */
-    private static final class GreetingComponent implements Component {
-
-        private final Signal<String> name = new Signal<>("");
-
-        @Override
-        public View render() {
-            return Views.div(
-                            Views.h1("Hello, " + name.get()),
-                            Views.button("Set name")
-                                    .onClick(() -> name.set("DejaView")))
                     .classes("example");
         }
     }
