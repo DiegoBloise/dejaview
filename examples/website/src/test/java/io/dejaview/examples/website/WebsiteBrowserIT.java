@@ -45,7 +45,7 @@ class WebsiteBrowserIT {
                 page.navigate(server.url() + "/website/");
 
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
-                assertEquals(10, page.locator("#features .card").count());
+                assertEquals(11, page.locator("#features .card").count());
                 assertEquals("true", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertEquals("http://www.w3.org/2000/svg",
@@ -84,7 +84,7 @@ class WebsiteBrowserIT {
 
                 assertTrue(page.textContent("#hero-title").contains("Reimaginado"));
                 assertEquals("EN", page.textContent(".lang-switch"));
-                assertTrue(page.locator("#features .card").count() == 10);
+                assertTrue(page.locator("#features .card").count() == 11);
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {
@@ -104,10 +104,12 @@ class WebsiteBrowserIT {
                 page.onPageError(pageErrors::add);
 
                 page.navigate(server.url() + "/website/get-started.html");
-                assertTrue(page.locator(".docs-toc-nav a").count() >= 15);
-                assertTrue(page.locator(".docs-content h2").count() >= 15);
+                assertTrue(page.locator(".docs-toc-nav a").count() >= 19);
+                assertTrue(page.locator(".docs-content h2").count() >= 19);
                 assertTrue(page.locator("#forms").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#forms']").count() == 1);
+                assertTrue(page.locator("#state").count() == 1);
+                assertTrue(page.locator(".docs-toc-nav a[href='#state']").count() == 1);
 
                 // Anchor navigation must clear the sticky header.
                 page.click(".docs-toc-nav a[href='#composition']");
@@ -129,8 +131,9 @@ class WebsiteBrowserIT {
                 page.setViewportSize(1280, 720);
 
                 page.navigate(server.url() + "/website/pt/get-started.html");
-                assertTrue(page.locator(".docs-content h2").count() >= 15);
+                assertTrue(page.locator(".docs-content h2").count() >= 19);
                 assertTrue(page.locator("#forms").textContent().contains("Formulários reativos"));
+                assertTrue(page.locator("#state").textContent().contains("Gerenciamento de estado"));
                 assertTrue(page.textContent(".docs-content h2") != null);
                 assertTrue(page.locator(".docs-toc-nav a").allTextContents().stream()
                         .anyMatch(text -> text.contains("Pré-requisitos")));
@@ -153,7 +156,7 @@ class WebsiteBrowserIT {
                 page.onPageError(pageErrors::add);
 
                 page.navigate(server.url() + "/website/playground/");
-                assertEquals(9, page.locator(".example-item").count());
+                assertEquals(10, page.locator(".example-item").count());
                 assertEquals("Playground", page.textContent("h1.page-title"));
 
                 // The shared site stylesheet styles inline <code>; the editor's
@@ -180,6 +183,13 @@ class WebsiteBrowserIT {
                 page.click("#btn-run");
                 page.waitForTimeout(500);
                 assertTrue(page.getAttribute("#preview-iframe", "src").contains("example=forms"));
+
+                // The state example is listed, shows its real source and runs.
+                page.click(".example-item[data-example='state']");
+                assertTrue(page.locator("#highlight-code").textContent().contains("StateDemo"));
+                page.click("#btn-run");
+                page.waitForTimeout(500);
+                assertTrue(page.getAttribute("#preview-iframe", "src").contains("example=state"));
 
                 // The playground header must match the landing page's brand size.
                 double playgroundMark = ((Number) page.evaluate(

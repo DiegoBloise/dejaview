@@ -279,6 +279,60 @@ public final class Snippets {
                 }
             }""";
 
+    public static final String STATE_STORE = """
+            private final StateStore<List<String>> cart =
+                    new StateStore<>(List.of());
+
+            @Override
+            public View render() {
+                // tracked read: changing the cart re-renders this component
+                return Views.p("Items: " + cart.state().size());
+            }
+
+            cart.update(items -> {
+                List<String> next = new ArrayList<>(items);
+                next.add("book");
+                return List.copyOf(next);
+            });""";
+
+    public static final String STATE_DERIVED = """
+            Selector<List<String>, Integer> itemCount =
+                    Selector.of("cart/itemCount", List::size);
+
+            // lazy Computed owned by the store; disposed with it
+            Computed<Integer> count = cart.select(itemCount);
+
+            // cross-store projection without a global store of everything
+            Computed<Integer> total =
+                    Stores.combine(cart, discountPercent, (items, percent) ->
+                            applyDiscount(subtotalOf(items), percent));""";
+
+    public static final String STATE_ASYNC = """
+            AsyncStore<String> orders = new AsyncStore<>((succeed, fail) ->
+                    http.get("/api/orders", outcome -> {
+                        if (outcome instanceof HttpResult.Success ok) {
+                            succeed.accept(ok.body());
+                        } else {
+                            fail.accept(AsyncError.of("network-error", "orders request failed"));
+                        }
+                    }));
+
+            AsyncState<String> state = orders.state(); // IDLE -> LOADING -> SUCCESS | FAILURE
+            state.isLoading();
+            state.data();   // last good value, kept while refreshing (stale-while-revalidate)
+            state.error();  // Optional<AsyncError> with a stable, machine-readable code""";
+
+    public static final String STATE_PERSIST = """
+            PersistedStore<String> theme = new PersistedStore<>(
+                    "dejaview-demo-theme",
+                    new StateStore<>("dark"),
+                    BrowserStorage.local(),
+                    StateCodec.string());
+
+            theme.restored();      // true when a stored value was found
+            theme.store().state(); // restored value, or "dark" on first visit
+            theme.store().set("light"); // written through to localStorage""";
+
     public static final String JAVA_MAIN = """
             public static void main(String[] args) {
                 DejaView.mount(Views.componentFactory(CounterComponent::new), "app");

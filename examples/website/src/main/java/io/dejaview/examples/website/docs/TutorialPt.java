@@ -145,12 +145,27 @@ public final class TutorialPt {
                         item(code("status()"), text(" — VALID, INVALID, PENDING ou DISABLED, agregado pela árvore."))),
                 note("tip", strong("Valores nunca são null."), text(" Use o valor vazio do tipo — \"\", 0 ou false — para um controle não preenchido.")),
 
-                h2("styling", "15. Estilizando seu app"),
+                h2("state", "15. Gerenciamento de estado"),
+                prose(text("O dejaview-state tira o estado da aplicação de dentro dos componentes individuais. Um StateStore é um holder compartilhado e observável: todo componente que o lê observa o mesmo valor, e escritas são síncronas:")),
+                java(Snippets.STATE_STORE),
+                prose(text("Estado derivado é um Computed preguiçoso, dono é o store, então ler dentro de um effect registra a projeção. Selector dá à projeção um nome estável para diagnósticos, e Stores.combine deriva valores entre stores independentes — nenhum store global de tudo:")),
+                java(Snippets.STATE_DERIVED),
+                prose(text("Estado assíncrono é um AsyncState imutável — IDLE, LOADING, SUCCESS ou FAILURE — carregando opcionalmente o último valor bom enquanto um refresh está em voo (stale-while-revalidate). O AsyncStore é dono da operação, um contador de geração descarta tentativas substituídas, e exatamente um resultado vence por tentativa:")),
+                java(Snippets.STATE_ASYNC),
+                prose(text("Falhas são valores AsyncError estruturados, com um código estável e legível por máquina — aplicações mapeiam códigos para mensagens localizadas, exatamente como as chaves de erro de formulários. Persistência é opcional: PersistedStore restaura o valor antes do primeiro observer existir e depois escreve cada mudança de volta no storage que você fornecer:")),
+                java(Snippets.STATE_PERSIST),
+                bullets(
+                        item(code("PersistedStore"), text(" — restaura do storage antes do primeiro observer existir e escreve de volta cada mudança. Erros de decode e de storage são reportados como códigos, nunca lançados contra você.")),
+                        item(code("StateRegistry"), text(" — um objeto comum criado na raiz de composição, com chave por nome; nenhum singleton global.")),
+                        item(code("AsyncState.data()"), text(" — o último valor bom, mesmo durante um refresh ou após um refresh falho."))),
+                note("tip", strong("Descarte na fronteira."), text(" Um store é dono dos computeds que cria; descarte-os — ou um StateRegistry — quando a view dona for destruída.")),
+
+                h2("styling", "16. Estilizando seu app"),
                 prose(text("O DejaView nunca toca no seu CSS. As views carregam atributos class e style simples, então qualquer stylesheet funciona — CSS escrito à mão, Bootstrap, Tailwind CSS, daisyUI:")),
                 java(Snippets.STYLING),
                 prose(text("Traga o seu framework: adicione o CSS dele no head da página, use as classes dele em .classes(...), e pronto. O DejaView não entrega kit de UI nem pipeline de CSS, de propósito.")),
 
-                h2("production", "16. Build de produção"),
+                h2("production", "17. Build de produção"),
                 prose(text("O build que você rodou no passo 2 já é o de produção. ./mvnw clean verify compila tudo para JavaScript e escreve o resultado no diretório target/webapp de cada exemplo — arquivos simples que você pode hospedar em qualquer lugar:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
@@ -159,7 +174,7 @@ public final class TutorialPt {
                         item(code("index.html"), text(" — a página de entrada que carrega o bundle."))),
                 prose(text("Suba esses arquivos para qualquer hospedagem estática (nginx, S3, Netlify, GitHub Pages) e você tem um deploy de produção.")),
 
-                h2("troubleshooting", "17. Problemas comuns"),
+                h2("troubleshooting", "18. Problemas comuns"),
                 bullets(
                         item(code("java -version mostra 8, 17 ou 21"), text(" — seu JAVA_HOME aponta para o JDK errado. Aponte para uma instalação do Java 25 e reabra o terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — rode chmod +x mvnw, ou use mvnw.cmd no Windows.")),
@@ -167,7 +182,7 @@ public final class TutorialPt {
                         item(code("Página em branco, sem contador"), text(" — abra o console do navegador. Um 404 para app.js significa que você está servindo o diretório errado; precisa ser examples/counter/target/webapp, não a raiz do repositório.")),
                         item(code("BUILD FAILURE baixando dependências"), text(" — confira o acesso à rede; o Maven precisa alcançar repo.maven.apache.org no primeiro build."))),
 
-                h2("next-steps", "18. Próximos passos"),
+                h2("next-steps", "19. Próximos passos"),
                 prose(
                         text("Explore o "),
                         link("/website/pt/playground/", "playground interativo"),

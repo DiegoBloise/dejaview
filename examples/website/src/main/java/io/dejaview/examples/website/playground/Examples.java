@@ -391,6 +391,75 @@ public final class Examples {
                                             : ValidationErrors.none()),
                                     600);
                         }
+                    }"""),
+
+            new Example("state",
+                    "State management", "Gerenciamento de estado",
+                    "Shared stores, derived projections, cross-store combine, async checkout and a persisted theme",
+                    "Stores compartilhados, projeções derivadas, combine entre stores, checkout assíncrono e um tema persistido",
+                    """
+                    // examples/showcase/src/main/java/io/dejaview/examples/showcase/ShowcaseApp.java
+
+                    private static final class StateDemo extends AbstractComponent {
+
+                        private final StateStore<List<String>> cart = new StateStore<>(List.of());
+                        private final Computed<Integer> itemCount = cart.select(List::size);
+                        private final Computed<Integer> subtotalCents =
+                                cart.select(StateDemo::subtotalOf);
+                        private final StateStore<Integer> discountPercent = new StateStore<>(0);
+                        private final Computed<Integer> totalCents = Stores.combine(
+                                cart, discountPercent,
+                                (items, percent) -> applyDiscount(subtotalOf(items), percent));
+                        private final AsyncStore<String> checkout = new AsyncStore<>(this::runCheckout);
+                        private final PersistedStore<String> theme = new PersistedStore<>(
+                                "dejaview-demo-theme", new StateStore<>("dark"),
+                                BrowserStorage.local(), StateCodec.string());
+
+                        @Override
+                        public View render() {
+                            AsyncState<String> order = checkout.state();
+                            return Views.div(
+                                    Views.h1("State management"),
+                                    Views.p("Items: " + itemCount.get()).id("state-count"),
+                                    Views.p("Subtotal: " + formatCents(subtotalCents.get()))
+                                            .id("state-subtotal"),
+                                    Views.p("Total: " + formatCents(totalCents.get()))
+                                            .id("state-total"),
+                                    Views.button("Add book (12.00)").onClick(() -> addItem("book")),
+                                    Views.button("10% off").id("state-discount-10")
+                                            .onClick(() -> discountPercent.set(10)),
+                                    Views.button("Checkout").id("state-checkout")
+                                            .onClick(checkout::load),
+                                    Views.p(resultText(order)).id("state-result")
+                                            .attr("role", "status"),
+                                    Views.p("Theme: " + theme.store().state()).id("state-theme"),
+                                    Views.button("Toggle theme").id("state-theme-toggle")
+                                            .onClick(() ->
+                                                    theme.store().update(
+                                                            v -> "dark".equals(v) ? "light" : "dark")));
+                        }
+
+                        private void runCheckout(Consumer<String> succeed,
+                                                 Consumer<AsyncError> fail) {
+                            if (cart.state().isEmpty()) {
+                                fail.accept(AsyncError.of("empty-cart", "cannot checkout"));
+                                return;
+                            }
+                            Window.setTimeout(() -> succeed.accept("order-1"), 700);
+                        }
+
+                        private String resultText(AsyncState<String> order) {
+                            if (order.isLoading()) {
+                                return "Placing your order…";
+                            }
+                            if (order.isSuccess()) {
+                                return "Order placed: " + order.data().orElse("");
+                            }
+                            if (order.isFailure()) {
+                                return "Checkout failed: " + order.error().map(AsyncError::code).orElse("unknown");
+                            }
+                            return "No checkout attempted yet.";
+                        }
                     }""")
     );
 
