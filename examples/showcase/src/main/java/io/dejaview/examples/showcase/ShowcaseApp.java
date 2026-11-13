@@ -4,6 +4,7 @@ import io.dejaview.core.AbstractComponent;
 import io.dejaview.core.View;
 import io.dejaview.core.Views;
 import io.dejaview.dom.DejaView;
+import io.dejaview.reactivity.Computed;
 import io.dejaview.reactivity.Signal;
 import io.dejaview.http.HttpClient;
 import io.dejaview.http.HttpResult;
@@ -20,6 +21,14 @@ import io.dejaview.forms.FormSubmission;
 import io.dejaview.forms.ValidationCallback;
 import io.dejaview.forms.ValidationErrors;
 import io.dejaview.forms.Validators;
+import io.dejaview.state.AsyncError;
+import io.dejaview.state.AsyncState;
+import io.dejaview.state.AsyncStore;
+import io.dejaview.state.PersistedStore;
+import io.dejaview.state.StateCodec;
+import io.dejaview.state.StateStore;
+import io.dejaview.state.Stores;
+import io.dejaview.state.internal.BrowserStorage;
 import org.teavm.jso.browser.Window;
 
 /**
@@ -62,6 +71,9 @@ public final class ShowcaseApp {
                 break;
             case "forms":
                 mountForms("app");
+                break;
+            case "state":
+                mountState("app");
                 break;
             case "counter":
             default:
@@ -174,6 +186,11 @@ public final class ShowcaseApp {
     /** Reactive forms: validation, async checks, arrays and submission. */
     public static void mountForms(String hostId) {
         DejaView.mount(Views.componentFactory(FormsDemo::new), hostId);
+    }
+
+    /** Shared stores, derived state, async checkout and persisted theme. */
+    public static void mountState(String hostId) {
+        DejaView.mount(Views.componentFactory(StateDemo::new), hostId);
     }
 
     /** Class-based counter, identical in shape to the examples/counter app. */
@@ -600,6 +617,174 @@ public final class ShowcaseApp {
 
         private static boolean isTaken(String value) {
             return value.equals("admin") || value.equals("dejaview");
+        }
+    }
+
+    /** Shared stores, derived state, async checkout and a persisted theme. */
+    private static final class StateDemo extends AbstractComponent {
+
+        private static final int BOOK_CENTS = 1200;
+        private static final int PEN_CENTS = 300;
+        private static final int MUG_CENTS = 900;
+        private static final long CHECKOUT_DELAY_MS = 700;
+
+        private final StateStore<java.util.List<String>> cart = new StateStore<>(java.util.List.of());
+        private final Computed<Integer> itemCount = cart.select(java.util.List::size);
+        private final Computed<Integer> subtotalCents = cart.select(StateDemo::subtotalOf);
+        private final StateStore<Integer> discountPercent = new StateStore<>(0);
+        private final Computed<Integer> totalCents = Stores.combine(
+                cart, discountPercent, (items, percent) -> applyDiscount(subtotalOf(items), percent));
+        private final AsyncStore<String> checkout = new AsyncStore<>(this::runCheckout);
+        private final PersistedStore<String> theme = new PersistedStore<>(
+                "dejaview-demo-theme", new StateStore<>("dark"),
+                BrowserStorage.local(), StateCodec.string());
+        private int orderSequence;
+
+        @Override
+        public View render() {
+            AsyncState<String> order = checkout.state();
+            String currentTheme = theme.store().state();
+            int discount = discountPercent.state();
+            return Views.div(
+                            Views.h1("State management"),
+                            Views.p("One shared store holds the cart, projections derive the totals, and the checkout is an async store.")
+                                    .id("state-intro"),
+                            Views.div(
+                                    Views.button("Add book (12.00)")
+                                            .id("state-add-book")
+                                            .attr("type", "button")
+                                            .onClick(() -> addItem("book")),
+                                    Views.button("Add pen (3.00)")
+                                            .id("state-add-pen")
+                                            .attr("type", "button")
+                                            .onClick(() -> addItem("pen")),
+                                    Views.button("Add mug (9.00)")
+                                            .id("state-add-mug")
+                                            .attr("type", "button")
+                                            .onClick(() -> addItem("mug")),
+                                    Views.button("Clear")
+                                            .id("state-clear")
+                                            .attr("type", "button")
+                                            .onClick(() -> cart.set(java.util.List.of())))
+                                    .style("display:flex;gap:0.5rem;flex-wrap:wrap"),
+                            Views.p("Items: " + itemCount.get())
+                                    .id("state-count")
+                                    .attr("data-count", Integer.toString(itemCount.get())),
+                            Views.p("Subtotal: " + formatCents(subtotalCents.get()))
+                                    .id("state-subtotal"),
+                            Views.div(
+                                    discountButton(0, discount),
+                                    discountButton(10, discount),
+                                    discountButton(25, discount))
+                                    .style("display:flex;gap:0.5rem;flex-wrap:wrap"),
+                            Views.p("Total: " + formatCents(totalCents.get()))
+                                    .id("state-total")
+                                    .attr("data-cents", Integer.toString(totalCents.get())),
+                            Views.div(
+                                    Views.button("Checkout")
+                                            .id("state-checkout")
+                                            .attr("type", "button")
+                                            .onClick(checkout::load),
+                                    Views.p(resultText(order))
+                                            .id("state-result")
+                                            .attr("role", "status")
+                                            .attr("aria-live", "polite"))
+                                    .style("display:grid;gap:0.5rem"),
+                            Views.div(
+                                    Views.p("Theme: " + currentTheme)
+                                            .id("state-theme"),
+                                    Views.button("Toggle theme")
+                                            .id("state-theme-toggle")
+                                            .attr("type", "button")
+                                            .onClick(this::toggleTheme))
+                                    .style("display:flex;gap:0.5rem;align-items:center"))
+                    .classes("example", "state-example")
+                    .style("display:grid;gap:0.75rem;max-width:32rem;align-items:start");
+        }
+
+        @Override
+        public void onDestroy() {
+            theme.dispose();
+            checkout.dispose();
+            cart.dispose();
+            discountPercent.dispose();
+            totalCents.dispose();
+        }
+
+        private View discountButton(int percent, int current) {
+            String label = percent == 0 ? "No discount" : percent + "% off";
+            return Views.button(label)
+                    .id("state-discount-" + percent)
+                    .attr("type", "button")
+                    .attr("aria-pressed", Boolean.toString(current == percent))
+                    .onClick(() -> discountPercent.set(percent));
+        }
+
+        private void addItem(String item) {
+            cart.update(items -> {
+                java.util.List<String> next = new java.util.ArrayList<>(items);
+                next.add(item);
+                return java.util.List.copyOf(next);
+            });
+        }
+
+        private void runCheckout(java.util.function.Consumer<String> succeed,
+                                 java.util.function.Consumer<AsyncError> fail) {
+            if (cart.state().isEmpty()) {
+                fail.accept(AsyncError.of("empty-cart", "cannot place an order with an empty cart"));
+                return;
+            }
+            Window.setTimeout(() -> succeed.accept("order-" + (++orderSequence)), (int) CHECKOUT_DELAY_MS);
+        }
+
+        private void toggleTheme() {
+            theme.store().update(value -> "dark".equals(value) ? "light" : "dark");
+        }
+
+        private static String resultText(AsyncState<String> order) {
+            switch (order.status()) {
+                case IDLE:
+                    return "No checkout attempted yet.";
+                case LOADING:
+                    return "Placing your order…";
+                case SUCCESS:
+                    return "Order placed: " + order.data().orElse("");
+                case FAILURE:
+                    return "Checkout failed: " + order.error().map(AsyncError::code).orElse("unknown");
+                default:
+                    return "";
+            }
+        }
+
+        private static int subtotalOf(java.util.List<String> items) {
+            int cents = 0;
+            for (String item : items) {
+                cents += priceOf(item);
+            }
+            return cents;
+        }
+
+        private static int applyDiscount(int cents, int percent) {
+            return cents * (100 - percent) / 100;
+        }
+
+        private static int priceOf(String item) {
+            if ("book".equals(item)) {
+                return BOOK_CENTS;
+            }
+            if ("pen".equals(item)) {
+                return PEN_CENTS;
+            }
+            if ("mug".equals(item)) {
+                return MUG_CENTS;
+            }
+            return 0;
+        }
+
+        private static String formatCents(int cents) {
+            int whole = cents / 100;
+            int fraction = cents % 100;
+            return whole + "." + (fraction < 10 ? "0" + fraction : Integer.toString(fraction));
         }
     }
 }

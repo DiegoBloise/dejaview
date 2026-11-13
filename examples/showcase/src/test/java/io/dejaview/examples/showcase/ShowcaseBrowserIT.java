@@ -332,6 +332,54 @@ class ShowcaseBrowserIT {
         }
     }
 
+    @Test
+    void stateExampleManagesSharedDerivedAndAsyncState() throws IOException {
+        try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions().setHeadless(true));
+            try (BrowserContext context = browser.newContext();
+                 Page page = context.newPage()) {
+                List<String> pageErrors = new CopyOnWriteArrayList<>();
+                page.onPageError(pageErrors::add);
+
+                page.navigate(server.url() + "/index.html?example=state");
+
+                assertEquals("State management", page.textContent("h1"));
+                assertEquals("Items: 0", page.textContent("#state-count"));
+                assertEquals("Subtotal: 0.00", page.textContent("#state-subtotal"));
+                assertEquals("Total: 0.00", page.textContent("#state-total"));
+
+                // Checkout with an empty cart reports a stable error code.
+                page.click("#state-checkout");
+                assertEquals("Checkout failed: empty-cart", page.textContent("#state-result"));
+
+                page.click("#state-add-book");
+                page.click("#state-add-pen");
+                assertEquals("Items: 2", page.textContent("#state-count"));
+                assertEquals("Subtotal: 15.00", page.textContent("#state-subtotal"));
+                assertEquals("Total: 15.00", page.textContent("#state-total"));
+
+                page.click("#state-discount-10");
+                assertEquals("Total: 13.50", page.textContent("#state-total"));
+
+                // The loader completes after 700 ms; assertions wait.
+                page.click("#state-checkout");
+                assertThat(page.locator("#state-result")).containsText("Order placed: order-");
+
+                page.click("#state-theme-toggle");
+                assertEquals("Theme: light", page.textContent("#state-theme"));
+
+                // The theme is persisted in localStorage and survives a reload.
+                page.navigate(server.url() + "/index.html?example=state");
+                assertEquals("Theme: light", page.textContent("#state-theme"));
+
+                assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
+            } finally {
+                browser.close();
+            }
+        }
+    }
+
     /** Tiny static file server bound to an ephemeral loopback port. */
     private static final class Server implements AutoCloseable {
         private final HttpServer server;
