@@ -31,7 +31,9 @@
 > [ADR-0017](ADR/0017-routing-model.md)), `dejaview-http` (see
 > [ADR-0018](ADR/0018-http-client-model.md)), `dejaview-forms` (reactive forms:
 > `FormControl`, `FormGroup`, `FormArray`, sync/async validators; see
-> [ADR-0019](ADR/0019-reactive-forms.md)), and `examples/counter`.
+> [ADR-0019](ADR/0019-reactive-forms.md)), `dejaview-state` (state management:
+> `StateStore`, `Selector`, `Stores.combine`, `AsyncStore`, `PersistedStore`;
+> see [ADR-0020](ADR/0020-state-management-model.md)), and `examples/counter`.
 > TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
@@ -709,6 +711,25 @@ Possibilidade de persistência utilizando:
 
 A persistência deverá ser configurável e independente da implementação central de Signals.
 
+> **Implementation note (2026-11-13).** O modelo implementado no Sprint 13 é
+> deliberadamente menor que a proposta: `StateStore` (signal compartilhado com
+> leituras rastreadas), `Selector` (projetor nomeado), `select()` devolve um
+> `Computed` preguiçoso que o store possui, `Stores.combine` deriva valores
+> entre stores independentes, `AsyncStore` expõe `AsyncState`
+> (`IDLE`/`LOADING`/`SUCCESS`/`FAILURE`) com rejeição de tentativas
+> substituídas por contador de geração e exatamente um resultado por tentativa
+> (falha preserva o último valor bom — stale-while-revalidate), `AsyncError`
+> com códigos estáveis (aplicações mapeiam códigos para mensagens localizadas,
+> como nas chaves de erro de formulários) e persistência via `StateStorage` +
+> `StateCodec` + `PersistedStore` (restauração antes do primeiro observer,
+> write-through por effect, falhas de decode/storage são códigos, nunca
+> exceções). `StateRegistry` é um registry comum criado na raiz de composição —
+> não há singleton global. `BrowserStorage` cobre `localStorage`/
+> `sessionStorage` via TeaVM JSO; `MemoryStateStorage` cobre testes JVM.
+> Stores globais implícitos, IndexedDB e suspense/loaders de rota continuam
+> propostas. Detalhes em [ADR-0020](ADR/0020-state-management-model.md) e
+> [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+
 # 8. Dependency Injection
 
 Implementar um container próprio de Dependency Injection.
@@ -1240,6 +1261,7 @@ dejaview/
 ├── dejaview-router/
 ├── dejaview-http/
 ├── dejaview-forms/
+├── dejaview-state/
 ├── dejaview-di/
 ├── dejaview-i18n/
 ├── dejaview-spring-boot/
@@ -1369,6 +1391,7 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 - [ ] Lazy Loading.
 - [x] HTTP Client.
 - [x] Reactive Forms.
+- [x] State Management.
 - [ ] Error Boundaries.
 - [ ] Styling integrations.
 

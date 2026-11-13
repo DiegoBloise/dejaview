@@ -794,36 +794,37 @@ Developers must be able to create and validate forms using Java APIs and reactiv
 
 ### Implementation
 
-- [ ] Define shared state abstractions.
-- [ ] Implement application-level stores.
-- [ ] Implement derived state.
-- [ ] Implement asynchronous state.
-- [ ] Implement loading and error states.
-- [ ] Implement state composition.
-- [ ] Implement state selectors.
-- [ ] Implement state persistence contracts.
-- [ ] Implement browser storage adapters.
-- [ ] Implement state restoration.
-- [ ] Define state ownership and disposal rules.
+- [x] Define shared state abstractions. (`StateStore`, `Selector`, `Stores.combine`)
+- [x] Implement application-level stores. (`StateStore`, `StateRegistry`)
+- [x] Implement derived state. (`select` → lazy `Computed` owned by the store)
+- [x] Implement asynchronous state. (`AsyncStore`)
+- [x] Implement loading and error states. (`AsyncState`, `AsyncStatus`, `AsyncError`)
+- [x] Implement state composition. (`Stores.combine` across independent stores)
+- [x] Implement state selectors. (`Selector` named projectors)
+- [x] Implement state persistence contracts. (`StateStorage`, `StateCodec`, `PersistedStore`)
+- [x] Implement browser storage adapters. (`internal/BrowserStorage` over `localStorage`/`sessionStorage`)
+- [x] Implement state restoration. (Restored before the first observer exists; failures are values)
+- [x] Define state ownership and disposal rules. (Stores own their selections; `dispose()` is explicit and idempotent)
 
 ### Deliverables
 
+- `dejaview-state`.
 - Application state management APIs.
 - Shared state infrastructure.
 - Persistence adapters.
 
 ### Tests
 
-- [ ] Multiple components share the same state.
-- [ ] Derived state updates correctly.
-- [ ] Async operations expose loading and error states.
-- [ ] Persisted state can be restored.
-- [ ] Storage failures are handled.
-- [ ] State disposal releases subscriptions.
+- [x] Multiple components share the same state. (`StateStoreTest#multipleComponentsShareTheSameState`)
+- [x] Derived state updates correctly. (`StateStoreTest#selectReturnsDerivedStateThatRecomputes`, `selectWithNamedSelectorKeepsDiagnostics`)
+- [x] Async operations expose loading and error states. (`AsyncStoreTest` stale-attempt rejection, exactly-once completions, failure codes)
+- [x] Persisted state can be restored. (`PersistedStoreTest#restoresAPersistedValueBeforeAnyObserverExists`)
+- [x] Storage failures are handled. (`PersistedStoreTest#unreadableStorageBecomesARestoreErrorValue`, `writeFailuresKeepInMemoryStateAndRecoverOnNextWrite`)
+- [x] State disposal releases subscriptions. (`StateStoreTest#disposeMakesStoreUnreadableAndUnwritable`, registry `disposeAll`)
 
 ### Acceptance Criteria
 
-Applications must be able to manage local, shared, derived, asynchronous and persisted state without introducing unnecessary global coupling.
+Applications must be able to manage local, shared, derived, asynchronous and persisted state without introducing unnecessary global coupling. ✅ Met — `dejaview-state` ships with 33 JVM unit tests, a Chromium E2E (`ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState`), a playground example and tutorial coverage in both languages. See ADR-0020.
 
 ---
 
@@ -1511,7 +1512,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-13):** Sprints 00 through 12 are complete. The
+**Current status (2026-11-13):** Sprints 00 through 13 are complete. The
 authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -1530,7 +1531,7 @@ authoritative implemented-versus-planned list is
 | 10 | Router | Completed |
 | 11 | HTTP Client | Completed |
 | 12 | Reactive Forms | Completed |
-| 13 | State Management | Not Started |
+| 13 | State Management | Completed |
 | 14 | CLI and Development Server | Not Started |
 | 15 | Production Compiler and Optimization | Not Started |
 | 16 | Server Platform Abstraction | Not Started |

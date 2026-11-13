@@ -86,7 +86,7 @@ treated as available.
 | Source maps | example | `app.js.map` |
 | Browser E2E test | `examples/counter`, `examples/showcase`, `examples/website` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, user guide, playground) rendered by DejaView itself, in English and Portuguese | `examples/website` + `website/` | `WebsiteBrowserIT` (`-Pe2e`); static shells load the compiled bundle |
-| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http, forms) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
+| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http, forms, state) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 | Showcase examples: `usercard` (inputs/outputs/slots/lifecycle) and `list` (keyed reconciliation) | `examples/showcase` | Playwright E2E in Chromium |
 | `InjectionToken<T>` (identity-based; canonical `of(Class)` overload; diagnostic `name()`) | `dejaview-di` | JUnit tests |
@@ -131,7 +131,15 @@ treated as available.
 | `FormBindings`: `input`/`textarea` (input), `checkbox`/`select` (change), blur → touched, `aria-invalid`/`disabled` reflect status | `dejaview-forms` | JUnit tests |
 | Forms showcase example (`?example=forms`): sync + async validation, dynamic array, submission snapshot | `examples/showcase` | Playwright E2E |
 | Forms example published in the playground | `website/playground` | Static bundle served by the showcase |
-| Feature card, bilingual tutorial section (14–18), playground list update | `examples/website` | Playwright E2E |
+| `StateStore`, named `Selector`, lazy store-owned `select()` projections, `Stores.combine` cross-store composition | `dejaview-state` | JUnit tests |
+| `AsyncStore` with generation-counter staleness rejection and exactly-once completions; `AsyncState` (IDLE/LOADING/SUCCESS/FAILURE) keeping the last good value (stale-while-revalidate) | `dejaview-state` | JUnit tests |
+| Structured `AsyncError` with stable machine-readable codes; `AsyncLoader` contract | `dejaview-state` | JUnit tests |
+| `StateStorage` contract, `StateCodec` (`string`/`integer`, wrapped failures), `PersistedStore` restore-before-observers with write-through effect | `dejaview-state` | JUnit tests |
+| `StateRegistry` composition-root registry with reverse-order `disposeAll()` | `dejaview-state` | JUnit tests |
+| `internal/BrowserStorage` over `localStorage`/`sessionStorage`; `MemoryStateStorage` for tests and SSR | `dejaview-state` | JUnit tests (memory); browser adapter covered by E2E |
+| State showcase example (`?example=state`): shared cart store, selectors, cross-store discount, async checkout, persisted theme | `examples/showcase` | Playwright E2E |
+| State example published in the playground | `website/playground` | Static bundle served by the showcase |
+| Feature card, bilingual tutorial sections, playground list updates | `examples/website` | Playwright E2E |
 
 ### End-to-end proof
 
@@ -176,7 +184,7 @@ reconciles the component and updates the existing text node and the counter's
 | Routing | Implemented (Sprint 10) | See implemented table; bundle-level lazy route loading is deferred to Sprint 15 |
 | HTTP client | Implemented (Sprint 11) | See implemented table; Fetch adapter deferred — XHR transport shipped instead (ADR-0018) |
 | Reactive forms | Implemented (Sprint 12) | See implemented table; `dejaview-forms` with controls, groups, arrays, sync/async validators, stable error keys, DOM bindings and E2E coverage (ADR-0019) |
-| State management | Planned | |
+| State management | Implemented (Sprint 13) | See implemented table; `dejaview-state` with `StateStore`, named selectors, cross-store `Stores.combine`, `AsyncStore` with exactly-once completions, `PersistedStore`/`StateCodec` persistence and E2E coverage (ADR-0020) |
 | SSR | Planned (Phase 6) | |
 | SSG | Planned (Phase 6) | |
 | Hydration | Planned (Phase 6) | |
@@ -226,9 +234,9 @@ reconciles the component and updates the existing text node and the counter's
    (`componentFactory(Class, Supplier)`) swap the instance; unkeyed tokenless
    views reuse positionally, so dynamic swaps without keys or tokens keep
    the previous instance. There is no state migration.
-10. **Nine examples across two modules.** `examples/counter` (one,
+10. **Ten examples across two modules.** `examples/counter` (one,
     class-based counter) and `examples/showcase` (counter, greeting,
-    composition, conditional, usercard, list, router, http, forms), plus the conceptual previews in
+    composition, conditional, usercard, list, router, http, forms, state), plus the conceptual previews in
     the playground that are not executable.
 11. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
     not part of the automated matrix yet.
@@ -283,7 +291,26 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 13 — State Management** (see `docs/ROADMAP.md`).
+**Sprint 14 — CLI and Development Server** (see `docs/ROADMAP.md`).
+
+Sprint 13 is implemented and tested: `dejaview-state` with `StateStore`
+(shared, observable holder with tracked reads and synchronous writes), named
+`Selector` projectors, lazy store-owned `select()` computeds, `Stores.combine`
+for cross-store derived values, `StateRegistry` (anti-global composition-root
+registry with reverse-order `disposeAll()`), `AsyncStore` (generation-counter
+staleness rejection, exactly-once completions, stale-while-revalidate data),
+`AsyncState`/`AsyncStatus`/`AsyncError` (stable machine-readable codes;
+applications map codes to localized copy, like form error keys), and
+persistence through `StateStorage` + `StateCodec` + `PersistedStore`
+(restore-before-observers; write-through effect; decode/storage failures
+surface as codes, never thrown). Browser storage ships as
+`internal/BrowserStorage` over `localStorage`/`sessionStorage`; JVM tests use
+`MemoryStateStorage`. The showcase `StateDemo` (`?example=state`) demonstrates
+the shared cart store, selectors, a cross-store discount and an async checkout
+with a persisted theme; `ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState`
+validates it in Chromium. The website feature card, tutorial section (heading
+15 in both languages) and playground example are wired; `WebsiteBrowserIT`
+asserts 11 feature cards and 10 playground examples. See ADR-0020.
 
 Sprint 12 is implemented and tested: `dejaview-forms` with `FormControl`,
 `FormGroup` and `FormArray` (value, `touched`/`dirty`/`disabled`, aggregated
@@ -297,9 +324,8 @@ snapshots validity and value. `FormBindings` connects DOM controls (`input`,
 touched; `aria-invalid` and `disabled` reflect control state. The showcase
 `FormsDemo` (`?example=forms`) demonstrates sync + async validation, a dynamic
 tag array and a submission snapshot; `ShowcaseBrowserIT#formsExampleValidatesAndSubmits`
-validates it in Chromium. The website feature card, tutorial section (headings
-14–18 in both languages) and playground example are wired; `WebsiteBrowserIT`
-asserts 10 feature cards and 9 playground examples. See ADR-0019.
+validates it in Chromium. The website feature card, tutorial section (heading 14 in both languages) and playground example are wired; `WebsiteBrowserIT`
+asserts 11 feature cards and 10 playground examples. See ADR-0019.
 
 Sprint 11 is implemented and tested: `dejaview-http` with immutable
 `HttpRequest` (`get`/`post`/`put`/`patch`/`delete`, fluent withers,

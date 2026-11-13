@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 4 in progress — Sprint 12 (reactive forms) implemented.**
+**Phase 4 in progress — Sprint 13 (state management) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -47,7 +47,7 @@ Java source
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end
-test. State management, SSR or tooling do not exist yet.
+test. SSR and tooling do not exist yet.
 
 | Capability | Status |
 |---|---|
@@ -70,7 +70,7 @@ test. State management, SSR or tooling do not exist yet.
 | Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
 | HTTP client (`dejaview-http`): immutable `HttpRequest`/`HttpHeaders`/`HttpResponse`, async exactly-once delivery, request/response interceptors, timeouts, credentials, cancellation, dependency-free JSON, XHR browser adapter (statuses as values; Fetch deferred) | Implemented and tested (Chromium E2E) |
 | Reactive forms (`dejaview-forms`): typed `FormControl`/`FormGroup`/`FormArray`, sync and async validators, touched/dirty/disabled states, prefixed aggregated errors, `FormSubmission` snapshots, `FormBindings` DOM bindings | Implemented and tested (Chromium E2E) |
-| State management | Planned (Phase 4; DI, router, HTTP and forms done) |
+| State management (`dejaview-state`): `StateStore` shared holders, named selectors, lazy store-owned `select()` computeds, `Stores.combine` cross-store projections, `AsyncStore` with exactly-once completions and stale-while-revalidate data, `PersistedStore`/`StateCodec` opt-in persistence, `StateRegistry` composition-root registry | Implemented and tested (Chromium E2E) |
 | CLI, DevTools, compiler abstraction | Planned |
 | SSR, SSG, hydration | Planned |
 
@@ -162,6 +162,7 @@ created as empty placeholders.
 | `dejaview-router` | Client-side routing: `Route` definitions, matching, parameters, query parameters, nested routes, guards, redirects, `RouterOutlet`, browser/memory history, navigation events. TeaVM JSO only in the browser history adapter. | Implemented |
 | `dejaview-http` | HTTP client: `HttpClient` with async exactly-once delivery, immutable requests and headers, interceptors, timeouts, credentials, cancellation, dependency-free JSON tree. XHR browser adapter behind `HttpTransport`; the API itself has no browser or TeaVM imports. | Implemented |
 | `dejaview-forms` | Platform-independent reactive forms: `FormControl`, `FormGroup`, `FormArray`, sync/async validators, stable error keys, `FormBindings` DOM bindings. Depends on `dejaview-core` and `dejaview-reactivity`; no browser or TeaVM imports. | Implemented |
+| `dejaview-state` | Platform-independent state management: `StateStore`, `Selector`, `Stores.combine`, `StateRegistry`, `AsyncStore` with `AsyncState`/`AsyncStatus`/`AsyncError`, persistence contracts (`StateStorage`, `StateCodec`, `PersistedStore`) with a `localStorage`/`sessionStorage` browser adapter. Depends on `dejaview-core` and `dejaview-reactivity`; no browser types on the API surface. | Implemented |
 | `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
 | `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
@@ -170,12 +171,13 @@ Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
-examples/showcase → dejaview-dom, dejaview-router, dejaview-http, dejaview-forms → dejaview-core
+examples/showcase → dejaview-dom, dejaview-router, dejaview-http, dejaview-forms, dejaview-state → dejaview-core
 examples/website → dejaview-dom, dejaview-reactivity → dejaview-core
 dejaview-di → dejaview-core
 dejaview-router → dejaview-core, dejaview-reactivity
 dejaview-http → dejaview-core
 dejaview-forms → dejaview-core, dejaview-reactivity
+dejaview-state → dejaview-core, dejaview-reactivity
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -199,6 +201,7 @@ dejaview/
 ├── dejaview-router/        # Client-side router (pure Java + TeaVM history adapter)
 ├── dejaview-http/          # HTTP client (pure Java API + TeaVM XHR adapter)
 ├── dejaview-forms/         # Reactive forms (pure Java)
+├── dejaview-state/         # State management (pure Java)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
@@ -306,15 +309,37 @@ API — see
 | 1 | Foundation and JavaScript runtime | Implemented |
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
-| 4 | Application Framework | In progress — Sprints 09–12 implemented (dependency injection, router, HTTP client, reactive forms); state management next |
+| 4 | Application Framework | In progress — Sprints 09–13 implemented (dependency injection, router, HTTP client, reactive forms, state management); CLI next |
 | 5 | Compiler and Tooling | Planned |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 13 — State Management
+### Next milestone: Sprint 14 — CLI and Development Server
 
-Sprint 12 delivered a platform-independent reactive forms module (`dejaview-forms`,
+Sprint 13 delivered a platform-independent state management module (`dejaview-state`,
+depending on `dejaview-core` and `dejaview-reactivity`): `StateStore` shared
+holders with tracked reads and synchronous writes, named `Selector` projectors,
+lazy store-owned `select()` computeds, `Stores.combine` for cross-store derived
+values, `StateRegistry` (an ordinary composition-root registry, no global
+singletons, reverse-order `disposeAll()`), `AsyncStore` (exactly-once
+completions via a settled-attempt guard, generation-counter staleness
+rejection, stale-while-revalidate data) and `AsyncState`/`AsyncStatus`/
+`AsyncError` (stable machine-readable codes; applications map codes to
+localized copy, like form error keys). Persistence is opt-in: `PersistedStore`
+restores from a `StateStorage` before the first observer exists, then writes
+every change through; decode/storage failures surface as codes
+(`decode-error`, `storage-error`, `storage-write-error`), never as crashes.
+The showcase `StateDemo` (`?example=state`) demonstrates a shared cart store,
+selectors, a cross-store discount, an async checkout and a `localStorage`-
+persisted theme, verified in Chromium by
+`ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState` — including
+restore across reload. The website feature card, tutorial section (heading 15
+of 19 in both languages) and playground example are wired; `WebsiteBrowserIT`
+asserts 11 feature cards and 10 playground examples.
+See [ADR-0020](docs/ADR/0020-state-management-model.md).
+
+Earlier in this phase, Sprint 12 delivered a platform-independent reactive forms module (`dejaview-forms`,
 depending on `dejaview-core` and `dejaview-reactivity`): `FormControl`,
 `FormGroup` and `FormArray` with value, `touched`/`dirty`/`disabled` states,
 aggregated `status()` (`VALID`/`INVALID`/`PENDING`/`DISABLED`) and prefixed
@@ -329,9 +354,8 @@ lifecycle semantics and `FormSubmission` snapshots with an `ifValid` guard.
 `FormsDemo` (`?example=forms`) demonstrates sync + async validation, a dynamic
 tag `FormArray` and a submission snapshot, verified in Chromium by
 `ShowcaseBrowserIT#formsExampleValidatesAndSubmits`. The website feature card,
-tutorial section (headings 14–18 in both languages) and playground example are
-wired; `WebsiteBrowserIT` asserts 10 feature cards and 9 playground examples.
-See [ADR-0019](docs/ADR/0019-reactive-forms.md).
+tutorial section (heading 14 in both languages) and playground example are
+wired. See [ADR-0019](docs/ADR/0019-reactive-forms.md).
 
 Earlier in this phase, Sprint 11 delivered a platform-independent HTTP client (`dejaview-http`,
 depending on `dejaview-core`): immutable `HttpRequest` (`get`/`post`/`put`/
