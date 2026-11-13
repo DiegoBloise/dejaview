@@ -4,19 +4,22 @@ import org.teavm.jso.JSBody;
 import org.teavm.jso.JSObject;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.EventListener;
-import org.teavm.jso.dom.html.HTMLElement;
+import org.teavm.jso.dom.xml.Element;
 
 import java.util.Objects;
 
 /**
- * Browser implementation detail: adapts a JSO {@link HTMLElement} to the
+ * Browser implementation detail: adapts a JSO {@link Element} to the
  * platform-neutral {@link DomElement} contract.
+ *
+ * <p>{@code Element} covers both HTML and SVG elements, so views can build
+ * inline graphics as well as regular markup.</p>
  */
 final class BrowserDomElement extends BrowserDomNode implements DomElement {
 
-    private final HTMLElement element;
+    private final Element element;
 
-    BrowserDomElement(HTMLElement element) {
+    BrowserDomElement(Element element) {
         super(element);
         this.element = Objects.requireNonNull(element, "element");
     }
@@ -71,7 +74,7 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
         Objects.requireNonNull(handler, "handler");
 
         EventListener<Event> listener = event -> handler.run();
-        element.addEventListener(type, listener);
+        listen(element, type, listener);
         return new DomEventRegistration() {
             private boolean removed;
 
@@ -81,7 +84,7 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
                     return;
                 }
                 removed = true;
-                element.removeEventListener(type, listener);
+                unlisten(element, type, listener);
             }
         };
     }
@@ -103,4 +106,14 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
             params = {"element", "name"},
             script = "element[name] = null;")
     private static native void clearJsProperty(JSObject element, String name);
+
+    @JSBody(
+            params = {"element", "type", "listener"},
+            script = "element.addEventListener(type, listener);")
+    private static native void listen(JSObject element, String type, EventListener<Event> listener);
+
+    @JSBody(
+            params = {"element", "type", "listener"},
+            script = "element.removeEventListener(type, listener);")
+    private static native void unlisten(JSObject element, String type, EventListener<Event> listener);
 }

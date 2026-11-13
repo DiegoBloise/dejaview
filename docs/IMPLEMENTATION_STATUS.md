@@ -79,6 +79,7 @@ treated as available.
 | Reactive renderer with in-place reconciliation | `dejaview-dom` | JUnit tests |
 | Stable attribute/property reconciliation (unchanged attributes are not re-applied, so unrelated re-renders never reload embedded frames or reset form state) | `dejaview-dom` | JUnit tests |
 | Browser DOM adapter | `dejaview-dom` | Playwright E2E |
+| SVG elements created in the SVG namespace (logos and icons paint instead of receiving only a layout box) | `dejaview-dom` | Playwright E2E (asserts `namespaceURI`) |
 | Browser rendering | example | Playwright E2E |
 | Click event handling | example | Playwright E2E |
 | Generated browser bundle | example | `target/webapp/app.js` |

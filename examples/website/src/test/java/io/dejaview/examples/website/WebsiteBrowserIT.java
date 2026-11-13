@@ -47,6 +47,13 @@ class WebsiteBrowserIT {
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
                 assertEquals(9, page.locator("#features .card").count());
 
+                assertEquals("http://www.w3.org/2000/svg",
+                        page.evaluate("() => document.querySelector('.brand-mark').namespaceURI"));
+                assertEquals("http://www.w3.org/2000/svg",
+                        page.evaluate("() => document.querySelector('.card-icon svg').namespaceURI"));
+                assertEquals("http://www.w3.org/2000/svg",
+                        page.evaluate("() => document.querySelector('.card-icon svg path').namespaceURI"));
+
                 String frame = page.getAttribute("#demo-frame", "src");
                 assertTrue(frame.contains("example=counter"), frame);
 
