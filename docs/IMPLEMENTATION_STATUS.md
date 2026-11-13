@@ -152,6 +152,14 @@ treated as available.
 | Deterministic `dejaview-assets.json` fingerprint (paths, byte sizes, SHA-256; excludes itself; byte-identical across equivalent builds) | `dejaview-compiler` | JUnit tests; written by every build; `CliWorkflowIT` asserts it for generated apps |
 | Reproducible output under equivalent build conditions (`project.build.outputTimestamp`; TeaVM determinism verified) | `dejaview-compiler` | `-Pe2e` `ReproducibleBuildIT` (two nested builds, byte comparison) |
 | Build diagnostics with likely-cause hints (class file version, missing `teavm-classlib`, unresolved classes, strict mode) | `dejaview-cli` | JUnit tests (`BuildDiagnosticsTest`) |
+| `dejaview-server` — platform contracts (`PlatformKind`, `Platform`, `ServerPlatform` singleton, `ServerTokens`), transport-neutral `ServerRequest`/`ServerResponse` values (no servlet/HTTP-framework types; not wired to a server) | `dejaview-server` | JUnit tests |
+| `ServerContext` — request-scoped child injector (`server.request`), `REQUEST`/`CONTEXT` bound inside the child only, owned `ResourceRegistry` (reverse-order disposal, idempotent close), per-context `PlatformCompatibilityRegistry`; fresh `MemoryStateStorage` bound when the parent cannot resolve `StateStorage` | `dejaview-server` | JUnit tests (`ServerContextTest`, `ServerBindingsTest`) |
+| `ServerBindings.apply(InjectorBuilder)` — `PLATFORM` to the server singleton, `StateStorage` with `Scope.SCOPED` (one `MemoryStateStorage` per resolving injector, i.e. per request) | `dejaview-server` | JUnit tests (`ServerBindingsTest`) |
+| `PlatformCompatibility` + `BrowserOnlyComponent` marker + registry (exact-class override > marker by assignability > UNIVERSAL); SERVER_ONLY allowed on the server | `dejaview-server` | JUnit tests (`PlatformCompatibilityRegistryTest`) |
+| `ServerRenderer` — renders the platform-neutral `View` tree into a sealed `ServerNode` tree (`ServerElement`/`ServerText`/`ServerFragment`); BROWSER_ONLY components rejected with `browser-only-component` before `bind`/`onInit`/`render` (pre-construction via class token); fragments splice; components get `onDestroy()` then `close()` in reverse creation order on success and failure alike; event handlers dropped and reported de-duplicated in `ServerTree.droppedEvents()` | `dejaview-server` | JUnit tests (`ServerRendererTest`, `ServerNodeTest`) |
+| `SerializationBoundary` — strict `toJson`/`write` (null, JsonValue trees, String, Boolean, finite Numbers, String-keyed Maps, Lists; depth ≤ 512; rest rejected with `not-serializable`) | `dejaview-server` | JUnit tests (`SerializationBoundaryTest`) |
+| Module purity — no DOM adapter and no TeaVM on the `dejaview-server` classpath | `dejaview-server` | JUnit test (`ModulePurityTest`) |
+| `dejaview-server` module is built and tested with the rest of the reactor (`./mvnw clean verify`: 73 tests) | `dejaview-server` | `./mvnw clean verify` |
 | CLI end-to-end workflow: generate → wrapper build → serve → Chromium render → source edit → rebuild → reload | `dejaview-cli` | Playwright E2E (`CliWorkflowIT`) |
 
 ### End-to-end proof
@@ -198,9 +206,9 @@ reconciles the component and updates the existing text node and the counter's
 | HTTP client | Implemented (Sprint 11) | See implemented table; Fetch adapter deferred — XHR transport shipped instead (ADR-0018) |
 | Reactive forms | Implemented (Sprint 12) | See implemented table; `dejaview-forms` with controls, groups, arrays, sync/async validators, stable error keys, DOM bindings and E2E coverage (ADR-0019) |
 | State management | Implemented (Sprint 13) | See implemented table; `dejaview-state` with `StateStore`, named selectors, cross-store `Stores.combine`, `AsyncStore` with exactly-once completions, `PersistedStore`/`StateCodec` persistence and E2E coverage (ADR-0020) |
-| SSR | Planned (Phase 6) | |
-| SSG | Planned (Phase 6) | |
-| Hydration | Planned (Phase 6) | |
+| SSR | Planned (Sprint 17) | HTML serialization; the server platform foundation it builds on is shipped (`dejaview-server`, ADR-0023) |
+| SSG | Planned (Sprint 18) | |
+| Hydration | Planned (Sprint 19) | |
 | CLI | Implemented (Sprint 14) | See implemented table; `dejaview-cli` with `new`/`build`/`run`/`doctor`, the development server with live reload and Chromium E2E coverage (`CliWorkflowIT`) (ADR-0021) | |
 | DevTools | Planned | |
 | Spring Boot integration | Planned (Phase 8) | |
@@ -255,9 +263,15 @@ reconciles the component and updates the existing text node and the counter's
     not part of the automated matrix yet.
 12. **JVM/browser API parity.** Only APIs exercised by the current code are
     validated against TeaVM's class library.
-13. **No production build profile.** The example uses readable, non-minified
-    output for inspection. Minification and advanced optimization are not yet
-    benchmarked.
+13. **The server platform is a foundation, not a renderer.** `dejaview-server`
+    (ADR-0023) mounts and tears down component trees on the JVM and produces a
+    platform-neutral `ServerNode` tree, but there is no HTML serialization
+    (Sprint 17), no streaming and no deployable server adapter (Sprint 21).
+    Event handlers are dropped during server rendering by design — they are
+    not serializable — and reported de-duplicated on
+    `ServerTree.droppedEvents()`. Browser-only components are rejected with
+    `browser-only-component` instead of being mounted; SERVER_ONLY classes are
+    allowed, and enforcement on the browser side does not exist yet.
 14. **E2E requires network on first run.** Playwright downloads Chromium into
     the user's cache. The profile is opt-in for that reason.
 15. **Dependency injection is not wired into the component system yet.**
@@ -280,6 +294,12 @@ reconciles the component and updates the existing text node and the counter's
     streaming; `cancel()` settles asynchronously as `cancelled`. The Fetch
     API is not bound by `teavm-jso-apis` 0.16.0 — XHR is the deliberate
     transport (ADR-0018).
+19. **Server-side DI is not wired into components.** The request injector is
+    available to host code and to the renderer (for platform-compatibility
+    classification), but components mounted on the server resolve dependencies
+    through plain constructor parameters, like their browser counterparts.
+    Numbers crossing `SerializationBoundary` are JSON doubles; integers above
+    2^53 lose precision.
 
 ---
 
@@ -304,32 +324,36 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 16 — Server Platform Abstraction** (see `docs/ROADMAP.md`).
+**Sprint 17 — Server-Side Rendering (SSR)** (see `docs/ROADMAP.md`).
 
-Sprint 15 is implemented and tested: `dejaview-compiler`, a build-time-only
-module that formalizes the production compilation pipeline around TeaVM
-(ADR-0022). The TeaVM configuration is centralized in the parent POM
-`pluginManagement`; browser modules declare only `mainClass`. Two Maven
-profiles share the pipeline: `development` (default; `SIMPLE` optimization
-and readable, unminified JavaScript; 2 MiB size tripwire) and `production`
-(`-Pproduction`; `FULL` dead-code elimination and minified output; 768 KiB
-tripwire). Every build validates the assembled webapp (`WebAppValidator` /
-`VerifyWebApp`: bundle presence and non-emptiness, escapes-root detection,
-local `src`/`href` resolution, size budget — failures report the file and the
-reference and fail the build) and fingerprints it
-(`dejaview-assets.json`: paths, bytes, SHA-256, byte-identical across
-equivalent builds). Reproducible output is asserted by `ReproducibleBuildIT`
-(opt-in `e2e`); the whole browser E2E suite passes on `-Pproduction` builds
-(Counter 1/1, Showcase 11/11, Website 4/4). During the sprint a long-standing
-bug was found and fixed: the TeaVM plugin parameter is `minifying` (default
-`true`), so the previously used `<minified>` element was silently ignored and
-every development build shipped obfuscated JavaScript. Build diagnostics
-(actionable `[ERROR]` extraction plus TeaVM failure-signature hints) live in
-`dejaview-cli` and are surfaced by `dejaview build` and the rebuild-failure
-path. The bilingual website ships a thirteenth feature card and a rewritten
-guide section 18 (both languages); generated projects (`dejaview new`)
-validate on every `package`. Not delivered in this sprint: bundle-level code
-splitting (TeaVM emits a single bundle per application; remain open).
+Sprint 16 is implemented and tested: `dejaview-server`, a pure Java 25 module
+with no browser APIs and no TeaVM (asserted by `ModulePurityTest`) that gives
+the framework a server platform foundation capable of supporting SSR
+(ADR-0023). The platform contracts are `PlatformKind`/`Platform`/
+`ServerPlatform`, bound by `ServerBindings.apply` to `ServerTokens.PLATFORM`;
+`ServerBindings` also binds `StateStorage` with `Scope.SCOPED`, giving one
+`MemoryStateStorage` per request scope by default. Each request handled by a
+host gets a `ServerContext`: a child injector (`server.request`) that binds
+`REQUEST`/`CONTEXT` inside the child only, owns a `ResourceRegistry` disposed
+in reverse registration order, and isolates state and component class
+classifications per request; when the parent injector cannot resolve
+`StateStorage`, the context binds a fresh `MemoryStateStorage` itself.
+`ServerRenderer` renders the platform-neutral `View` tree into a sealed
+`ServerNode` tree (`ServerElement`/`ServerText`/`ServerFragment`): browser-only
+components — via the `BrowserOnlyComponent` marker, an exact-class registry
+override, or an explicit `componentType` token (rejected before construction)
+— fail with `browser-only-component` before `bind`/`onInit`/`render`; event
+handlers are dropped and reported de-duplicated in
+`ServerTree.droppedEvents()`; every mounted component receives `onDestroy()`
+(when initialized) and `close()` in reverse creation order, on the success and
+failure paths alike. Strict JSON leaves only via
+`SerializationBoundary.toJson`/`write` (`not-serializable` otherwise, depth
+cap 512). `ServerRequest`/`ServerResponse` are transport-neutral value types,
+not wired to any HTTP server yet. The bilingual website ships a fourteenth
+feature card and a new guide section 19 (both languages). 73 JVM tests cover
+the module. Not delivered in this sprint: HTML serialization (Sprint 17), SSG
+(Sprint 18), hydration (Sprint 19) and a deployable server adapter (Sprint
+21); there is no user-visible SSR output yet.
 
 Sprint 14 is implemented and tested: `dejaview-cli` with
 `dejaview new` (embedded `basic-app` template: generated project with the

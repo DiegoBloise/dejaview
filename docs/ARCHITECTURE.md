@@ -38,6 +38,11 @@
 > (production build pipeline: centralized TeaVM configuration,
 > development/production profiles, webapp validation and SHA-256 asset
 > manifest; see [ADR-0022](ADR/0022-production-compiler-pipeline.md)), and
+> `dejaview-server` (server platform abstraction: platform contracts,
+> request-scoped `ServerContext`, per-context platform compatibility
+> registry, `ServerRenderer` producing a sealed `ServerNode` tree, strict
+> serialization boundary; see
+> [ADR-0023](ADR/0023-server-platform-abstraction.md)), and
 > `examples/counter`.
 > TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
@@ -1437,6 +1442,8 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 
 ## Phase 6 — SSR e SSG
 
+- [x] Server platform contracts and request-scoped context. (Sprint 16 — `dejaview-server`: `Platform`/`ServerPlatform`/`ServerTokens`, `ServerContext` com child injector `server.request`, `ResourceRegistry` com disposição LIFO, `PlatformCompatibilityRegistry` com marker `BrowserOnlyComponent`; ver ADR-0023)
+- [x] Serialization boundary. (Sprint 16 — `SerializationBoundary`: JSON estrito, profundidade máxima 512; ver ADR-0023)
 - [ ] Server renderer.
 - [ ] HTML serialization.
 - [ ] SSR integration.

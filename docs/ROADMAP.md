@@ -928,15 +928,15 @@ A DejaView application must be compilable into production-ready JavaScript using
 
 ### Implementation
 
-- [ ] Define server platform contracts.
-- [ ] Define server rendering context.
-- [ ] Implement server-side resource management.
-- [ ] Implement request-scoped context.
-- [ ] Define server-compatible component behavior.
-- [ ] Define platform-specific dependency injection.
-- [ ] Implement server rendering adapters.
-- [ ] Define serialization boundaries.
-- [ ] Separate browser-only and server-compatible APIs.
+- [x] Define server platform contracts. (`PlatformKind`, `Platform`, `ServerPlatform` singleton, `ServerTokens.PLATFORM`)
+- [x] Define server rendering context. (`ServerContext` — request-scoped child injector `server.request`, owned `ResourceRegistry`, owned compatibility registry; transport-neutral `ServerRequest`/`ServerResponse` value types)
+- [x] Implement server-side resource management. (`ServerContext` owns a `ResourceRegistry`; disposal in reverse registration order on `close()`; idempotent; failure of one resource does not stop the others)
+- [x] Implement request-scoped context. (child injector per request shadows the root; `REQUEST`/`CONTEXT` bind `toInstance` on the child; sibling contexts are fully isolated; context without a parent `StateStorage` binds a fresh `MemoryStateStorage`)
+- [x] Define server-compatible component behavior. (`PlatformCompatibility` `UNIVERSAL`/`BROWSER_ONLY`/`SERVER_ONLY`; `BrowserOnlyComponent` marker; BROWSER_ONLY components are rejected with `browser-only-component` before `bind`/`onInit`/`render`)
+- [x] Define platform-specific dependency injection. (`ServerBindings.apply(InjectorBuilder)` — `PLATFORM` to the server singleton, `StateStorage` with `Scope.SCOPED`: one `MemoryStateStorage` per resolving injector/request)
+- [x] Implement server rendering adapters. (`ServerRenderer` — renders the platform-neutral `View` tree into a sealed `ServerNode` tree: `ServerElement`/`ServerText`/`ServerFragment`; no DOM, no TeaVM; component mount pipeline mirrored; components destroyed and closed in reverse creation order, on success and failure alike)
+- [x] Define serialization boundaries. (`SerializationBoundary` — strict `toJson`/`write`: null, JsonValue trees, String, Boolean, finite Numbers, String-keyed Maps, Lists; depth ≤ 512; everything else rejected with `not-serializable`; writes via `Json.write`)
+- [x] Separate browser-only and server-compatible APIs. (module boundary: `dejaview-server` has zero browser/TeaVM dependencies, guarded by `ModulePurityTest`; events are dropped during server rendering and reported de-duplicated in `ServerTree.droppedEvents()`)
 
 ### Deliverables
 
@@ -946,15 +946,25 @@ A DejaView application must be compilable into production-ready JavaScript using
 
 ### Tests
 
-- [ ] Core executes without browser APIs.
-- [ ] Server context is isolated per request.
-- [ ] Server resources are disposed correctly.
-- [ ] Browser-only APIs are not accidentally invoked during server execution.
-- [ ] Components can be classified by platform compatibility.
+- [x] Core executes without browser APIs. (`ModulePurityTest` — DOM adapter and TeaVM absent from the classpath; full suite runs on the JVM; `ServerRendererTest` renders without a browser)
+- [x] Server context is isolated per request. (`ServerContextTest` — parent never sees `REQUEST`/`CONTEXT`, sibling contexts isolated, per-context compatibility registry; `ServerBindingsTest` — SCOPED `StateStorage` resolves per request injector)
+- [x] Server resources are disposed correctly. (`ServerContextTest` — reverse-order disposal, idempotent `close()`, disposal failure still closes everything else; `ServerRendererTest` — components destroyed and closed in reverse creation order on success and on render failure)
+- [x] Browser-only APIs are not accidentally invoked during server execution. (`ServerRendererTest` — `browser-only-component` before lifecycle runs, pre-construction rejection via class token, cost-free rejection via marker or registry override)
+- [x] Components can be classified by platform compatibility. (`PlatformCompatibilityRegistryTest` — default UNIVERSAL, marker interface by assignability, exact-class override wins, SERVER_ONLY allowed on the server)
 
 ### Acceptance Criteria
 
 The framework must have a server platform foundation capable of supporting SSR.
+
+**✅ Met (2026-11-13).** `dejaview-server` ships the platform contracts
+(`Platform`/`ServerPlatform`/`ServerTokens`), a request-scoped `ServerContext`
+(child injector, isolated state, reverse-order disposal), a per-context
+`PlatformCompatibilityRegistry` with `BrowserOnlyComponent` marker support, a
+stateless `ServerRenderer` producing a sealed `ServerNode` tree (events
+dropped and reported, components destroyed and closed LIFO), a strict
+`SerializationBoundary`, and transport-neutral `ServerRequest`/`ServerResponse`
+values. 73 JVM tests cover the module, including classpath purity. No browser
+APIs and no TeaVM imports anywhere in the module. See ADR-0023.
 
 ---
 
@@ -1516,7 +1526,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-13):** Sprints 00 through 15 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Sprint 16 (Server Platform Abstraction) is next. The authoritative implemented-versus-planned list is
+**Current status (2026-11-13):** Sprints 00 through 16 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Phase VI (Server Rendering and Static Generation) is open: Sprint 16 (Server Platform Abstraction) is delivered. Sprint 17 (Server-Side Rendering) is next. The authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Sprint | Feature | Status |
@@ -1537,7 +1547,7 @@ Use the following checklist to track sprint completion.
 | 13 | State Management | Completed |
 | 14 | CLI and Development Server | Completed |
 | 15 | Production Compiler and Optimization | Completed |
-| 16 | Server Platform Abstraction | Not Started |
+| 16 | Server Platform Abstraction | Completed |
 | 17 | Server-Side Rendering | Not Started |
 | 18 | Static Site Generation | Not Started |
 | 19 | Hydration | Not Started |

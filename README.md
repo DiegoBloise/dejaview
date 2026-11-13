@@ -47,7 +47,9 @@ Java source
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end
-test. SSR and tooling do not exist yet.
+test. The CLI and the production pipeline (Sprints 14–15) are available now;
+SSR itself is still in progress (Sprint 16 shipped the platform foundation,
+Sprint 17 will add HTML serialization).
 
 | Capability | Status |
 |---|---|
@@ -73,8 +75,9 @@ test. SSR and tooling do not exist yet.
 | State management (`dejaview-state`): `StateStore` shared holders, named selectors, lazy store-owned `select()` computeds, `Stores.combine` cross-store projections, `AsyncStore` with exactly-once completions and stale-while-revalidate data, `PersistedStore`/`StateCodec` opt-in persistence, `StateRegistry` composition-root registry | Implemented and tested (Chromium E2E) |
 | CLI and development server (`dejaview-cli`): `dejaview new` project generator (embedded template, Maven wrapper), `dejaview build` with actionable diagnostics, `dejaview run` with live reload on a watched source tree, `dejaview doctor` project validation | Implemented and tested (Chromium E2E) |
 | Production compiler pipeline (`dejaview-compiler`): centralized TeaVM configuration, `development`/`production` profiles, webapp validation and SHA-256 asset manifest on every build, reproducible output, `-Pproduction` optimized bundles | Implemented and tested (Chromium E2E on optimized bundles) |
+| Server platform abstraction (`dejaview-server`): platform contracts (`PlatformKind`/`Platform`/`ServerPlatform`), request-scoped `ServerContext` (isolated state, reverse-order disposal), per-context platform compatibility registry with `BrowserOnlyComponent` marker, `ServerRenderer` producing a sealed `ServerNode` tree, strict JSON serialization boundary | Implemented and tested |
 | DevTools | Planned |
-| SSR, SSG, hydration | Planned |
+| SSR, SSG, hydration | Planned (Sprints 17–19) |
 
 The authoritative implemented-versus-planned breakdown is
 [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
@@ -184,6 +187,7 @@ created as empty placeholders.
 | `dejaview-state` | Platform-independent state management: `StateStore`, `Selector`, `Stores.combine`, `StateRegistry`, `AsyncStore` with `AsyncState`/`AsyncStatus`/`AsyncError`, persistence contracts (`StateStorage`, `StateCodec`, `PersistedStore`) with a `localStorage`/`sessionStorage` browser adapter. Depends on `dejaview-core` and `dejaview-reactivity`; no browser types on the API surface. | Implemented |
 | `dejaview-cli` | Zero-dependency developer workflow: `dejaview new` (project generator from the embedded `basic-app` template), `dejaview build`, `dejaview run` (JDK HTTP development server with `WatchService` rebuilds and poll-based live reload) and `dejaview doctor` (JDK, wrapper, layout and configuration validation). Invokes the project's Maven wrapper; no reflection, no daemon. | Implemented |
 | `dejaview-compiler` | Build-time-only production compiler pipeline (no runtime dependencies, no browser API): `WebAppValidator`/`VerifyWebApp` webapp validation, deterministic `dejaview-assets.json` SHA-256 manifest, `CompilerProfile` development/production mapping, reproducibility verification. TeaVM configuration itself lives in the parent POM (`pluginManagement`); browser modules declare only `mainClass`. | Implemented |
+| `dejaview-server` | Platform-independent server execution: platform contracts (`PlatformKind`, `Platform`, `ServerPlatform`), request-scoped `ServerContext` (child injector, isolated `StateStorage`, reverse-order disposal), `PlatformCompatibilityRegistry` + `BrowserOnlyComponent` marker, `ServerRenderer` (sealed `ServerNode` tree; component compatibility enforced), strict `SerializationBoundary`, transport-neutral `ServerRequest`/`ServerResponse`. Depends on `dejaview-core`, `dejaview-di`, `dejaview-state`, `dejaview-http`; no browser or TeaVM imports. | Implemented |
 | `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
 | `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
@@ -201,6 +205,7 @@ dejaview-forms → dejaview-core, dejaview-reactivity
 dejaview-state → dejaview-core, dejaview-reactivity
 dejaview-cli → (no runtime dependencies)
 dejaview-compiler → (no runtime dependencies; build-time only)
+dejaview-server → dejaview-core, dejaview-di, dejaview-state, dejaview-http
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -209,9 +214,10 @@ and to reconcile the mounted tree; application code no longer performs direct
 DOM updates.
 
 The target architecture keeps the core independent of browser APIs and places
-platform-specific code in dedicated modules. The remaining long-term module map
-(`dejaview-renderer`, `dejaview-ssr`, ...) is still a design proposal; see
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+platform-specific code in dedicated modules. `dejaview-server` is the first
+server-side module; the remaining long-term module map
+(`dejaview-ssr`, `dejaview-ssg`, `dejaview-hydration`, ...) is still a design
+proposal; see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ### Repository layout
 
@@ -227,6 +233,7 @@ dejaview/
 ├── dejaview-state/         # State management (pure Java)
 ├── dejaview-cli/           # CLI and development server (zero dependencies)
 ├── dejaview-compiler/      # Build-time production compiler pipeline (zero dependencies)
+├── dejaview-server/        # Server platform abstraction (pure Java)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
@@ -336,11 +343,36 @@ API — see
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
 | 4 | Application Framework | Completed — Sprints 09–13 implemented (dependency injection, router, HTTP client, reactive forms, state management) |
 | 5 | Compiler and Tooling | Completed — Sprints 14 (CLI and development server) and 15 (production compiler) delivered |
-| 6 | SSR and SSG | Planned |
+| 6 | SSR and SSG | In progress — Sprint 16 (Server Platform Abstraction) delivered; Sprints 17–19 planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 16 — Server Platform Abstraction
+### Next milestone: Sprint 17 — Server-Side Rendering (SSR)
+
+Sprint 16 delivered the server platform abstraction
+(`dejaview-server`, pure Java 25, zero browser/TeaVM imports; see
+[ADR-0023](docs/ADR/0023-server-platform-abstraction.md)): platform contracts
+(`PlatformKind`/`Platform`/`ServerPlatform`), request-scoped `ServerContext`
+(a child injector `server.request` binding `REQUEST`/`CONTEXT` inside the
+child only, an owned `ResourceRegistry` with reverse-order disposal, and
+isolated state — a fresh `MemoryStateStorage` unless the parent injector
+resolves `StateStorage`; `ServerBindings.apply` binds it with `Scope.SCOPED`),
+a per-context `PlatformCompatibilityRegistry` with the `BrowserOnlyComponent`
+marker (exact-class override > marker assignability > `UNIVERSAL`), and a
+stateless `ServerRenderer` that renders the platform-neutral `View` tree into
+a sealed `ServerNode` tree (`ServerElement`/`ServerText`/`ServerFragment`).
+Browser-only components fail fast with `browser-only-component` — before
+construction when the view carries a class token, before
+`bind`/`onInit`/`render` otherwise; event handlers are dropped and reported
+de-duplicated in `ServerTree.droppedEvents()`; mounted components receive
+`onDestroy()` (when initialized) and `close()` in reverse creation order on
+success and failure alike. Everything crossing the boundary leaves through
+`SerializationBoundary` (strict `toJson`/`write`; `not-serializable` otherwise;
+depth cap 512). `ServerRequest`/`ServerResponse` are transport-neutral values,
+not yet wired to an HTTP server. 73 JVM tests cover the module. Not delivered:
+HTML serialization (Sprint 17), SSG (Sprint 18), hydration (Sprint 19) and a
+deployable server adapter (Sprint 21) — there is no user-visible SSR output
+yet.
 
 Sprint 15 delivered the production compilation pipeline (`dejaview-compiler`,
 build-time only, zero runtime dependencies; see
