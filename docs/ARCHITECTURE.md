@@ -33,7 +33,12 @@
 > `FormControl`, `FormGroup`, `FormArray`, sync/async validators; see
 > [ADR-0019](ADR/0019-reactive-forms.md)), `dejaview-state` (state management:
 > `StateStore`, `Selector`, `Stores.combine`, `AsyncStore`, `PersistedStore`;
-> see [ADR-0020](ADR/0020-state-management-model.md)), and `examples/counter`.
+> see [ADR-0020](ADR/0020-state-management-model.md)), `dejaview-cli`
+> (see [ADR-0021](ADR/0021-cli-and-dev-server.md)) and `dejaview-compiler`
+> (production build pipeline: centralized TeaVM configuration,
+> development/production profiles, webapp validation and SHA-256 asset
+> manifest; see [ADR-0022](ADR/0022-production-compiler-pipeline.md)), and
+> `examples/counter`.
 > TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
@@ -285,13 +290,14 @@ dejaview analyze
 O processo de build deverá suportar otimizações, geração de bundles, resolução de dependências e preparação dos recursos necessários para execução no navegador.
 
 > Os comandos acima descrevem a CLI planejada (Phase 5). O modelo implementado
-> no Sprint 14 é deliberadamente menor: a `dejaview-cli` orquestra o Maven
-> wrapper em vez de substituí-lo — `dejaview build` roda `./mvnw package` e
-> reporta as linhas `[ERROR]` (ruído do Maven filtrado) quando o build falha;
-> `dejaview run` constrói uma vez e serve `target/webapp` em
-> `http://localhost:4321` com um `WatchService` recursivo (debounce de
-> 300 ms) sobre `src/`, reconstruindo a cada mudança; o navegador recarrega
-> sozinho por meio de um cliente injetado que consulta `/__dejaview__/version`
+> é deliberadamente menor: a `dejaview-cli` orquestra o Maven wrapper em vez de
+> substituí-lo — `dejaview build` roda `./mvnw package` e reporta as linhas
+> `[ERROR]` (ruído do Maven filtrado) com dicas de causa provável (JDK novo
+> demais, `teavm-classlib` ausente, classe não resolvida, modo strict) quando o
+> build falha; `dejaview run` constrói uma vez e serve `target/webapp` em
+> `http://localhost:4321` com um `WatchService` recursivo (debounce de 300 ms)
+> sobre `src/`, reconstruindo a cada mudança; o navegador recarrega sozinho
+> por meio de um cliente injetado que consulta `/__dejaview__/version`
 > (contador monotônico). `dejaview new` gera um projeto autocontido a partir de
 > um template embutido (`basic-app`: wrapper, pom standalone, componente
 > contador, página host e `dejaview.properties`); `dejaview doctor` valida o
@@ -299,6 +305,12 @@ O processo de build deverá suportar otimizações, geração de bundles, resolu
 > `dejaview.properties`. O servidor de desenvolvimento é uma ferramenta de
 > desenvolvimento — não faz cache, TLS nem compressão. O build em si continua
 > sendo `./mvnw clean verify`. Detalhes em [ADR-0021](ADR/0021-cli-and-dev-server.md).
+>
+> O build de produção é `./mvnw clean package -Pproduction` (Sprint 15): o
+> `dejaview-compiler` valida o webapp montado em todo build (assets ausentes
+> ou vazios falham o build com arquivo e referência) e escreve o manifesto
+> SHA-256 `dejaview-assets.json`. Não há flag `dejaview build --production` —
+> o perfil Maven é a interface. Detalhes em [ADR-0022](ADR/0022-production-compiler-pipeline.md).
 
 # 4. Rendering Engine
 
@@ -1411,12 +1423,12 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 
 ## Phase 5 — Compiler e Tooling
 
-- [ ] Compiler abstraction.
+- [x] Compiler abstraction. (Sprint 15 — o boundary Maven é a abstração; ver ADR-0022)
 - [ ] Annotation processing.
-- [ ] Production build.
-- [ ] Tree Shaking.
-- [ ] Code Splitting.
-- [ ] Source Maps.
+- [x] Production build. (Sprint 15 — perfil `production`: FULL DCE + minificação)
+- [x] Tree Shaking. (Sprint 15 — dead-code elimination do TeaVM via `optimizationLevel=FULL`)
+- [ ] Code Splitting. (TeaVM emite um único bundle por aplicação; em aberto — ver ADR-0017)
+- [x] Source Maps. (Sprint 15 — `app.js.map` preservado nos dois perfis)
 - [x] CLI. (Sprint 14)
 - [x] Development Server. (Sprint 14)
 - [x] Hot Reload. (Sprint 14 — poll-based live reload; full HMR remains proposto)

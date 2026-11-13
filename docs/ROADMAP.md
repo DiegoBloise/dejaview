@@ -636,8 +636,8 @@ an optional `notFound(...)` chain matched with guards, `NavigationEvent`s
 id (path parameters pushed as inputs), `MemoryRouterHistory` for tests and a
 TeaVM `BrowserHistory` (`pushState`/`replaceState` + `popstate`). Lazy route
 loading exists only as activation-time factory deferral; bundle-level code
-splitting is not supported by the current single-bundle TeaVM output and is
-deferred to Sprint 15. Verified by 90 JVM unit tests and a Chromium E2E test
+splitting is not supported by the current single-bundle TeaVM output and was
+not part of Sprint 15; it remains open. Verified by 90 JVM unit tests and a Chromium E2E test
 in the showcase (`?example=router`), which also covers browser back/forward
 adoption. See ADR-0017.
 
@@ -654,7 +654,7 @@ adoption. See ADR-0017.
 - [x] Implement navigation events.
 - [x] Implement route guards.
 - [x] Implement redirects.
-- [x] Implement lazy route loading. (Route factories defer component instantiation to activation; bundle-level code splitting deferred to Sprint 15 — the current TeaVM output is a single bundle; see ADR-0017)
+- [x] Implement lazy route loading. (Route factories defer component instantiation to activation; bundle-level code splitting is not delivered — TeaVM 0.16.0 emits a single bundle per application; see ADR-0017 and docs/COMPILER.md)
 - [x] Implement not-found routes.
 - [x] Implement route-level metadata.
 
@@ -673,7 +673,7 @@ adoption. See ADR-0017.
 - [x] Nested routes render correctly.
 - [x] Guards allow and reject navigation correctly.
 - [x] Redirects work.
-- [x] Lazy routes load successfully. (Deferred: factory deferral only; bundle-level splitting deferred to Sprint 15 — see note above and ADR-0017)
+- [x] Lazy routes load successfully. (Deferred: factory deferral only; bundle-level splitting remains undelivered — TeaVM emits a single bundle; see note above and ADR-0017)
 - [x] Unknown routes display the configured fallback.
 
 ### Acceptance Criteria
@@ -881,19 +881,19 @@ A developer must be able to create and run a basic DejaView application using th
 
 ### Implementation
 
-- [ ] Formalize the compiler abstraction.
-- [ ] Isolate TeaVM-specific implementation details.
-- [ ] Implement compilation configuration.
-- [ ] Implement production build profiles.
-- [ ] Implement source map generation where supported.
-- [ ] Implement JavaScript output validation.
-- [ ] Implement asset processing.
-- [ ] Implement resource handling.
-- [ ] Implement dead code elimination through supported compiler capabilities.
-- [ ] Implement build diagnostics.
-- [ ] Implement reproducible production builds.
-- [ ] Implement build failure reporting.
-- [ ] Document compiler limitations.
+- [x] Formalize the compiler abstraction. (`dejaview-compiler`: build-time-only module; the Maven build boundary is the abstraction — see ADR-0022)
+- [x] Isolate TeaVM-specific implementation details. (all `teavm-maven-plugin` configuration centralized in the parent POM `pluginManagement`; modules declare only `mainClass`)
+- [x] Implement compilation configuration. (`dejaview.compiler.*` properties: optimization level, minification, source maps, size budget)
+- [x] Implement production build profiles. (`production` Maven profile: `FULL` DCE + `minifying`; development default stays `SIMPLE` and readable)
+- [x] Implement source map generation where supported. (`sourceMapsGenerated` parameterized; `app.js.map` retained in both profiles; missing map reported as a warning)
+- [x] Implement JavaScript output validation. (`WebAppValidator`/`VerifyWebApp`: bundle presence, non-empty, escapes-root detection, local reference resolution, size budget)
+- [x] Implement asset processing. (`AssetManifest` writes a deterministic `dejaview-assets.json` fingerprint of the webapp: paths, bytes, SHA-256)
+- [x] Implement resource handling. (missing/empty/escaping resources are build failures with file + reference; website bundles validated with `--no-index`; generated template validated during `package`)
+- [x] Implement dead code elimination through supported compiler capabilities. (TeaVM `FULL` for the production profile; benefit verified by byte sizes across `SIMPLE`/`ADVANCED`/`FULL`)
+- [x] Implement build diagnostics. (`dejaview-cli` `BuildDiagnostics` extracts the actionable `[ERROR]` lines and maps common TeaVM/Maven failure signatures — class file version, missing `teavm-classlib`, unresolved classes, strict mode — to likely-cause hints; surfaced by `dejaview build` and the rebuild-failure path)
+- [x] Implement reproducible production builds. (`project.build.outputTimestamp`; TeaVM output verified byte-identical; `ReproducibleBuildIT` asserts it)
+- [x] Implement build failure reporting. (`VerifyWebApp` fails the build with a human-readable report: errors fail, warnings are printed and tolerated)
+- [x] Document compiler limitations. (`docs/COMPILER.md` — production pipeline section and documented limitations)
 
 ### Deliverables
 
@@ -904,17 +904,19 @@ A developer must be able to create and run a basic DejaView application using th
 
 ### Tests
 
-- [ ] Production builds compile successfully.
-- [ ] Generated JavaScript executes correctly.
-- [ ] Runtime behavior matches development builds.
-- [ ] Missing resources are reported.
-- [ ] Build failures are actionable.
-- [ ] Output is reproducible under equivalent build conditions.
-- [ ] Supported optimizations do not break runtime behavior.
+- [x] Production builds compile successfully. (`./mvnw -Pproduction` over the full reactor; all modules BUILD SUCCESS)
+- [x] Generated JavaScript executes correctly. (Counter/Showcase/Website browser tests pass on `-Pproduction` bundles)
+- [x] Runtime behavior matches development builds. (same suites: Counter 1/1, Showcase 11/11, Website 4/4)
+- [x] Missing resources are reported. (`WebAppValidatorTest` — missing asset reported with referencing file; `VerifyWebAppTest`)
+- [x] Build failures are actionable. (CLI `BuildDiagnosticsTest` — extracted errors and known-cause hints; validator findings carry file, reference and remedy)
+- [x] Output is reproducible under equivalent build conditions. (`ReproducibleBuildIT` — byte-identical bundle and manifest across consecutive builds)
+- [x] Supported optimizations do not break runtime behavior. (the entire browser e2e suite runs green under `-Pproduction`)
 
 ### Acceptance Criteria
 
 A DejaView application must be compilable into production-ready JavaScript using a reproducible Maven workflow.
+
+**✅ Met (2026-11-13).** `./mvnw clean package -Pproduction` compiles a DejaView application into production-ready, minified JavaScript with FULL dead-code elimination; the webapp is validated (missing/empty/escaping assets fail the build with file and reference) and fingerprinted (`dejaview-assets.json`); output is reproducible under equivalent build conditions (asserted by `ReproducibleBuildIT`), and the whole browser e2e suite passes on the optimized bundles. See ADR-0022.
 
 ---
 
@@ -1514,7 +1516,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-13):** Sprints 00 through 14 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is underway with Sprint 14 delivered; Sprint 15 (Production Compiler) is next. The authoritative implemented-versus-planned list is
+**Current status (2026-11-13):** Sprints 00 through 15 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Sprint 16 (Server Platform Abstraction) is next. The authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Sprint | Feature | Status |
@@ -1534,7 +1536,7 @@ Use the following checklist to track sprint completion.
 | 12 | Reactive Forms | Completed |
 | 13 | State Management | Completed |
 | 14 | CLI and Development Server | Completed |
-| 15 | Production Compiler and Optimization | Not Started |
+| 15 | Production Compiler and Optimization | Completed |
 | 16 | Server Platform Abstraction | Not Started |
 | 17 | Server-Side Rendering | Not Started |
 | 18 | Static Site Generation | Not Started |

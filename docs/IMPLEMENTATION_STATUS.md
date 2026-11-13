@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 5 — Developer Tooling and Compiler  
+**Milestone:** Phase 5 — Developer Tooling and Compiler (complete)  
 **Last updated:** 2026-11-13
 
 This document separates what is implemented and tested from what is designed
@@ -84,7 +84,7 @@ treated as available.
 | Click event handling | example | Playwright E2E |
 | Generated browser bundle | example | `target/webapp/app.js` |
 | Source maps | example | `app.js.map` |
-| Browser E2E test | `dejaview-cli`, `examples/counter`, `examples/showcase`, `examples/website` | `-Pe2e` Failsafe test (Chromium via Playwright) |
+| Browser E2E test | `dejaview-cli`, `examples/counter`, `examples/showcase`, `examples/website`, `dejaview-compiler` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, user guide, playground) rendered by DejaView itself, in English and Portuguese | `examples/website` + `website/` | `WebsiteBrowserIT` (`-Pe2e`); static shells load the compiled bundle |
 | Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http, forms, state) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
@@ -141,11 +141,17 @@ treated as available.
 | State example published in the playground | `website/playground` | Static bundle served by the showcase |
 | Feature card, bilingual tutorial sections, playground list updates | `examples/website` | Playwright E2E |
 | `dejaview-cli` — `dejaview new` project generator (embedded `basic-app` template, Maven wrapper, standalone pom, placeholder substitution) | `dejaview-cli` | JUnit tests (`ProjectGeneratorTest`, `MainTest`) |
-| `dejaview build` — wrapper orchestration with `[ERROR]` diagnostics (Maven noise filtered, bounded) | `dejaview-cli` | JUnit tests (`BuildDiagnosticsTest`) |
+| `dejaview build` — wrapper orchestration with `[ERROR]` diagnostics and TeaVM failure hints (class file version, missing `teavm-classlib`, unresolved classes, strict mode) | `dejaview-cli` | JUnit tests (`BuildDiagnosticsTest`) |
 | `dejaview run` — development server on `com.sun.net.httpserver`: static serving with containment check, content types, injected poll-based live reload, `/__dejaview__/version` | `dejaview-cli` | JUnit tests (`DevServerTest`); Chromium E2E |
 | File watching (`WatchService`, recursive, 300 ms debounce) with automatic rebuilds; failed rebuilds serve the last good build | `dejaview-cli` | JUnit tests; Chromium E2E (`CliWorkflowIT`) |
 | `dejaview doctor` — environment and project validation (JDK ≥ 25, compiler, wrapper, layout, `dejaview.properties`, local repo, port) | `dejaview-cli` | JUnit tests (`MainTest`) |
 | `dejaview.properties` — per-project port/host/webappDir configuration; flags take precedence; line-numbered errors | `dejaview-cli` | JUnit tests (`ProjectConfigTest`) |
+| Centralized TeaVM configuration (parent POM `pluginManagement`; browser modules declare only `mainClass`) | root + browser modules | `./mvnw clean verify` |
+| `development`/`production` build profiles (`SIMPLE` + readable JS by default; `FULL` DCE + minified `-Pproduction`) | root | `-Pproduction` build; browser E2E suite green on optimized bundles |
+| Webapp validation on every build (`WebAppValidator`/`VerifyWebApp`: bundle presence, non-empty, escapes-root, local reference resolution, size budget; failures report file + reference) | `dejaview-compiler` | JUnit tests (31); `./mvnw clean verify` reports 0 errors |
+| Deterministic `dejaview-assets.json` fingerprint (paths, byte sizes, SHA-256; excludes itself; byte-identical across equivalent builds) | `dejaview-compiler` | JUnit tests; written by every build; `CliWorkflowIT` asserts it for generated apps |
+| Reproducible output under equivalent build conditions (`project.build.outputTimestamp`; TeaVM determinism verified) | `dejaview-compiler` | `-Pe2e` `ReproducibleBuildIT` (two nested builds, byte comparison) |
+| Build diagnostics with likely-cause hints (class file version, missing `teavm-classlib`, unresolved classes, strict mode) | `dejaview-cli` | JUnit tests (`BuildDiagnosticsTest`) |
 | CLI end-to-end workflow: generate → wrapper build → serve → Chromium render → source edit → rebuild → reload | `dejaview-cli` | Playwright E2E (`CliWorkflowIT`) |
 
 ### End-to-end proof
@@ -188,7 +194,7 @@ reconciles the component and updates the existing text node and the counter's
 | Component annotations (`@Component`, `@Input`, `@Output`) | Not started | The programmatic API is the supported surface; annotations remain a proposal layered on top of it |
 | Annotations for lifecycle (`@OnInit` etc.) | Not started | `onInit`/`onUpdate`/`onDestroy` are the supported hooks |
 | Hydration | Planned (Phase 6) | |
-| Routing | Implemented (Sprint 10) | See implemented table; bundle-level lazy route loading is deferred to Sprint 15 |
+| Routing | Implemented (Sprint 10) | See implemented table; bundle-level lazy code splitting is not supported by TeaVM (single bundle) and remains open — see ADR-0017 |
 | HTTP client | Implemented (Sprint 11) | See implemented table; Fetch adapter deferred — XHR transport shipped instead (ADR-0018) |
 | Reactive forms | Implemented (Sprint 12) | See implemented table; `dejaview-forms` with controls, groups, arrays, sync/async validators, stable error keys, DOM bindings and E2E coverage (ADR-0019) |
 | State management | Implemented (Sprint 13) | See implemented table; `dejaview-state` with `StateStore`, named selectors, cross-store `Stores.combine`, `AsyncStore` with exactly-once completions, `PersistedStore`/`StateCodec` persistence and E2E coverage (ADR-0020) |
@@ -201,7 +207,7 @@ reconciles the component and updates the existing text node and the counter's
 | Testing utilities | Planned | JUnit/Playwright are used directly |
 | Field/annotation injection (`@Inject`, qualifiers) | Not started | The supported DI surface is the programmatic factory API (ADR-0016) |
 | Annotation processing | Not started | |
-| Compiler abstraction layer | Not started | TeaVM is configured directly in Maven |
+| Compiler abstraction and production build pipeline | Implemented (Sprint 15) | See implemented table; `dejaview-compiler` with centralized TeaVM configuration, development/production profiles, webapp validation, SHA-256 asset manifest and reproducible builds (ADR-0022) |
 
 ---
 
@@ -298,7 +304,32 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 15 — Production Compiler and Build Optimization** (see `docs/ROADMAP.md`).
+**Sprint 16 — Server Platform Abstraction** (see `docs/ROADMAP.md`).
+
+Sprint 15 is implemented and tested: `dejaview-compiler`, a build-time-only
+module that formalizes the production compilation pipeline around TeaVM
+(ADR-0022). The TeaVM configuration is centralized in the parent POM
+`pluginManagement`; browser modules declare only `mainClass`. Two Maven
+profiles share the pipeline: `development` (default; `SIMPLE` optimization
+and readable, unminified JavaScript; 2 MiB size tripwire) and `production`
+(`-Pproduction`; `FULL` dead-code elimination and minified output; 768 KiB
+tripwire). Every build validates the assembled webapp (`WebAppValidator` /
+`VerifyWebApp`: bundle presence and non-emptiness, escapes-root detection,
+local `src`/`href` resolution, size budget — failures report the file and the
+reference and fail the build) and fingerprints it
+(`dejaview-assets.json`: paths, bytes, SHA-256, byte-identical across
+equivalent builds). Reproducible output is asserted by `ReproducibleBuildIT`
+(opt-in `e2e`); the whole browser E2E suite passes on `-Pproduction` builds
+(Counter 1/1, Showcase 11/11, Website 4/4). During the sprint a long-standing
+bug was found and fixed: the TeaVM plugin parameter is `minifying` (default
+`true`), so the previously used `<minified>` element was silently ignored and
+every development build shipped obfuscated JavaScript. Build diagnostics
+(actionable `[ERROR]` extraction plus TeaVM failure-signature hints) live in
+`dejaview-cli` and are surfaced by `dejaview build` and the rebuild-failure
+path. The bilingual website ships a thirteenth feature card and a rewritten
+guide section 18 (both languages); generated projects (`dejaview new`)
+validate on every `package`. Not delivered in this sprint: bundle-level code
+splitting (TeaVM emits a single bundle per application; remain open).
 
 Sprint 14 is implemented and tested: `dejaview-cli` with
 `dejaview new` (embedded `basic-app` template: generated project with the
@@ -337,7 +368,7 @@ the shared cart store, selectors, a cross-store discount and an async checkout
 with a persisted theme; `ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState`
 validates it in Chromium. The website feature card, tutorial section (heading
 15 in both languages) and playground example are wired; `WebsiteBrowserIT`
-asserted 11 feature cards and 10 playground examples (12 cards since Sprint 14). See ADR-0020.
+asserted 11 feature cards and 10 playground examples (13 cards since Sprint 15). See ADR-0020.
 
 Sprint 12 is implemented and tested: `dejaview-forms` with `FormControl`,
 `FormGroup` and `FormArray` (value, `touched`/`dirty`/`disabled`, aggregated
@@ -352,7 +383,7 @@ touched; `aria-invalid` and `disabled` reflect control state. The showcase
 `FormsDemo` (`?example=forms`) demonstrates sync + async validation, a dynamic
 tag array and a submission snapshot; `ShowcaseBrowserIT#formsExampleValidatesAndSubmits`
 validates it in Chromium. The website feature card, tutorial section (heading 14 in both languages) and playground example are wired; `WebsiteBrowserIT`
-asserted 11 feature cards and 10 playground examples (12 cards since Sprint 14). See ADR-0019.
+asserted 11 feature cards and 10 playground examples (13 cards since Sprint 15). See ADR-0019.
 
 Sprint 11 is implemented and tested: `dejaview-http` with immutable
 `HttpRequest` (`get`/`post`/`put`/`patch`/`delete`, fluent withers,
@@ -384,8 +415,8 @@ history behind the `RouterHistory` seam (`BrowserHistory` for TeaVM,
 `MemoryRouterHistory` for the JVM). Single-position keyed component views now
 replace the mounted instance when the key changes, which is how route
 swaps dispose the previous screen. Lazy route loading is limited to
-activation-time factory deferral — bundle-level code splitting is deferred to
-Sprint 15. The router is not wired to the injector; route components receive
+activation-time factory deferral — bundle-level code splitting is not
+supported by TeaVM (single bundle) and remains open. The router is not wired to the injector; route components receive
 dependencies through plain constructor parameters at the composition root. See
 ADR-0017.
 

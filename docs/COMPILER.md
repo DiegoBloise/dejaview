@@ -212,11 +212,16 @@ rewrite of the view model or the reactivity primitives.
 
 ---
 
+---
+
 ## 8. Reproducing the validation
 
 ```bash
 # Full JVM build, unit tests and TeaVM compilation
 ./mvnw clean verify
+
+# Production build: FULL DCE, minified output, webapp validation, asset manifest
+./mvnw clean verify -Pproduction
 
 # Browser end-to-end test (downloads Chromium on first run)
 ./mvnw -Pe2e -pl examples/counter -am verify
@@ -224,3 +229,96 @@ rewrite of the view model or the reactivity primitives.
 
 The generated browser artifacts are written to
 `examples/counter/target/webapp/`.
+
+---
+
+## 9. Production pipeline
+
+Since Sprint 15 (ADR-0022), the compiler configuration is no longer
+copy-pasted per module. Everything TeaVM-related lives in the parent POM's
+`pluginManagement`; browser modules declare only `<mainClass>` and the
+`mainClass` gets the rest from the parent. A dedicated `dejaview-compiler`
+module (build-time only, zero runtime dependencies) formalizes what happens
+around TeaVM: profiles, validation, asset fingerprinting and reproducibility
+verification.
+
+### 9.1 Profiles
+
+| Profile | `optimizationLevel` | `minifying` | Source maps | Size tripwire |
+|---|---|---|---|---|
+| `development` (default) | `SIMPLE` | `false` (readable output) | `true` | 2 MiB |
+| `production` (`-Pproduction`) | `FULL` (aggressive DCE) | `true` | `true` | 768 KiB |
+
+The properties (`dejaview.compiler.profile`,
+`dejaview.compiler.optimization-level`, `dejaview.compiler.minify`,
+`dejaview.compiler.source-maps`, `dejaview.compiler.size-budget-bytes`) are the
+single knob; the POM binds them to the plugin parameters and the
+`dejaview-compiler` validator. Budgets only produce warnings — a large bundle
+is reported, never rejected.
+
+### 9.2 The `minifying` trap
+
+TeaVM 0.16.0's JavaScript compile mojo parameter is **`minifying`**
+(`${teavm.minifying}`, default `true`). A `<minified>` element is not a
+parameter of the mojo and is silently ignored — which previously meant every
+development build shipped obfuscated JavaScript. The parent POM and the
+generated `basic-app` template now bind `minifying` to
+`dejaview.compiler.minify`. Impact on existing builds: development output is
+larger but readable (e.g. counter 417 511 B of pretty-printed JavaScript);
+production output is minified (93 682 B) with identical runtime behavior.
+
+### 9.3 Validation and the asset manifest
+
+Every build runs `VerifyWebApp` against `target/webapp` after assembly:
+
+- **Errors (build fails):** webapp directory missing; `index.html` missing
+  (unless `--no-index`); a local `src`/`href` reference that escapes the web
+  root or points at a missing file; `app.js` missing or empty.
+- **Warnings (reported, tolerated):** missing `app.js.map`, webapp larger
+  than the size budget, root-relative and `file:///` references.
+- The build then writes `dejaview-assets.json`: every file in the webapp with
+  relative path, byte size and SHA-256, sorted by path (the manifest excludes
+  itself). Equivalent builds produce byte-identical manifests.
+
+In-repo examples bind `verify-webapp` to `verify` (the repository gate is
+`mvn verify`); the generated template binds it to `package`, because the CLI
+builds generated applications with `package`. The website example passes
+`--no-index` — its host pages live in `website/`, not in its webapp directory.
+
+### 9.4 Reproducible output
+
+`project.build.outputTimestamp` pins archive timestamps and TeaVM's JavaScript
+output is deterministic in practice. `ReproducibleBuildIT` (opt-in `e2e`
+profile) builds the counter example twice and asserts byte-identical `app.js`
+and manifest. The reproducibility contract is *equivalent build conditions*
+(same inputs, same environment), not identity across machines.
+
+### 9.5 Failure modes and remedies
+
+| Symptom | Likely cause | Remedy |
+|---|---|---|
+| `Unsupported class file major version` | JDK newer than the compiler expects | Build with JDK 25 (`java -version`), keep `teavm.version` at 0.16.0 |
+| `JSClassProcessor.getObjectClass()` NPE | `teavm-classlib` missing from the project class path | Declare it `provided` in the browser module (section 4) |
+| `Can't find class`/`cannot find symbol` under `strict=true` | Dependency missing or API absent from TeaVM's classlib | Add the dependency, or use a JDK API the classlib implements (section 6) |
+| Webapp validation: `references missing asset` | `index.html` (or another local page) points at a path the build did not copy | Fix the `src`/`href`, or ensure the resource lands in `target/webapp` |
+| Webapp validation: `escapes the web root` | `../` or absolute path in a reference | Use a web-root-relative or relative path inside the webapp |
+| Webapp validation: size budget warning | Bundle grew past the tripwire | Inspect with `-Pproduction`; it is a warning, not a failure |
+
+### 9.6 Documented limitations
+
+- **One bundle per application.** TeaVM 0.16.0 has no code splitting; every
+  route and example shares `app.js`. Lazy route loading defers instantiation
+  only (ADR-0017) — the bytes all ship together.
+- **FULL is not always smaller.** `FULL` (93682 B counter) yields the most
+  aggressive dead-code elimination but emits larger bootstrap code than
+  `ADVANCED` (67298 B); both minify. `FULL` was kept for production because
+  aggressive DCE is the safer default for real applications with large
+  frameworks, not because it wins every size benchmark.
+- **Source maps are retained** in both profiles for field diagnostics; they
+  cost nothing at runtime but are served next to the bundle if your host
+  exposes them.
+- **The size budget is a tripwire, not a limit.** It exists to catch
+  accidental inclusions (e.g. a dependency dragged into the bundle), not to
+  enforce a byte-exact contract.
+- **Budgets and warnings never fail the build**; missing or broken artifacts
+  always do.

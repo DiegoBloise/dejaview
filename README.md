@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 5 in progress — Sprint 14 (CLI and development server) implemented.**
+**Phase 5 complete — Sprint 14 (CLI and development server) and Sprint 15 (production compiler) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -72,7 +72,8 @@ test. SSR and tooling do not exist yet.
 | Reactive forms (`dejaview-forms`): typed `FormControl`/`FormGroup`/`FormArray`, sync and async validators, touched/dirty/disabled states, prefixed aggregated errors, `FormSubmission` snapshots, `FormBindings` DOM bindings | Implemented and tested (Chromium E2E) |
 | State management (`dejaview-state`): `StateStore` shared holders, named selectors, lazy store-owned `select()` computeds, `Stores.combine` cross-store projections, `AsyncStore` with exactly-once completions and stale-while-revalidate data, `PersistedStore`/`StateCodec` opt-in persistence, `StateRegistry` composition-root registry | Implemented and tested (Chromium E2E) |
 | CLI and development server (`dejaview-cli`): `dejaview new` project generator (embedded template, Maven wrapper), `dejaview build` with actionable diagnostics, `dejaview run` with live reload on a watched source tree, `dejaview doctor` project validation | Implemented and tested (Chromium E2E) |
-| DevTools, compiler abstraction | Planned |
+| Production compiler pipeline (`dejaview-compiler`): centralized TeaVM configuration, `development`/`production` profiles, webapp validation and SHA-256 asset manifest on every build, reproducible output, `-Pproduction` optimized bundles | Implemented and tested (Chromium E2E on optimized bundles) |
+| DevTools | Planned |
 | SSR, SSG, hydration | Planned |
 
 The authoritative implemented-versus-planned breakdown is
@@ -103,6 +104,7 @@ The browser bundle is written to `examples/counter/target/webapp/`:
 examples/counter/target/webapp/
 ├── app.js
 ├── app.js.map
+├── dejaview-assets.json
 └── index.html
 ```
 
@@ -181,6 +183,7 @@ created as empty placeholders.
 | `dejaview-forms` | Platform-independent reactive forms: `FormControl`, `FormGroup`, `FormArray`, sync/async validators, stable error keys, `FormBindings` DOM bindings. Depends on `dejaview-core` and `dejaview-reactivity`; no browser or TeaVM imports. | Implemented |
 | `dejaview-state` | Platform-independent state management: `StateStore`, `Selector`, `Stores.combine`, `StateRegistry`, `AsyncStore` with `AsyncState`/`AsyncStatus`/`AsyncError`, persistence contracts (`StateStorage`, `StateCodec`, `PersistedStore`) with a `localStorage`/`sessionStorage` browser adapter. Depends on `dejaview-core` and `dejaview-reactivity`; no browser types on the API surface. | Implemented |
 | `dejaview-cli` | Zero-dependency developer workflow: `dejaview new` (project generator from the embedded `basic-app` template), `dejaview build`, `dejaview run` (JDK HTTP development server with `WatchService` rebuilds and poll-based live reload) and `dejaview doctor` (JDK, wrapper, layout and configuration validation). Invokes the project's Maven wrapper; no reflection, no daemon. | Implemented |
+| `dejaview-compiler` | Build-time-only production compiler pipeline (no runtime dependencies, no browser API): `WebAppValidator`/`VerifyWebApp` webapp validation, deterministic `dejaview-assets.json` SHA-256 manifest, `CompilerProfile` development/production mapping, reproducibility verification. TeaVM configuration itself lives in the parent POM (`pluginManagement`); browser modules declare only `mainClass`. | Implemented |
 | `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
 | `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
@@ -197,6 +200,7 @@ dejaview-http → dejaview-core
 dejaview-forms → dejaview-core, dejaview-reactivity
 dejaview-state → dejaview-core, dejaview-reactivity
 dejaview-cli → (no runtime dependencies)
+dejaview-compiler → (no runtime dependencies; build-time only)
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -222,6 +226,7 @@ dejaview/
 ├── dejaview-forms/         # Reactive forms (pure Java)
 ├── dejaview-state/         # State management (pure Java)
 ├── dejaview-cli/           # CLI and development server (zero dependencies)
+├── dejaview-compiler/      # Build-time production compiler pipeline (zero dependencies)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
@@ -330,12 +335,29 @@ API — see
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
 | 4 | Application Framework | Completed — Sprints 09–13 implemented (dependency injection, router, HTTP client, reactive forms, state management) |
-| 5 | Compiler and Tooling | In progress — Sprint 14 (CLI and development server) implemented; Sprint 15 (production compiler) next |
+| 5 | Compiler and Tooling | Completed — Sprints 14 (CLI and development server) and 15 (production compiler) delivered |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 15 — Production Compiler and Build Optimization
+### Next milestone: Sprint 16 — Server Platform Abstraction
+
+Sprint 15 delivered the production compilation pipeline (`dejaview-compiler`,
+build-time only, zero runtime dependencies; see
+[ADR-0022](docs/ADR/0022-production-compiler-pipeline.md)): TeaVM configuration
+is centralized in the parent POM (`pluginManagement`), browser modules declare
+only `mainClass`, and two Maven profiles share the pipeline — `development`
+(default: `SIMPLE`, readable unminified JavaScript) and `production`
+(`-Pproduction`: `FULL` dead-code elimination and minified output). Every build
+validates the assembled webapp and writes `dejaview-assets.json` (paths, sizes,
+SHA-256) next to the bundle; `ReproducibleBuildIT` proves byte-identical output
+across consecutive builds. During the sprint a long-standing bug was found: the
+TeaVM plugin parameter is `minifying` (default `true`), so the previously used
+`<minified>` element was silently ignored and every development build shipped
+obfuscated JavaScript — fixed in the parent POM and the generated template.
+Generated projects (`dejaview new`) validate on every `package`. See
+[ADR-0022](docs/ADR/0022-production-compiler-pipeline.md) and
+[docs/COMPILER.md](docs/COMPILER.md).
 
 Sprint 14 delivered the official developer workflow (`dejaview-cli`, zero
 runtime dependencies): `dejaview new <name>` generates a self-contained
@@ -375,7 +397,7 @@ persisted theme, verified in Chromium by
 `ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState` — including
 restore across reload. The website feature card, tutorial section (heading 15 in both
 languages) and playground example are wired; `WebsiteBrowserIT`
-asserted 11 feature cards and 10 playground examples (12 cards since Sprint 14).
+asserted 11 feature cards and 10 playground examples (13 cards since Sprint 15).
 See [ADR-0020](docs/ADR/0020-state-management-model.md).
 
 Earlier in this phase, Sprint 12 delivered a platform-independent reactive forms module (`dejaview-forms`,
@@ -431,8 +453,8 @@ route's id (path parameters pushed as inputs), and browser history behind
 the `RouterHistory` seam (`MemoryRouterHistory` for tests, `BrowserHistory`
 for TeaVM). Single-position keyed components now replace the mounted
 instance when the key changes. Lazy route loading is limited to
-activation-time factory deferral; bundle-level code splitting is deferred to
-Sprint 15. See [ADR-0017](docs/ADR/0017-routing-model.md).
+activation-time factory deferral; bundle-level code splitting is not supported
+by the single-bundle TeaVM output and remains open. See [ADR-0017](docs/ADR/0017-routing-model.md).
 
 The remaining Phase 2 refinements are still open:
 
@@ -463,7 +485,7 @@ Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 ./mvnw clean package -DskipTests
 
 # Opt-in browser end-to-end tests (unit + examples)
-./mvnw -Pe2e -pl dejaview-cli,examples/counter,examples/showcase,examples/website -am verify
+./mvnw -Pe2e -pl dejaview-compiler,dejaview-cli,examples/counter,examples/showcase,examples/website -am verify
 ```
 
 The root `pom.xml` declares the modules, centralizes dependency and plugin
@@ -515,8 +537,11 @@ Significant decisions are recorded as ADRs rather than changed silently.
 - The website playground runs pre-compiled TeaVM bundles only; there is no in-browser compiler yet, so editing the Java source is a read-only preview until the development server is built.
 - Browser E2E coverage is Chromium only.
 - Only the JDK/TeaVM APIs exercised by the current code are validated.
-- The example emits readable, non-minified JavaScript; production optimization
-  is not benchmarked yet.
+- The production bundle is a single file: TeaVM 0.16.0 has no code splitting,
+  so every application ships one `app.js` (smaller under `-Pproduction` via
+  FULL dead-code elimination, minification included).
+- Development builds are intentionally unminified and readable; production
+  builds are minified but still carry a source map (`app.js.map`).
 
 See [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) for the
 complete list.
