@@ -25,6 +25,7 @@
 | [0021](0021-cli-and-dev-server.md) | CLI and development server model: zero-dependency orchestration over the Maven wrapper, embedded basic-app template, JDK HTTP dev server with poll-based live reload, debounced WatchService rebuilds | Accepted |
 | [0022](0022-production-compiler-pipeline.md) | Production compiler pipeline: Maven build boundary over TeaVM, centralized plugin configuration, `dejaview-compiler` validation and asset fingerprinting, reproducible output | Accepted |
 | [0023](0023-server-platform-abstraction.md) | Server platform abstraction: `dejaview-server` with request-scoped `ServerContext`, per-context platform compatibility registry, `ServerRenderer` into a sealed `ServerNode` tree, strict serialization boundary; no browser or TeaVM imports | Accepted |
+| [0024](0024-server-side-rendering.md) | Server-side rendering: `dejaview-ssr` renders the `ServerNode` tree to validated, escaped HTML documents and fragments, with `ServerErrorBoundary` containment, per-request `PageMeta`, a generic 500 page and an honest alpha scope (no hydration, no state serialization, no progressive streaming) | Accepted |
 
 New ADRs use the same structure: context, decision, consequences, alternatives
 and revisit triggers. Superseded decisions keep their record and are linked from

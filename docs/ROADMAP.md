@@ -963,8 +963,9 @@ The framework must have a server platform foundation capable of supporting SSR.
 stateless `ServerRenderer` producing a sealed `ServerNode` tree (events
 dropped and reported, components destroyed and closed LIFO), a strict
 `SerializationBoundary`, and transport-neutral `ServerRequest`/`ServerResponse`
-values. 73 JVM tests cover the module, including classpath purity. No browser
-APIs and no TeaVM imports anywhere in the module. See ADR-0023.
+values. 80 JVM tests cover the module today (including the Sprint 17 boundary
+support), with classpath purity asserted. No browser APIs and no TeaVM imports
+anywhere in the module. See ADR-0023.
 
 ---
 
@@ -974,37 +975,51 @@ APIs and no TeaVM imports anywhere in the module. See ADR-0023.
 
 ### Implementation
 
-- [ ] Implement server renderer.
-- [ ] Implement HTML serialization.
-- [ ] Implement text escaping.
-- [ ] Implement attribute serialization.
-- [ ] Implement component rendering.
-- [ ] Implement nested component rendering.
-- [ ] Implement request-specific rendering.
-- [ ] Implement error boundaries for server rendering.
-- [ ] Implement initial metadata handling.
-- [ ] Implement server output validation.
-- [ ] Implement initial streaming SSR where technically feasible.
+- [x] Implement server renderer. (`ServerRenderer` from `dejaview-server` reused by `dejaview-ssr`; mount pipeline unchanged — ADR-0023)
+- [x] Implement HTML serialization. (`HtmlSerializer` — escaped fragments, void elements, fragments spliced without wrappers; `HtmlPage` — complete document with doctype, `lang`, charset, viewport and metadata)
+- [x] Implement text escaping. (`&`, `<`, `>` in text; attributes also escape `"` and `'`; `SsrFinding` `raw-text-escaped` warns when text lands inside `script`/`style`)
+- [x] Implement attribute serialization. (attributes verbatim after validation; `value` property → `value` attribute; `checked`/`selected`/`disabled`/`readonly`/`multiple` → boolean attributes when `"true"`; unsupported properties skipped and reported)
+- [x] Implement component rendering. (`SsrRenderer.renderPage`/`renderFragment` render a `View` through `ServerRenderer` and return an `SsrResult` with status, HTML, dropped events, boundary reports and warnings)
+- [x] Implement nested component rendering. (nested components, fragments and slots serialize in render order; `ServerRenderer` lifecycle semantics preserved)
+- [x] Implement request-specific rendering. (`PageMeta` per request — lang, title, description, canonical, meta/Open Graph; `ServerContext` + root injector per request; `examples/ssr` search routing proves no cross-request leakage)
+- [x] Implement error boundaries for server rendering. (`ServerErrorBoundary` in `dejaview-server`: failed subtree destroyed and closed LIFO, `BoundaryError` recorded, `fallback(error)` rendered in place; fallback failures propagate outward)
+- [x] Implement initial metadata handling. (`PageMeta` mutable and fluent, written by components during render; `HtmlPage` assembles the head and omits empty optional tags)
+- [x] Implement server output validation. (`SsrValidator` rejects illegal tag/attribute names, void elements with children, duplicate attributes and depth > 512 with `ssr-validation-failed`; warnings for raw text, skipped properties and empty output)
+- [ ] Implement initial streaming SSR where technically feasible. (Deferred: the `Writer` variants render and validate the whole document before writing — all-or-nothing, no partial output. True progressive streaming needs a resumable pipeline and belongs to Phase 7 / Sprint 19 — ADR-0024)
 
 ### Deliverables
 
 - `dejaview-ssr`.
 - Server-side HTML renderer.
-- SSR integration examples.
+- SSR integration examples. (`examples/ssr` — JDK HTTP server, GET search form, error boundary, 404 page, JavaScript disabled in the browser test)
 
 ### Tests
 
-- [ ] Components generate valid HTML.
-- [ ] Text and attributes are escaped correctly.
-- [ ] Nested components render correctly.
-- [ ] Multiple requests do not leak state.
-- [ ] Server rendering handles errors safely.
-- [ ] Generated HTML can be loaded by a browser.
-- [ ] Streaming output preserves the expected document structure.
+- [x] Components generate valid HTML. (`HtmlSerializerTest`, `HtmlPageTest`, `SsrValidatorTest`; `examples/ssr` `SsrApplicationTest` asserts complete documents)
+- [x] Text and attributes are escaped correctly. (`HtmlSerializerTest` escaping cases; `SsrApplicationTest.userInputIsEscapedInsteadOfBecomingMarkup` renders hostile query strings as text in body and title)
+- [x] Nested components render correctly. (`SsrRendererTest`, `ServerRendererTest` boundary tests; `HtmlSerializerTest` nested elements and fragment splicing)
+- [x] Multiple requests do not leak state. (`SsrApplicationTest.requestsDoNotShareMetadataOrOutput` and `renderingTheSameRequestTwiceIsDeterministic`; one `ServerContext` and root injector per request)
+- [x] Server rendering handles errors safely. (`SsrRendererTest.unhandledFailureReturnsTheGenericErrorPage`/`validationFailureReturnsTheGenericErrorPage` — generic 500, no leaked details; boundary containment tests; `aClosedContextFailsSafely`)
+- [x] Generated HTML can be loaded by a browser. (`SsrBrowserIT` — Chromium with JavaScript disabled: home page, link and GET form navigation, contained widget failure, 404 page)
+- [ ] Streaming output preserves the expected document structure. (Deferred with streaming; buffered output preserves the document structure today, verified by `HtmlPageTest` and `SsrBrowserIT`)
 
 ### Acceptance Criteria
 
 A DejaView application must be capable of generating its initial HTML on the server.
+
+**✅ Met (2026-11-13).** `dejaview-ssr` ships `SsrRenderer` (page and
+fragment rendering, `Writer` variants), `SsrValidator` (tag/attribute names,
+void elements, duplicate attributes, depth 512), `HtmlSerializer` and
+`HtmlPage` (escaped text and attributes, complete document with per-request
+`PageMeta` metadata), `SsrResult` (status, HTML, dropped events, boundary
+reports, warnings, attached error) and the generic 500 failure path.
+`dejaview-server` gains `ServerErrorBoundary`/`BoundaryError` containment.
+`examples/ssr` is a working server-rendered application served by the JDK
+`HttpServer` without JavaScript. 43 JVM tests cover `dejaview-ssr`, 10 more
+cover the example, and `SsrBrowserIT` renders it in Chromium with JavaScript
+disabled. Not delivered: state serialization, hydration, progressive
+streaming, a deployable server adapter and the full DOM property set — see
+ADR-0024.
 
 ---
 
@@ -1526,7 +1541,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-13):** Sprints 00 through 16 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Phase VI (Server Rendering and Static Generation) is open: Sprint 16 (Server Platform Abstraction) is delivered. Sprint 17 (Server-Side Rendering) is next. The authoritative implemented-versus-planned list is
+**Current status (2026-11-13):** Sprints 00 through 17 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Phase VI (Server Rendering and Static Generation) is open: Sprint 16 (Server Platform Abstraction) and Sprint 17 (Server-Side Rendering) are delivered. Sprint 18 (Static Site Generation) is next. The authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Sprint | Feature | Status |
@@ -1548,7 +1563,7 @@ Use the following checklist to track sprint completion.
 | 14 | CLI and Development Server | Completed |
 | 15 | Production Compiler and Optimization | Completed |
 | 16 | Server Platform Abstraction | Completed |
-| 17 | Server-Side Rendering | Not Started |
+| 17 | Server-Side Rendering | Completed |
 | 18 | Static Site Generation | Not Started |
 | 19 | Hydration | Not Started |
 | 20 | Testing Framework and DevTools | Not Started |

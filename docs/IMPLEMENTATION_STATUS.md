@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 5 — Developer Tooling and Compiler (complete)  
+**Milestone:** Phase 6 — Server Rendering and Static Generation (in progress)  
 **Last updated:** 2026-11-13
 
 This document separates what is implemented and tested from what is designed
@@ -158,8 +158,17 @@ treated as available.
 | `PlatformCompatibility` + `BrowserOnlyComponent` marker + registry (exact-class override > marker by assignability > UNIVERSAL); SERVER_ONLY allowed on the server | `dejaview-server` | JUnit tests (`PlatformCompatibilityRegistryTest`) |
 | `ServerRenderer` — renders the platform-neutral `View` tree into a sealed `ServerNode` tree (`ServerElement`/`ServerText`/`ServerFragment`); BROWSER_ONLY components rejected with `browser-only-component` before `bind`/`onInit`/`render` (pre-construction via class token); fragments splice; components get `onDestroy()` then `close()` in reverse creation order on success and failure alike; event handlers dropped and reported de-duplicated in `ServerTree.droppedEvents()` | `dejaview-server` | JUnit tests (`ServerRendererTest`, `ServerNodeTest`) |
 | `SerializationBoundary` — strict `toJson`/`write` (null, JsonValue trees, String, Boolean, finite Numbers, String-keyed Maps, Lists; depth ≤ 512; rest rejected with `not-serializable`) | `dejaview-server` | JUnit tests (`SerializationBoundaryTest`) |
+| `ServerErrorBoundary` — server-side containment: the failed subtree's components are destroyed and closed LIFO, one `BoundaryError` (original failure class) is recorded in `ServerTree.boundaryErrors()`, and `fallback(error)` renders in place; fallback failures propagate to the enclosing boundary; `isComplete()` is false when anything was contained | `dejaview-server` | JUnit tests (`ServerRendererTest`, 7 boundary cases) |
 | Module purity — no DOM adapter and no TeaVM on the `dejaview-server` classpath | `dejaview-server` | JUnit test (`ModulePurityTest`) |
-| `dejaview-server` module is built and tested with the rest of the reactor (`./mvnw clean verify`: 73 tests) | `dejaview-server` | `./mvnw clean verify` |
+| `dejaview-server` module is built and tested with the rest of the reactor (`./mvnw clean verify`: 80 tests) | `dejaview-server` | `./mvnw clean verify` |
+| `SsrRenderer` — page (`renderPage`/`writePage`) and fragment (`renderFragment`/`writeFragment`) rendering: `ServerRenderer` → `SsrValidator` → serializer; returns an `SsrResult` (status, HTML, dropped events, boundary reports, warnings, attached error) | `dejaview-ssr` | JUnit tests (`SsrRendererTest`) |
+| `HtmlSerializer` / `HtmlPage` — escaped text (`&`, `<`, `>`) and attribute values (`"`, `'` added), void elements without closing tags, fragments spliced without wrappers, complete document with `lang`, charset, viewport, title, description, canonical and meta/Open Graph tags | `dejaview-ssr` | JUnit tests (`HtmlSerializerTest`, `HtmlPageTest`) |
+| `SsrValidator` — rejects illegal tag/attribute names, void elements with children, duplicate attributes and depth > 512 (`ssr-validation-failed`); warns on `raw-text-escaped`, `skipped-property` and `empty-root` | `dejaview-ssr` | JUnit tests (`SsrValidatorTest`) |
+| DOM property subset — `value` → `value` attribute; `checked`/`selected`/`disabled`/`readonly`/`multiple` → boolean attributes when `"true"`; explicit attribute wins; other properties skipped and reported | `dejaview-ssr` | JUnit tests (`HtmlSerializerTest`, `SsrValidatorTest`) |
+| `PageMeta` — mutable, fluent, request-scoped metadata (`lang`, `title`, `description`, `canonical`, `meta`, `metaProperty`); `SsrResult.toResponse()` → `ServerResponse.html(status, html)` | `dejaview-ssr` | JUnit tests (`PageMetaTest`, `SsrRendererTest`) |
+| Failure model — unhandled render/validation failure → `500` with a fixed generic document, exception attached to the result and never leaked; `isSuccess()` means `error == null` (host-chosen 404 pages are successful renders) | `dejaview-ssr` | JUnit tests (`SsrRendererTest`) |
+| Module purity — no DOM adapter and no TeaVM on the `dejaview-ssr` classpath; `dejaview-ssr` module built and tested with the reactor (43 tests) | `dejaview-ssr` | JUnit test (`ModulePurityTest`) |
+| Server-rendered example application — plain components, request-scoped `PageMeta`/`ServerContext`, GET search form, contained failing widget, 404 page, served by the JDK `HttpServer` on a loopback port | `examples/ssr` | JUnit tests (`SsrApplicationTest`, 10); Playwright E2E with JavaScript disabled (`SsrBrowserIT`, 4) |
 | CLI end-to-end workflow: generate → wrapper build → serve → Chromium render → source edit → rebuild → reload | `dejaview-cli` | Playwright E2E (`CliWorkflowIT`) |
 
 ### End-to-end proof
@@ -206,7 +215,7 @@ reconciles the component and updates the existing text node and the counter's
 | HTTP client | Implemented (Sprint 11) | See implemented table; Fetch adapter deferred — XHR transport shipped instead (ADR-0018) |
 | Reactive forms | Implemented (Sprint 12) | See implemented table; `dejaview-forms` with controls, groups, arrays, sync/async validators, stable error keys, DOM bindings and E2E coverage (ADR-0019) |
 | State management | Implemented (Sprint 13) | See implemented table; `dejaview-state` with `StateStore`, named selectors, cross-store `Stores.combine`, `AsyncStore` with exactly-once completions, `PersistedStore`/`StateCodec` persistence and E2E coverage (ADR-0020) |
-| SSR | Planned (Sprint 17) | HTML serialization; the server platform foundation it builds on is shipped (`dejaview-server`, ADR-0023) |
+| SSR | Implemented (Sprint 17) | See implemented table; `dejaview-ssr` renders validated, escaped HTML documents and fragments with `ServerErrorBoundary` containment and per-request `PageMeta` (ADR-0024). Alpha scope: no state serialization, no hydration, no progressive streaming |
 | SSG | Planned (Sprint 18) | |
 | Hydration | Planned (Sprint 19) | |
 | CLI | Implemented (Sprint 14) | See implemented table; `dejaview-cli` with `new`/`build`/`run`/`doctor`, the development server with live reload and Chromium E2E coverage (`CliWorkflowIT`) (ADR-0021) | |
@@ -263,15 +272,19 @@ reconciles the component and updates the existing text node and the counter's
     not part of the automated matrix yet.
 12. **JVM/browser API parity.** Only APIs exercised by the current code are
     validated against TeaVM's class library.
-13. **The server platform is a foundation, not a renderer.** `dejaview-server`
-    (ADR-0023) mounts and tears down component trees on the JVM and produces a
-    platform-neutral `ServerNode` tree, but there is no HTML serialization
-    (Sprint 17), no streaming and no deployable server adapter (Sprint 21).
-    Event handlers are dropped during server rendering by design — they are
-    not serializable — and reported de-duplicated on
-    `ServerTree.droppedEvents()`. Browser-only components are rejected with
-    `browser-only-component` instead of being mounted; SERVER_ONLY classes are
-    allowed, and enforcement on the browser side does not exist yet.
+13. **SSR is alpha and produces pages, not hydrated applications.**
+    `dejaview-ssr` (ADR-0024) renders a complete, escaped HTML document from the
+    same component model. It does not serialize state and emits no hydration
+    markers (Sprint 19); the `Writer` variants render and validate the whole
+    document before writing, so there is no progressive streaming (Phase 7).
+    Only the `value` and boolean DOM properties are serialized; other properties
+    and text inside `script`/`style` are skipped or escaped and reported as
+    warnings. There is no deployable server adapter yet (Sprint 21), so the host
+    owns its HTTP server — `examples/ssr` uses the JDK `HttpServer`. Events are
+    still dropped during server rendering by design and reported de-duplicated
+    on `ServerTree.droppedEvents()`; browser-only components are still rejected
+    with `browser-only-component`; SERVER_ONLY classes are allowed, and
+    enforcement on the browser side does not exist yet.
 14. **E2E requires network on first run.** Playwright downloads Chromium into
     the user's cache. The profile is opt-in for that reason.
 15. **Dependency injection is not wired into the component system yet.**
@@ -324,7 +337,35 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 17 — Server-Side Rendering (SSR)** (see `docs/ROADMAP.md`).
+**Sprint 18 — Static Site Generation (SSG)** (see `docs/ROADMAP.md`).
+
+Sprint 17 is implemented and tested: `dejaview-ssr`, a pure Java 25 module
+(no browser APIs, no TeaVM; asserted by `ModulePurityTest`) that renders the
+`ServerNode` tree into validated, escaped HTML (ADR-0024). `SsrRenderer`
+composes `ServerRenderer` → `SsrValidator` → serializer and returns an
+`SsrResult` with the HTTP status, the HTML, the dropped events, boundary
+reports, warnings and the attached failure; `renderPage` emits a complete
+document and `renderFragment` a bare fragment, and the `Writer` variants write
+the same output. `SsrValidator` rejects illegal tag or attribute names, void
+elements with children, duplicate attributes and depth beyond 512 with
+`ssr-validation-failed`, and reports `raw-text-escaped`, `skipped-property` and
+`empty-root` as warnings; text and attribute values are always escaped, so
+application data never becomes markup. `dejaview-server` gained
+`ServerErrorBoundary`: a failure in the protected subtree destroys and closes
+only that subtree, records a `BoundaryError` (original failure class) and
+renders `fallback(error)` in place; fallback failures propagate outward.
+`PageMeta` carries request-scoped lang, title, description, canonical and
+meta/Open Graph tags into `HtmlPage`'s document skeleton. Unhandled failures
+produce a generic `500` page and the exception is never leaked to the browser.
+`examples/ssr` is a working server-rendered application (GET search form,
+contained widget failure, 404 page) served by the JDK `HttpServer`.
+43 JVM tests cover `dejaview-ssr`, 10 more cover the example, and
+`SsrBrowserIT` renders it in Chromium with JavaScript disabled. The bilingual
+website ships a fifteenth feature card and a new guide section 20 (both
+languages). Not delivered in this sprint: state serialization and hydration
+(Sprint 19), progressive streaming (Phase 7), a deployable server adapter
+(Sprint 21) and the full DOM property set — the alpha limits are recorded in
+ADR-0024.
 
 Sprint 16 is implemented and tested: `dejaview-server`, a pure Java 25 module
 with no browser APIs and no TeaVM (asserted by `ModulePurityTest`) that gives
@@ -349,11 +390,12 @@ handlers are dropped and reported de-duplicated in
 failure paths alike. Strict JSON leaves only via
 `SerializationBoundary.toJson`/`write` (`not-serializable` otherwise, depth
 cap 512). `ServerRequest`/`ServerResponse` are transport-neutral value types,
-not wired to any HTTP server yet. The bilingual website ships a fourteenth
-feature card and a new guide section 19 (both languages). 73 JVM tests cover
-the module. Not delivered in this sprint: HTML serialization (Sprint 17), SSG
-(Sprint 18), hydration (Sprint 19) and a deployable server adapter (Sprint
-21); there is no user-visible SSR output yet.
+not wired to any HTTP server. The bilingual website shipped a fourteenth
+feature card and guide section 19 (both languages) when the sprint was
+delivered. 80 JVM tests cover the module today, including the Sprint 17
+boundary support; HTML serialization arrived in Sprint 17 (ADR-0024). SSG
+(Sprint 18), hydration (Sprint 19) and a deployable server adapter (Sprint 21)
+remain open.
 
 Sprint 14 is implemented and tested: `dejaview-cli` with
 `dejaview new` (embedded `basic-app` template: generated project with the

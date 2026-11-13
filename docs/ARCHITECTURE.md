@@ -42,8 +42,12 @@
 > request-scoped `ServerContext`, per-context platform compatibility
 > registry, `ServerRenderer` producing a sealed `ServerNode` tree, strict
 > serialization boundary; see
-> [ADR-0023](ADR/0023-server-platform-abstraction.md)), and
-> `examples/counter`.
+> [ADR-0023](ADR/0023-server-platform-abstraction.md)), `dejaview-ssr`
+> (server-side rendering: validated, escaped HTML documents and fragments,
+> `ServerErrorBoundary` containment, per-request `PageMeta`, generic 500 page;
+> see [ADR-0024](ADR/0024-server-side-rendering.md)), and
+> `examples/counter`, `examples/showcase`, `examples/website` and
+> `examples/ssr`.
 > TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
@@ -1444,9 +1448,9 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 
 - [x] Server platform contracts and request-scoped context. (Sprint 16 — `dejaview-server`: `Platform`/`ServerPlatform`/`ServerTokens`, `ServerContext` com child injector `server.request`, `ResourceRegistry` com disposição LIFO, `PlatformCompatibilityRegistry` com marker `BrowserOnlyComponent`; ver ADR-0023)
 - [x] Serialization boundary. (Sprint 16 — `SerializationBoundary`: JSON estrito, profundidade máxima 512; ver ADR-0023)
-- [ ] Server renderer.
-- [ ] HTML serialization.
-- [ ] SSR integration.
+- [x] Server renderer. (Sprint 17 — `ServerRenderer` já entregue no Sprint 16 e reutilizado por `dejaview-ssr`; ver ADR-0023)
+- [x] HTML serialization. (Sprint 17 — `HtmlSerializer`/`HtmlPage` em `dejaview-ssr`: escape de texto e atributos, elementos void, fragmentos sem wrapper, documento completo com head; ver ADR-0024)
+- [x] SSR integration. (Sprint 17 — `SsrRenderer.renderPage`/`renderFragment`/`writePage`/`writeFragment`, `PageMeta` por requisição, `ServerErrorBoundary` com fallback e `BoundaryError`, exemplo `examples/ssr` servido por `com.sun.net.httpserver` e validado em Chromium com JavaScript desabilitado; ver ADR-0024)
 - [ ] State serialization.
 - [ ] Hydration.
 - [ ] Hydration mismatch detection.
@@ -1504,9 +1508,17 @@ ADRs aceitos:
 | [0014](ADR/0014-component-model-and-ownership.md) | Modelo de componentes e propriedade de recursos | Accepted |
 | [0015](ADR/0015-component-interaction-model.md) | Modelo de interação de componentes: inputs, outputs, slots, lifecycle e listas com chaves | Accepted |
 | [0016](ADR/0016-dependency-injection-model.md) | Modelo de injeção de dependência: providers explícitos, três escopos, injectors hierárquicos | Accepted |
+| [0017](ADR/0017-routing-model.md) | Modelo de roteamento client-side: resolve-before-push, trocas de componente com chave, adapter de history | Accepted |
+| [0018](ADR/0018-http-client-model.md) | Modelo de cliente HTTP: entrega assíncrona, transporte XHR, status como valores | Accepted |
+| [0019](ADR/0019-reactive-forms.md) | Modelo de formulários reativos: controls, groups, arrays, validação sync/async, chaves de erro estáveis | Accepted |
+| [0020](ADR/0020-state-management-model.md) | Modelo de gerenciamento de estado: stores, seletores, combine entre stores, valores assíncronos exatamente uma vez, persistência opt-in | Accepted |
+| [0021](ADR/0021-cli-and-dev-server.md) | Modelo de CLI e servidor de desenvolvimento: orquestração do wrapper Maven, template embutido, dev server com live reload | Accepted |
+| [0022](ADR/0022-production-compiler-pipeline.md) | Pipeline de compilação de produção: boundary Maven sobre TeaVM, configuração centralizada, validação e fingerprint de assets, saída reprodutível | Accepted |
+| [0023](ADR/0023-server-platform-abstraction.md) | Abstração de plataforma servidor: `dejaview-server` com `ServerContext` por requisição, registry de compatibilidade por contexto, `ServerRenderer` para uma árvore `ServerNode` selada, boundary de serialização estrito | Accepted |
+| [0024](ADR/0024-server-side-rendering.md) | Renderização no servidor: `dejaview-ssr` serializa a árvore `ServerNode` em HTML validado e escapado, com `ServerErrorBoundary`, `PageMeta` por requisição e página 500 genérica; alpha sem hydration, serialização de estado ou streaming | Accepted |
 
-Decisões futuras (Hydration, estratégia de renderização, etc.) ainda não
-possuem ADR e permanecem propostas até serem registradas.
+Decisões futuras (Hydration, streaming, etc.) ainda não possuem ADR e
+permanecem propostas até serem registradas.
 
 Cada ADR deverá registrar:
 
