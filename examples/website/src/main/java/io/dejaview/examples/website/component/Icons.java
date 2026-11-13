@@ -106,4 +106,12 @@ public final class Icons {
                 circle("8", "7", "0.5"),
                 circle("8", "17", "0.5"));
     }
+
+    public static View document() {
+        return svg(
+                path("M6 3h8l4 4v14H6z"),
+                path("M14 3v4h4"),
+                path("M9 12h6", "0.45"),
+                path("M9 16h6", "0.45"));
+    }
 }

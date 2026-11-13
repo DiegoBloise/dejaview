@@ -42,6 +42,61 @@ public final class Snippets {
                         Views.p("Hello from the server"), context);
             }""";
 
+    public static final String SSR_PAGE = """
+            final class ProductsPage extends AbstractComponent {
+                private final PageMeta meta;
+                private final List<Product> products;
+
+                ProductsPage(PageMeta meta, List<Product> products) {
+                    this.meta = meta;
+                    this.products = products;
+                }
+
+                @Override
+                public View render() {
+                    meta.title("Products")
+                            .description(products.size() + " product(s) found.");
+                    View[] items = products.stream()
+                            .map(product -> Views.li(product.name()))
+                            .toArray(View[]::new);
+                    return Views.div(
+                            Views.h1("Products"),
+                            Views.ul(items));
+                }
+            }""";
+
+    public static final String SSR_HOST = """
+            PageMeta meta = new PageMeta().lang("en");
+            View page = Views.componentFactory(
+                    () -> new ProductsPage(meta, catalogue.products()));
+
+            Injector root = Injector.builder().name("ssr").build();
+            try (ServerContext context = ServerContext.create(root, request)) {
+                SsrResult result = SsrRenderer.renderPage(page, context, meta);
+                return result.toResponse();
+            } finally {
+                root.close();
+            }""";
+
+    public static final String SSR_BOUNDARY = """
+            final class SectionBoundary extends AbstractComponent
+                    implements ServerErrorBoundary {
+
+                @Override
+                public View render() {
+                    return Views.fragment(slot().toArray(View[]::new));
+                }
+
+                @Override
+                public View fallback(Throwable error) {
+                    return Views.p("Prices are temporarily unavailable.");
+                }
+            }""";
+
+    public static final String SSR_RUN = """
+            ./mvnw -pl examples/ssr -am -Prun package
+            # open http://127.0.0.1:8080/ with JavaScript disabled""";
+
     public static final String SERVE = "python3 -m http.server 4280 -d examples/counter/target/webapp";
 
     public static final String COUNTER_COMPONENT = """

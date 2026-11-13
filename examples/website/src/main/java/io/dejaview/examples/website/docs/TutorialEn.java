@@ -195,7 +195,7 @@ public final class TutorialEn {
                 prose(text("The output is reproducible: equivalent sources under equivalent conditions produce byte-identical JavaScript and manifests — archives included. Upload those files to any static host (nginx, S3, Netlify, GitHub Pages) and you have a production deployment.")),
 
                 h2("server", "19. Server platform (alpha)"),
-                prose(text("dejaview-server is the foundation for server-side rendering: it runs component trees on the JVM — no browser, no DOM — and produces a platform-neutral description of the output. Add it to your application to try server-side execution today; HTML serialization itself arrives with Sprint 17.")),
+                prose(text("dejaview-server is the foundation for server-side rendering: it runs component trees on the JVM — no browser, no DOM — and produces a platform-neutral description of the output. Add it to your application to try server-side execution today; the HTML serialization built on it ships in dejaview-ssr, covered in the next section.")),
                 java(Snippets.SERVER_PLATFORM),
                 bullets(
                         item(code("ServerContext"), text(" — one per request: a child injector that binds REQUEST/CONTEXT inside the request scope only, and a fresh MemoryStateStorage per request (unless you bind your own), so requests never see each other's state.")),
@@ -203,9 +203,25 @@ public final class TutorialEn {
                         item(code("BrowserOnlyComponent"), text(" — implement this marker on a component (or register it in context.compatibility()) and the server rejects it with browser-only-component before bind/onInit/render runs — fail fast, never an obscure null pointer deep in browser code.")),
                         item(code("SerializationBoundary.write(value)"), text(" — the strict JSON gateway: null, JsonValue trees, strings, booleans, finite numbers, string-keyed maps and lists pass through; everything else fails fast with not-serializable."))),
                 prose(text("Components on the server go through the same mount pipeline as in the browser — created once per mounted node, bound, initialized, rendered once — and are destroyed and closed in reverse order when the render finishes or fails. Your components do not change; only the platform differs.")),
-                note("info", strong("Early and intentionally narrow."), text(" There is no HTML output yet, no streaming and no servlet integration — those are Sprint 17+ and Sprint 21. Event handlers never cross the boundary. Server-only execution is a renderer, not a runtime: dejaview-server contains no browser APIs and no TeaVM imports.")),
+                note("info", strong("Early and intentionally narrow."), text(" HTML output now ships in dejaview-ssr (next section); hydration, progressive streaming and servlet integration remain later milestones. Event handlers never cross the boundary. Server-only execution is a renderer, not a runtime: dejaview-server contains no browser APIs and no TeaVM imports.")),
 
-                h2("troubleshooting", "20. Troubleshooting"),
+                h2("ssr", "20. Server-side rendering (alpha)"),
+                prose(text("dejaview-ssr turns the same component tree into a complete HTML document on the JVM. A component reads the request through its inputs and writes page metadata while it renders; the pipeline escapes every value, assembles the document and gives the host an SsrResult to send:")),
+                java(Snippets.SSR_PAGE),
+                prose(text("The host creates one PageMeta and one request-scoped ServerContext per request. renderPage returns the status, the HTML, the events that were dropped and any boundary failures or validation warnings:")),
+                java(Snippets.SSR_HOST),
+                bullets(
+                        item(code("SsrRenderer.renderPage"), text(" — mounts the view with ServerRenderer, validates the tree and returns an SsrResult. An unhandled render or validation failure becomes a generic 500 page with the exception attached for logging — never leaked to the browser.")),
+                        item(code("PageMeta"), text(" — per-request lang, title, description, canonical URL and meta/Open Graph tags. Components write it during render; the head is assembled afterwards.")),
+                        item(code("ServerErrorBoundary"), text(" — a component marker: when its subtree throws, the failed components are destroyed and closed, the failure is reported in boundaryErrors and fallback(error) is rendered in its place.")),
+                        item(code("SsrValidator"), text(" — rejects illegal tag or attribute names, void elements with children and trees deeper than 512 levels with ssr-validation-failed. Text and attribute values are always escaped, so application data cannot become markup."))),
+                prose(text("An error boundary keeps a page useful when one widget fails:")),
+                java(Snippets.SSR_BOUNDARY),
+                prose(text("Run the bundled example and open it with JavaScript disabled — links and the GET search form still work:")),
+                shell(Snippets.SSR_RUN),
+                note("warning", strong("Alpha and intentionally narrow."), text(" The result is a complete page, not a hydrated application: state serialization and hydration are later milestones, and the Writer variants render and validate once instead of streaming progressively. Only the value and boolean DOM properties are serialized; other properties are skipped and reported as warnings. dejaview-ssr is pure JVM code — no browser APIs, no TeaVM imports — and text inside script or style elements is escaped rather than executed.")),
+
+                h2("troubleshooting", "21. Troubleshooting"),
                 bullets(
                         item(code("java -version shows 8, 17 or 21"), text(" — your JAVA_HOME points at the wrong JDK. Point it at a Java 25 install and reopen the terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — run chmod +x mvnw, or use mvnw.cmd on Windows.")),
@@ -213,7 +229,7 @@ public final class TutorialEn {
                         item(code("Blank page, no counter"), text(" — open the browser console. A 404 for app.js means you're serving the wrong directory; it must be examples/counter/target/webapp, not the repository root.")),
                         item(code("BUILD FAILURE downloading dependencies"), text(" — check network access; Maven needs to reach repo.maven.apache.org on the first build."))),
 
-                h2("next-steps", "21. Next steps"),
+                h2("next-steps", "22. Next steps"),
                 prose(
                         text("Explore the "),
                         link("/website/playground/", "interactive playground"),

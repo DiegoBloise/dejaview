@@ -162,7 +162,10 @@ public final class HomePage extends AbstractComponent {
                                           "./mvnw package -Pproduction publica um bundle validado e minificado — dead-code elimination FULL, manifesto de assets SHA-256 e saída idêntica entre builds equivalentes.")),
                                 feature(Icons.server(), t("Server platform", "Plataforma servidor"),
                                         t("dejaview-server runs component trees on the JVM with request-scoped contexts, browser-only components rejected up front and state isolated per request — the foundation for SSR.",
-                                          "o dejaview-server executa árvores de componentes na JVM com contextos por requisição, componentes browser-only rejeitados de início e estado isolado por requisição — a base para SSR.")))
+                                          "o dejaview-server executa árvores de componentes na JVM com contextos por requisição, componentes browser-only rejeitados de início e estado isolado por requisição — a base para SSR.")),
+                                feature(Icons.document(), t("Server-side rendering", "Renderização no servidor"),
+                                        t("dejaview-ssr serializes the same component tree into validated, escaped HTML — complete pages that work without JavaScript, with error boundaries and per-request metadata.",
+                                          "o dejaview-ssr serializa a mesma árvore de componentes em HTML validado e escapado — páginas completas que funcionam sem JavaScript, com error boundaries e metadados por requisição.")))
                                 .classes("card-grid"))
                 .id("features")
                 .classes("section", "container")
