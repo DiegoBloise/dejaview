@@ -66,4 +66,12 @@ public interface DomElement extends DomNode {
      * @return a handle that removes the listener
      */
     DomEventRegistration addEventListener(String type, Runnable handler);
+
+    /**
+     * Registers a listener that also receives the target value and checked
+     * state.
+     *
+     * @return a handle that removes the listener
+     */
+    DomEventRegistration addValueEventListener(String type, DomValueListener listener);
 }

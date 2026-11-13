@@ -20,6 +20,7 @@
         <module>dejaview-di</module>
         <module>dejaview-router</module>
         <module>dejaview-http</module>
+        <module>dejaview-forms</module>
         <module>examples/counter</module>
         <module>examples/showcase</module>
         <module>examples/website</module>
@@ -88,6 +89,11 @@
             <dependency>
                 <groupId>io.dejaview</groupId>
                 <artifactId>dejaview-http</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dejaview</groupId>
+                <artifactId>dejaview-forms</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

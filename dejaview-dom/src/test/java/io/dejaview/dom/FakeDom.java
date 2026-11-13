@@ -81,6 +81,7 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
     private final Map<String, String> properties = new LinkedHashMap<>();
     private final List<DomNode> children = new ArrayList<>();
     private final Map<String, List<Runnable>> listeners = new LinkedHashMap<>();
+    private final Map<String, List<DomValueListener>> valueListeners = new LinkedHashMap<>();
     private String textContent = "";
 
     FakeDomElement(FakeDomDocument document, String tagName) {
@@ -158,6 +159,17 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
         return () -> handlers.remove(handler);
     }
 
+    @Override
+    public DomEventRegistration addValueEventListener(String type, DomValueListener listener) {
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(listener, "listener");
+
+        List<DomValueListener> handlers =
+                valueListeners.computeIfAbsent(type, ignored -> new ArrayList<>());
+        handlers.add(listener);
+        return () -> handlers.remove(listener);
+    }
+
     String tagName() {
         return tagName;
     }
@@ -192,7 +204,17 @@ final class FakeDomElement extends FakeDomNode implements DomElement {
         }
     }
 
+    void fireValue(String type, String value, boolean checked) {
+        for (DomValueListener listener : List.copyOf(valueListeners.getOrDefault(type, List.of()))) {
+            listener.handle(value, checked);
+        }
+    }
+
     int listenerCount(String type) {
         return listeners.getOrDefault(type, List.of()).size();
+    }
+
+    int valueListenerCount(String type) {
+        return valueListeners.getOrDefault(type, List.of()).size();
     }
 }

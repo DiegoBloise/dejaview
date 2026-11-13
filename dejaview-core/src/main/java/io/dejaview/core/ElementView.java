@@ -174,6 +174,20 @@ public record ElementView(
     }
 
     /**
+     * Returns a copy of this element with an event listener that also receives
+     * the target value and checked state.
+     *
+     * <p>This is the binding used by form controls: the platform adapter reads
+     * {@code event.target.value} and {@code event.target.checked} before
+     * invoking the handler.</p>
+     */
+    public ElementView onValue(String eventType, EventValueHandler handler) {
+        List<EventBinding> updated = new ArrayList<>(events);
+        updated.add(new EventBinding(eventType, handler));
+        return new ElementView(tagName, attributes, properties, children, updated, key);
+    }
+
+    /**
      * Returns a copy of this element with a {@code click} listener.
      */
     public ElementView onClick(Runnable handler) {

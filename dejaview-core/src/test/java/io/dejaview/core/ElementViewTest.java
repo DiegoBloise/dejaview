@@ -113,6 +113,25 @@ class ElementViewTest {
     }
 
     @Test
+    void valueBindingsReceiveTheTargetValueAndCheckedState() {
+        List<String> values = new ArrayList<>();
+        List<Boolean> checks = new ArrayList<>();
+        ElementView view = Views.element("input")
+                .onValue("input", (value, checked) -> {
+                    values.add(value);
+                    checks.add(checked);
+                });
+
+        EventBinding binding = view.events().get(0);
+        assertEquals("input", binding.type());
+        assertTrue(binding.hasValueHandler());
+        binding.valueHandler().handle("typed", true);
+
+        assertEquals(List.of("typed"), values);
+        assertEquals(List.of(true), checks);
+    }
+
+    @Test
     void copiesMutableInputCollections() {
         List<Attribute> attributes = new ArrayList<>(List.of(new Attribute("id", "app")));
         List<View> children = new ArrayList<>(List.of(Views.text("one")));

@@ -67,7 +67,7 @@ final class RenderTreeBuilder {
 
         List<DomEventRegistration> registrations = new ArrayList<>();
         for (EventBinding event : view.events()) {
-            registrations.add(element.addEventListener(event.type(), event.handler()));
+            registrations.add(register(element, event));
         }
 
         List<RenderNode> children = new ArrayList<>();
@@ -80,5 +80,17 @@ final class RenderTreeBuilder {
         }
 
         return new ElementRenderNode(element, view, registrations, children);
+    }
+
+    /**
+     * Registers the correct listener kind for a binding. Value-aware bindings
+     * let form controls read the target control state without the core module
+     * knowing about browser events.
+     */
+    static DomEventRegistration register(DomElement element, EventBinding event) {
+        if (event.hasValueHandler()) {
+            return element.addValueEventListener(event.type(), event.valueHandler()::handle);
+        }
+        return element.addEventListener(event.type(), event.handler());
     }
 }

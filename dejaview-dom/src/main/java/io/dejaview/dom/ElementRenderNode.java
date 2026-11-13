@@ -115,7 +115,7 @@ final class ElementRenderNode implements RenderNode {
         }
         registrations = new ArrayList<>();
         for (EventBinding event : next) {
-            registrations.add(element.addEventListener(event.type(), event.handler()));
+            registrations.add(RenderTreeBuilder.register(element, event));
         }
         events = List.copyOf(next);
     }

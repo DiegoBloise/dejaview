@@ -280,6 +280,58 @@ class ShowcaseBrowserIT {
         }
     }
 
+    @Test
+    void formsExampleValidatesAndSubmits() throws IOException {
+        try (Server server = Server.create(); Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(
+                    new BrowserType.LaunchOptions().setHeadless(true));
+            try (BrowserContext context = browser.newContext();
+                 Page page = context.newPage()) {
+                List<String> pageErrors = new CopyOnWriteArrayList<>();
+                page.onPageError(pageErrors::add);
+
+                page.navigate(server.url() + "/index.html?example=forms");
+
+                assertEquals("Reactive forms", page.textContent("h1"));
+                assertEquals("Status: INVALID", page.textContent("#forms-status"));
+
+                page.click("#forms-submit");
+                assertEquals("Please fix the highlighted fields.",
+                        page.textContent("#forms-result"));
+                assertEquals("This field is required.",
+                        page.textContent("#forms-name-error"));
+
+                page.fill("#forms-name", "Ada");
+                page.fill("#forms-email", "ada@example.com");
+                page.fill("#forms-username", "ada");
+                page.fill("#forms-tag-0", "ui");
+                page.check("#forms-newsletter");
+                page.selectOption("#forms-plan", "pro");
+
+                // The username validator resolves after 600 ms; assertions wait.
+                assertThat(page.locator("#forms-status")).hasText("Status: VALID");
+
+                page.click("#forms-submit");
+                assertThat(page.locator("#forms-result")).containsText("Submitted:");
+                assertThat(page.locator("#forms-result"))
+                        .containsText("email=ada@example.com");
+
+                page.click("#forms-add-tag");
+                assertEquals(2, page.locator("input[id^=forms-tag-]").count());
+                page.fill("#forms-tag-1", "java");
+                page.click("#forms-submit");
+                assertThat(page.locator("#forms-result")).containsText("tags=[ui, java]");
+
+                page.click("#forms-remove-tag-1");
+                assertEquals(1, page.locator("input[id^=forms-tag-]").count());
+
+                assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
+            } finally {
+                browser.close();
+            }
+        }
+    }
+
     /** Tiny static file server bound to an ephemeral loopback port. */
     private static final class Server implements AutoCloseable {
         private final HttpServer server;

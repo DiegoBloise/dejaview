@@ -74,6 +74,20 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
         Objects.requireNonNull(handler, "handler");
 
         EventListener<Event> listener = event -> handler.run();
+        return register(type, listener);
+    }
+
+    @Override
+    public DomEventRegistration addValueEventListener(String type, DomValueListener listener) {
+        Objects.requireNonNull(type, "type");
+        Objects.requireNonNull(listener, "listener");
+
+        EventListener<Event> eventListener = event ->
+                listener.handle(eventValue(event), eventChecked(event));
+        return register(type, eventListener);
+    }
+
+    private DomEventRegistration register(String type, EventListener<Event> listener) {
         listen(element, type, listener);
         return new DomEventRegistration() {
             private boolean removed;
@@ -99,8 +113,18 @@ final class BrowserDomElement extends BrowserDomNode implements DomElement {
 
     @JSBody(
             params = {"element", "name", "value"},
-            script = "element[name] = value;")
+            script = "element[name] = value === 'true' ? true : value === 'false' ? false : value;")
     private static native void setJsProperty(JSObject element, String name, String value);
+
+    @JSBody(
+            params = {"event"},
+            script = "var target = event.target; return String(target && target.value != null ? target.value : '');")
+    private static native String eventValue(Event event);
+
+    @JSBody(
+            params = {"event"},
+            script = "var target = event.target; return !!(target && target.checked);")
+    private static native boolean eventChecked(Event event);
 
     @JSBody(
             params = {"element", "name"},

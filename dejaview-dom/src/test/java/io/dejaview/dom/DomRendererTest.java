@@ -68,6 +68,30 @@ class DomRendererTest {
     }
 
     @Test
+    void registersValueListenersThatReceiveTheTargetValue() {
+        StringBuilder value = new StringBuilder();
+        boolean[] checked = {false};
+        FakeDomElement container = document.createElement("main");
+
+        renderer.render(
+                Views.element("input").onValue("input", (next, isChecked) -> {
+                    value.setLength(0);
+                    value.append(next);
+                    checked[0] = isChecked;
+                }),
+                document,
+                container);
+
+        FakeDomElement input = assertInstanceOf(FakeDomElement.class, container.children().get(0));
+        assertEquals(1, input.valueListenerCount("input"));
+
+        input.fireValue("input", "hello", true);
+
+        assertEquals("hello", value.toString());
+        assertTrue(checked[0]);
+    }
+
+    @Test
     void flattensFragmentsIntoTheParent() {
         FakeDomElement container = document.createElement("main");
 
