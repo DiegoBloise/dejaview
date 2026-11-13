@@ -153,7 +153,10 @@ public final class HomePage extends AbstractComponent {
                                           "Atributos class e style simples, intactos pelo framework. Bootstrap, Tailwind CSS e daisyUI funcionam de primeira.")),
                                 feature(Icons.check(), t("Type-safe by design", "Tipagem segura por design"),
                                         t("The API is plain records, interfaces and generics on Java 25. Your IDE and the compiler catch mistakes before the browser does.",
-                                          "A API são records, interfaces e generics de Java puro. Sua IDE e o compilador pegam erros antes do navegador.")))
+                                          "A API são records, interfaces e generics de Java puro. Sua IDE e o compilador pegam erros antes do navegador.")),
+                                feature(Icons.terminal(), t("DejaView CLI", "DejaView CLI"),
+                                        t("dejaview new scaffolds a project; dejaview run builds it, serves it with live reload and rebuilds on change. One workflow, no boilerplate.",
+                                          "dejaview new cria o projeto; dejaview run compila, serve com live reload e recompila a cada mudança. Um workflow, sem boilerplate.")))
                                 .classes("card-grid"))
                 .id("features")
                 .classes("section", "container")

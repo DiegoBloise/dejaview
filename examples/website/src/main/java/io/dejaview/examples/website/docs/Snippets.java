@@ -333,6 +333,17 @@ public final class Snippets {
             theme.store().state(); // restored value, or "dark" on first visit
             theme.store().set("light"); // written through to localStorage""";
 
+    public static final String CLI_CREATE = """
+            dejaview new my-app
+            cd my-app
+            dejaview run""";
+
+    public static final String CLI_PROPERTIES = """
+            # dejaview.properties — command-line flags take precedence
+            port=4321
+            host=127.0.0.1
+            webappDir=target/webapp""";
+
     public static final String JAVA_MAIN = """
             public static void main(String[] args) {
                 DejaView.mount(Views.componentFactory(CounterComponent::new), "app");

@@ -160,12 +160,25 @@ public final class TutorialEn {
                         item(code("AsyncState.data()"), text(" — the last good value, even while refreshing or after a failed refresh."))),
                 note("tip", strong("Dispose at the boundary."), text(" A store owns the computeds it creates; dispose them — or a StateRegistry — when the owning view is destroyed.")),
 
-                h2("styling", "16. Styling your app"),
+                h2("cli", "16. The DejaView CLI"),
+                prose(text("The CLI is the official developer workflow: it scaffolds a project, builds it, and serves it with live reload — no hand-written build files:")),
+                shell(Snippets.CLI_CREATE),
+                prose(text("dejaview new generates a self-contained project: the Maven wrapper, a working counter component, the host page and a dejaview.properties file. Nothing to configure before the first build.")),
+                prose(text("dejaview run builds the project, serves target/webapp at http://localhost:4321, watches the sources and rebuilds on every change. The page reloads itself through a tiny injected client — you keep writing Java.")),
+                bullets(
+                        item(code("dejaview build"), text(" — ./mvnw package with actionable diagnostics when it fails: the [ERROR] lines, with the Maven noise filtered out.")),
+                        item(code("dejaview run"), text(" — build, then serve target/webapp with live reload; sources under src/ are watched and rebuilt on change. A failed rebuild serves the last good build.")),
+                        item(code("dejaview doctor"), text(" — validates the JDK, the compiler, the Maven wrapper, the project layout and dejaview.properties."))),
+                prose(text("dejaview.properties controls the development server; command-line flags take precedence over the file:")),
+                shell(Snippets.CLI_PROPERTIES),
+                note("tip", strong("Running the CLI from a source checkout."), text(" Until a standalone launcher is published, build the module and invoke the jar directly: java -jar dejaview-cli/target/dejaview-cli-0.1.0-SNAPSHOT.jar <command>.")),
+
+                h2("styling", "17. Styling your app"),
                 prose(text("DejaView never touches your CSS. Views carry plain class and style attributes, so any stylesheet works — hand-written CSS, Bootstrap, Tailwind CSS, daisyUI:")),
                 java(Snippets.STYLING),
                 prose(text("Bring your own framework: add its CSS to your page's head, use its classes in .classes(...), and you're done. DejaView ships no UI kit and no CSS pipeline on purpose.")),
 
-                h2("production", "17. Building for production"),
+                h2("production", "18. Building for production"),
                 prose(text("The build you ran in step 2 is the production build. ./mvnw clean verify compiles everything to JavaScript and writes the result to each example's target/webapp directory — plain files you can host anywhere:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
@@ -174,7 +187,7 @@ public final class TutorialEn {
                         item(code("index.html"), text(" — the entry page that loads the bundle."))),
                 prose(text("Upload those files to any static host (nginx, S3, Netlify, GitHub Pages) and you have a production deployment.")),
 
-                h2("troubleshooting", "18. Troubleshooting"),
+                h2("troubleshooting", "19. Troubleshooting"),
                 bullets(
                         item(code("java -version shows 8, 17 or 21"), text(" — your JAVA_HOME points at the wrong JDK. Point it at a Java 25 install and reopen the terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — run chmod +x mvnw, or use mvnw.cmd on Windows.")),
@@ -182,7 +195,7 @@ public final class TutorialEn {
                         item(code("Blank page, no counter"), text(" — open the browser console. A 404 for app.js means you're serving the wrong directory; it must be examples/counter/target/webapp, not the repository root.")),
                         item(code("BUILD FAILURE downloading dependencies"), text(" — check network access; Maven needs to reach repo.maven.apache.org on the first build."))),
 
-                h2("next-steps", "19. Next steps"),
+                h2("next-steps", "20. Next steps"),
                 prose(
                         text("Explore the "),
                         link("/website/playground/", "interactive playground"),

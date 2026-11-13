@@ -45,7 +45,7 @@ class WebsiteBrowserIT {
                 page.navigate(server.url() + "/website/");
 
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
-                assertEquals(11, page.locator("#features .card").count());
+                assertEquals(12, page.locator("#features .card").count());
                 assertEquals("true", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertEquals("http://www.w3.org/2000/svg",
@@ -84,7 +84,7 @@ class WebsiteBrowserIT {
 
                 assertTrue(page.textContent("#hero-title").contains("Reimaginado"));
                 assertEquals("EN", page.textContent(".lang-switch"));
-                assertTrue(page.locator("#features .card").count() == 11);
+                assertTrue(page.locator("#features .card").count() == 12);
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {
@@ -104,12 +104,14 @@ class WebsiteBrowserIT {
                 page.onPageError(pageErrors::add);
 
                 page.navigate(server.url() + "/website/get-started.html");
-                assertTrue(page.locator(".docs-toc-nav a").count() >= 19);
-                assertTrue(page.locator(".docs-content h2").count() >= 19);
+                assertTrue(page.locator(".docs-toc-nav a").count() >= 20);
+                assertTrue(page.locator(".docs-content h2").count() >= 20);
                 assertTrue(page.locator("#forms").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#forms']").count() == 1);
                 assertTrue(page.locator("#state").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#state']").count() == 1);
+                assertTrue(page.locator("#cli").count() == 1);
+                assertTrue(page.locator(".docs-toc-nav a[href='#cli']").count() == 1);
 
                 // Anchor navigation must clear the sticky header.
                 page.click(".docs-toc-nav a[href='#composition']");
@@ -131,9 +133,10 @@ class WebsiteBrowserIT {
                 page.setViewportSize(1280, 720);
 
                 page.navigate(server.url() + "/website/pt/get-started.html");
-                assertTrue(page.locator(".docs-content h2").count() >= 19);
+                assertTrue(page.locator(".docs-content h2").count() >= 20);
                 assertTrue(page.locator("#forms").textContent().contains("Formulários reativos"));
                 assertTrue(page.locator("#state").textContent().contains("Gerenciamento de estado"));
+                assertTrue(page.locator("#cli").textContent().contains("A DejaView CLI"));
                 assertTrue(page.textContent(".docs-content h2") != null);
                 assertTrue(page.locator(".docs-toc-nav a").allTextContents().stream()
                         .anyMatch(text -> text.contains("Pré-requisitos")));

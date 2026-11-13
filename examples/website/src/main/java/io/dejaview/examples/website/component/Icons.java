@@ -88,4 +88,8 @@ public final class Icons {
                 path("M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"),
                 path("M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3", "0.45"));
     }
+
+    public static View terminal() {
+        return svg(path("M4 5h16v14H4z"), path("M7 10l4 3-4 3"), path("M13 16h4", "0.45"));
+    }
 }

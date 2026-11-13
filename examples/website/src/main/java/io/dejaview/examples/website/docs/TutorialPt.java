@@ -160,12 +160,25 @@ public final class TutorialPt {
                         item(code("AsyncState.data()"), text(" — o último valor bom, mesmo durante um refresh ou após um refresh falho."))),
                 note("tip", strong("Descarte na fronteira."), text(" Um store é dono dos computeds que cria; descarte-os — ou um StateRegistry — quando a view dona for destruída.")),
 
-                h2("styling", "16. Estilizando seu app"),
+                h2("cli", "16. A DejaView CLI"),
+                prose(text("A CLI é o fluxo de desenvolvimento oficial: cria o projeto, compila e serve com live reload — sem editar arquivos de build à mão:")),
+                shell(Snippets.CLI_CREATE),
+                prose(text("dejaview new gera um projeto autocontido: o wrapper Maven, um componente contador funcional, a página host e o dejaview.properties. Nada para configurar antes do primeiro build.")),
+                prose(text("dejaview run compila o projeto, serve target/webapp em http://localhost:4321, observa os fontes e recompila a cada alteração. A página se recarrega sozinha por meio de um pequeno cliente injetado — você continua escrevendo Java.")),
+                bullets(
+                        item(code("dejaview build"), text(" — ./mvnw package com diagnóstico acionável quando falha: as linhas [ERROR], com o ruído do Maven filtrado.")),
+                        item(code("dejaview run"), text(" — compila e serve target/webapp com live reload; os fontes em src/ são observados e recompilados a cada mudança. Um rebuild que falha continua servindo o último build bom.")),
+                        item(code("dejaview doctor"), text(" — valida o JDK, o compilador, o wrapper Maven, a estrutura do projeto e o dejaview.properties."))),
+                prose(text("O dejaview.properties controla o servidor de desenvolvimento; flags de linha de comando têm precedência sobre o arquivo:")),
+                shell(Snippets.CLI_PROPERTIES),
+                note("tip", strong("Usando a CLI a partir do checkout."), text(" Enquanto um lançador standalone não é publicado, compile o módulo e invoque o jar diretamente: java -jar dejaview-cli/target/dejaview-cli-0.1.0-SNAPSHOT.jar <comando>.")),
+
+                h2("styling", "17. Estilizando seu app"),
                 prose(text("O DejaView nunca toca no seu CSS. As views carregam atributos class e style simples, então qualquer stylesheet funciona — CSS escrito à mão, Bootstrap, Tailwind CSS, daisyUI:")),
                 java(Snippets.STYLING),
                 prose(text("Traga o seu framework: adicione o CSS dele no head da página, use as classes dele em .classes(...), e pronto. O DejaView não entrega kit de UI nem pipeline de CSS, de propósito.")),
 
-                h2("production", "17. Build de produção"),
+                h2("production", "18. Build de produção"),
                 prose(text("O build que você rodou no passo 2 já é o de produção. ./mvnw clean verify compila tudo para JavaScript e escreve o resultado no diretório target/webapp de cada exemplo — arquivos simples que você pode hospedar em qualquer lugar:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
@@ -174,7 +187,7 @@ public final class TutorialPt {
                         item(code("index.html"), text(" — a página de entrada que carrega o bundle."))),
                 prose(text("Suba esses arquivos para qualquer hospedagem estática (nginx, S3, Netlify, GitHub Pages) e você tem um deploy de produção.")),
 
-                h2("troubleshooting", "18. Problemas comuns"),
+                h2("troubleshooting", "19. Problemas comuns"),
                 bullets(
                         item(code("java -version mostra 8, 17 ou 21"), text(" — seu JAVA_HOME aponta para o JDK errado. Aponte para uma instalação do Java 25 e reabra o terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — rode chmod +x mvnw, ou use mvnw.cmd no Windows.")),
@@ -182,7 +195,7 @@ public final class TutorialPt {
                         item(code("Página em branco, sem contador"), text(" — abra o console do navegador. Um 404 para app.js significa que você está servindo o diretório errado; precisa ser examples/counter/target/webapp, não a raiz do repositório.")),
                         item(code("BUILD FAILURE baixando dependências"), text(" — confira o acesso à rede; o Maven precisa alcançar repo.maven.apache.org no primeiro build."))),
 
-                h2("next-steps", "19. Próximos passos"),
+                h2("next-steps", "20. Próximos passos"),
                 prose(
                         text("Explore o "),
                         link("/website/pt/playground/", "playground interativo"),
