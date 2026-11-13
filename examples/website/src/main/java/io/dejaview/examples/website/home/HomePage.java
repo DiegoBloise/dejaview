@@ -187,7 +187,7 @@ public final class HomePage extends AbstractComponent {
                                                 demoTab("router", t("Router", "Rotas"), selected),
                                                 demoTab("http", "HTTP", selected))
                                                 .classes("demo-tabs")
-                                                .attr("role", "tablist")
+                                                .attr("role", "group")
                                                 .attr("aria-label", t("Choose an example", "Escolha um exemplo")),
                                         Views.p(demoCaption(selected)).id("demo-caption").classes("demo-caption"),
                                         Views.p(Views.text(t(
@@ -216,9 +216,8 @@ public final class HomePage extends AbstractComponent {
         boolean active = id.equals(selected);
         return Views.button(label)
                 .classes("demo-tab")
-                .attr("role", "tab")
                 .attr("id", "tab-" + id)
-                .attr("aria-selected", active ? "true" : "false")
+                .attr("aria-pressed", active ? "true" : "false")
                 .attr("aria-controls", "demo-frame")
                 .onClick(() -> demoTab.set(id));
     }

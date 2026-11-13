@@ -32,13 +32,17 @@ public final class SiteChrome {
     }
 
     public static View header(Lang lang, String page) {
+        View title = "playground".equals(page)
+                ? Views.element("h1", Views.text("Playground")).classes("page-title")
+                : Views.fragment();
         return Views.element("header",
                         Views.element("a",
                                         brandMark(),
                                         Views.element("span", Views.text("DejaView")).classes("brand-name"))
                                 .classes("brand")
                                 .attr("href", lang.homeUrl())
-                                .attr("aria-label", "DejaView home"),
+                                .attr("aria-label", lang.t("DejaView home", "Página inicial do DejaView")),
+                        title,
                         Views.element("nav",
                                         navLink(lang.homeUrl() + "#features", lang.t("Features", "Recursos")),
                                         navLink(lang.homeUrl() + "#demo", lang.t("Live demo", "Demo ao vivo")),

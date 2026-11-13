@@ -37,12 +37,7 @@ body {
 .skip-link:focus-visible { left: 0.5rem; }
 :focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 3px; border-radius: 4px; }
 
-/* Header */
-.pg-header { display: flex; align-items: center; gap: 1rem; padding: 0.55rem 1.25rem; background: rgba(11, 14, 20, 0.9); border-bottom: 1px solid var(--border); }
-.brand { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: var(--text); }
-.brand-mark { width: 1.7rem; height: 1.7rem; }
-.brand-name { font-weight: 800; letter-spacing: -0.02em; font-size: 1.02rem; }
-.pg-title { font-family: var(--font-mono); color: var(--text-dim); font-size: 0.88rem; border-left: 1px solid var(--border-strong); padding-left: 1rem; }
+/* Header: the playground uses the shared .site-header from styles.css. */
 
 /* DejaView app mount */
 #app { display: flex; flex-direction: column; flex: 1; min-height: 0; }

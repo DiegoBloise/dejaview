@@ -82,7 +82,7 @@ public final class BlockView {
         return switch (tone) {
             case "tip" -> lang.t("Tip", "Dica");
             case "warning" -> lang.t("Heads up", "Atenção");
-            default -> "Info";
+            default -> lang.t("Info", "Informação");
         };
     }
 }

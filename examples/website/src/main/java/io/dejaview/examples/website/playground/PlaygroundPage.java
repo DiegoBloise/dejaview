@@ -29,7 +29,7 @@ public final class PlaygroundPage extends AbstractComponent {
         this.lang = lang;
         this.previewStatus = new Signal<>(lang.t(
                 "Select an example and press Run.",
-                "Escolha um exemplo e pressione Run."));
+                "Escolha um exemplo e pressione Rodar."));
         this.copyLabel = new Signal<>(lang.t("Copy source", "Copiar código"));
     }
 
@@ -144,7 +144,7 @@ public final class PlaygroundPage extends AbstractComponent {
         EditorWidget.resync();
         previewStatus.set(t(
                 "Ready — press Run to execute the compiled example.",
-                "Pronto — pressione Run para executar o exemplo compilado."));
+                "Pronto — pressione Rodar para executar o exemplo compilado."));
     }
 
     private void run() {

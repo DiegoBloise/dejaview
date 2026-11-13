@@ -46,6 +46,7 @@ class WebsiteBrowserIT {
 
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
                 assertEquals(9, page.locator("#features .card").count());
+                assertEquals("true", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertEquals("http://www.w3.org/2000/svg",
                         page.evaluate("() => document.querySelector('.brand-mark').namespaceURI"));
@@ -59,6 +60,8 @@ class WebsiteBrowserIT {
 
                 page.click("#tab-router");
                 assertTrue(page.getAttribute("#demo-frame", "src").contains("example=router"));
+                assertEquals("true", page.getAttribute("#tab-router", "aria-pressed"));
+                assertEquals("false", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {
@@ -104,6 +107,25 @@ class WebsiteBrowserIT {
                 assertTrue(page.locator(".docs-toc-nav a").count() >= 15);
                 assertTrue(page.locator(".docs-content h2").count() >= 15);
 
+                // Anchor navigation must clear the sticky header.
+                page.click(".docs-toc-nav a[href='#composition']");
+                page.waitForTimeout(900);
+                assertEquals(Boolean.TRUE, page.evaluate("""
+                        () => {
+                            const heading = document.getElementById('composition');
+                            const header = document.querySelector('.site-header');
+                            return heading.getBoundingClientRect().top
+                                    >= header.getBoundingClientRect().bottom;
+                        }"""));
+
+                // Long Java snippets must not force horizontal scrolling on phones.
+                page.setViewportSize(390, 844);
+                page.navigate(server.url() + "/website/get-started.html");
+                assertEquals(Boolean.TRUE, page.evaluate(
+                        "() => document.documentElement.scrollWidth"
+                                + " <= document.documentElement.clientWidth"));
+                page.setViewportSize(1280, 720);
+
                 page.navigate(server.url() + "/website/pt/get-started.html");
                 assertTrue(page.locator(".docs-content h2").count() >= 15);
                 assertTrue(page.textContent(".docs-content h2") != null);
@@ -129,6 +151,7 @@ class WebsiteBrowserIT {
 
                 page.navigate(server.url() + "/website/playground/");
                 assertEquals(8, page.locator(".example-item").count());
+                assertEquals("Playground", page.textContent("h1.page-title"));
 
                 // The shared site stylesheet styles inline <code>; the editor's
                 // single multi-line <code> must not inherit that box, or every
@@ -147,6 +170,19 @@ class WebsiteBrowserIT {
                 page.click(".example-item[data-example='list']");
                 assertTrue(page.locator("#highlight-code").textContent().contains("KeyedListDemo")
                         || page.locator("#highlight-code").textContent().contains("order"));
+
+                // The playground header must match the landing page's brand size.
+                double playgroundMark = ((Number) page.evaluate(
+                        "() => document.querySelector('.brand-mark').getBoundingClientRect().width")).doubleValue();
+                String playgroundName = (String) page.evaluate(
+                        "() => getComputedStyle(document.querySelector('.brand-name')).fontSize");
+                page.navigate(server.url() + "/website/");
+                double homeMark = ((Number) page.evaluate(
+                        "() => document.querySelector('.brand-mark').getBoundingClientRect().width")).doubleValue();
+                String homeName = (String) page.evaluate(
+                        "() => getComputedStyle(document.querySelector('.brand-name')).fontSize");
+                assertEquals(homeMark, playgroundMark, 0.01);
+                assertEquals(homeName, playgroundName);
 
                 page.navigate(server.url() + "/website/pt/playground/");
                 assertTrue(page.locator(".example-item-name").allTextContents()
