@@ -203,16 +203,38 @@ class CliWorkflowIT {
         }
     }
 
+    @Test
+    @Order(6)
+    void package_writes_an_asset_manifest_for_the_generated_app() throws Exception {
+        Path manifest = projectDir.resolve("target/webapp/dejaview-assets.json");
+        assertTrue(Files.isRegularFile(manifest),
+                () -> "the generated build should write dejaview-assets.json during package");
+        String json = Files.readString(manifest, StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"path\": \"app.js\""), json);
+        assertTrue(json.contains("\"path\": \"index.html\""), json);
+        assertTrue(json.contains("\"sha256\": \""), json);
+        assertTrue(json.contains("\"totalBytes\": "), json);
+    }
+
     private static void ensureDejaViewInstalled() throws IOException, InterruptedException {
-        Path localArtifact = Path.of(System.getProperty("user.home"), ".m2", "repository", "io", "dejaview",
-                "dejaview-core", Version.current(), "dejaview-core-" + Version.current() + ".jar");
-        if (Files.isRegularFile(localArtifact)) {
+        Path repository = Path.of(System.getProperty("user.home"), ".m2", "repository", "io", "dejaview");
+        boolean compilerInstalled = Files.isRegularFile(repository
+                .resolve("dejaview-compiler").resolve(Version.current())
+                .resolve("dejaview-compiler-" + Version.current() + ".jar"));
+        boolean coreInstalled = Files.isRegularFile(repository
+                .resolve("dejaview-core").resolve(Version.current())
+                .resolve("dejaview-core-" + Version.current() + ".jar"));
+        if (compilerInstalled && coreInstalled) {
             return;
         }
         Path repoRoot = Path.of("").toAbsolutePath().normalize().getParent();
         assertNotNull(repoRoot, "could not resolve the repository root");
         Path wrapper = repoRoot.resolve("mvnw");
-        ProcessBuilder builder = new ProcessBuilder(wrapper.toString(), "-q", "install", "-DskipTests");
+        // Install only what the generated application needs. Building the whole
+        // reactor (or this module) would rewrite this module's target/test-classes
+        // while the forked failsafe JVM still has it on the classpath.
+        ProcessBuilder builder = new ProcessBuilder(wrapper.toString(), "-q", "install", "-Dmaven.test.skip=true",
+                "-pl", "dejaview-reactivity,dejaview-dom,dejaview-compiler", "-am");
         builder.directory(repoRoot.toFile());
         builder.inheritIO();
         int exit = builder.start().waitFor();

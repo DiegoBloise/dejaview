@@ -22,6 +22,7 @@
         <module>dejaview-http</module>
         <module>dejaview-forms</module>
         <module>dejaview-state</module>
+        <module>dejaview-compiler</module>
         <module>dejaview-cli</module>
         <module>examples/counter</module>
         <module>examples/showcase</module>
@@ -42,6 +43,20 @@
         <teavm.version>0.16.0</teavm.version>
         <junit.version>5.14.4</junit.version>
         <playwright.version>1.64.0</playwright.version>
+
+        <!--
+          Production pipeline configuration. The `production` profile (below)
+          flips these to the optimized TeaVM settings; the development build
+          keeps SIMPLE optimization and human-readable output.
+        -->
+        <dejaview.compiler.profile>development</dejaview.compiler.profile>
+        <dejaview.compiler.optimization-level>SIMPLE</dejaview.compiler.optimization-level>
+        <dejaview.compiler.minify>false</dejaview.compiler.minify>
+        <dejaview.compiler.source-maps>true</dejaview.compiler.source-maps>
+        <dejaview.compiler.size-budget-bytes>2097152</dejaview.compiler.size-budget-bytes>
+
+        <!-- Reproducible archive output across equivalent builds. -->
+        <project.build.outputTimestamp>2026-11-13T00:00:00Z</project.build.outputTimestamp>
 
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
@@ -105,6 +120,11 @@
             </dependency>
             <dependency>
                 <groupId>io.dejaview</groupId>
+                <artifactId>dejaview-compiler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dejaview</groupId>
                 <artifactId>dejaview-cli</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -154,6 +174,27 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${maven-resources-plugin.version}</version>
+                    <!--
+                      Shared by the browser modules: copy src/main/webapp into
+                      the TeaVM output directory before the bundle is compiled.
+                    -->
+                    <executions>
+                        <execution>
+                            <id>copy-webapp</id>
+                            <phase>prepare-package</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/webapp</outputDirectory>
+                                <resources>
+                                    <resource>
+                                        <directory>src/main/webapp</directory>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -184,6 +225,12 @@
                       plugin by default. Browser modules also declare teavm-classlib
                       as a provided dependency, which TeaVM requires on the project
                       class path. See docs/COMPILER.md.
+
+                      The plugin is configured once here so every browser module
+                      compiles through the same pipeline: modules only set
+                      `mainClass`. The `production` profile activates the optimized
+                      settings (FULL dead-code elimination, minification); the
+                      development build stays debuggable.
                     -->
                     <dependencies>
                         <dependency>
@@ -192,6 +239,18 @@
                             <version>${teavm.version}</version>
                         </dependency>
                     </dependencies>
+                    <configuration>
+                        <targetType>JAVASCRIPT</targetType>
+                        <targetDirectory>${project.build.directory}/webapp</targetDirectory>
+                        <targetFileName>app.js</targetFileName>
+                        <jsModuleType>NONE</jsModuleType>
+                        <optimizationLevel>${dejaview.compiler.optimization-level}</optimizationLevel>
+                        <!-- TeaVM's parameter is `minifying` (property teavm.minifying, default true);
+                             the legacy `<minified>` element was silently ignored. -->
+                        <minifying>${dejaview.compiler.minify}</minifying>
+                        <sourceMapsGenerated>${dejaview.compiler.source-maps}</sourceMapsGenerated>
+                        <strict>true</strict>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -228,4 +287,24 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+          Production pipeline: aggressive dead-code elimination (FULL),
+          minification, source maps retained for field diagnostics, and a tight
+          output-size tripwire (768 KiB). The output is browser-equivalent to
+          the development build; only the emitted JavaScript differs.
+          Use: ./mvnw clean package -Pproduction
+        -->
+        <profile>
+            <id>production</id>
+            <properties>
+                <dejaview.compiler.profile>production</dejaview.compiler.profile>
+                <dejaview.compiler.optimization-level>FULL</dejaview.compiler.optimization-level>
+                <dejaview.compiler.minify>true</dejaview.compiler.minify>
+                <dejaview.compiler.source-maps>true</dejaview.compiler.source-maps>
+                <dejaview.compiler.size-budget-bytes>786432</dejaview.compiler.size-budget-bytes>
+            </properties>
+        </profile>
+    </profiles>
 </project>

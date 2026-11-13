@@ -2,11 +2,14 @@ package io.dejaview.cli;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Extracts the actionable parts of a failed Maven build: the {@code [ERROR]}
  * lines with their location hints, or a bounded tail when no error lines are
- * present. Pure string processing so it can be unit-tested without a build.
+ * present; plus known-cause hints mapping common TeaVM/Maven failure
+ * signatures to likely fixes. Pure string processing so it can be
+ * unit-tested without a build.
  */
 public final class BuildDiagnostics {
 
@@ -39,6 +42,50 @@ public final class BuildDiagnostics {
         }
         int from = Math.max(0, outputTail.size() - TAIL_LINES);
         return new ArrayList<>(outputTail.subList(from, outputTail.size()));
+    }
+
+    /** Returns actionable hints for a single output line; empty when no known failure signature matches. */
+    public static List<String> hintsFor(String line) {
+        if (line == null || line.isBlank()) {
+            return List.of();
+        }
+        String lower = line.toLowerCase(Locale.ROOT);
+        List<String> hints = new ArrayList<>();
+
+        if (lower.contains("unsupported class file major version")) {
+            hints.add("The JDK class file version is too new for the compiler. "
+                    + "DejaView builds with JDK 25 and TeaVM 0.16.0 — check java -version "
+                    + "and the teavm.version property (docs/COMPILER.md).");
+        }
+        if (lower.contains("jsclassprocessor") || lower.contains("getobjectclass()")) {
+            hints.add("TeaVM needs teavm-classlib on the project class path. Declare it with "
+                    + "provided scope in the browser module (docs/COMPILER.md, section 4).");
+        }
+        if (lower.contains("can't find class") || lower.contains("cannot find class")
+                || lower.contains("cannot find symbol") || lower.contains("unresolved reference")) {
+            hints.add("A referenced class or symbol is missing. Check that the dependency is on "
+                    + "the compile classpath and that the API exists in TeaVM's class library "
+                    + "(docs/COMPILER.md, section 6).");
+        }
+        if (lower.contains("strict")) {
+            hints.add("TeaVM strict mode is enabled: missing classes fail the build instead of "
+                    + "surfacing later in the browser. Add the missing dependency, or see "
+                    + "docs/COMPILER.md section 6 for unsupported APIs.");
+        }
+        return List.copyOf(hints);
+    }
+
+    /** Collects the hints for a whole output; de-duplicated, order of first appearance. */
+    public static List<String> hintsForOutput(List<String> outputLines) {
+        List<String> hints = new ArrayList<>();
+        for (String line : outputLines) {
+            for (String hint : hintsFor(line)) {
+                if (!hints.contains(hint)) {
+                    hints.add(hint);
+                }
+            }
+        }
+        return List.copyOf(hints);
     }
 
     private static String cleanup(String line) {

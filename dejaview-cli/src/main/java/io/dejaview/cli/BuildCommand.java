@@ -54,6 +54,14 @@ final class BuildCommand {
         for (String line : BuildDiagnostics.diagnose(outputTail)) {
             context.err().println("  " + line);
         }
+        List<String> hints = BuildDiagnostics.hintsForOutput(outputTail);
+        if (!hints.isEmpty()) {
+            context.err().println();
+            context.err().println("Likely cause:");
+            for (String hint : hints) {
+                context.err().println("  - " + hint);
+            }
+        }
         context.err().println();
         context.err().println("Run 'dejaview doctor' to validate the environment, or 'dejaview build -- -e' for the full stack trace.");
     }

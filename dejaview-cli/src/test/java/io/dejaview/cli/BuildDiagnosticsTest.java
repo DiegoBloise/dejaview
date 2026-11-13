@@ -52,4 +52,51 @@ class BuildDiagnosticsTest {
         assertEquals(25, diagnostics.size());
         assertTrue(diagnostics.get(0).contains("some log line 55"));
     }
+
+    @Test
+    void class_file_major_version_gets_a_jdk25_hint() {
+        List<String> hints = BuildDiagnostics.hintsFor(
+                "[ERROR] Unsupported class file major version 69");
+
+        assertTrue(hints.stream().anyMatch(h -> h.contains("JDK 25")));
+    }
+
+    @Test
+    void jsclassprocessor_failure_gets_a_classlib_hint() {
+        List<String> hints = BuildDiagnostics.hintsFor(
+                "java.lang.NullPointerException at org.teavm.javascript.JSClassProcessor.getObjectClass()");
+
+        assertTrue(hints.stream().anyMatch(h -> h.contains("teavm-classlib")));
+    }
+
+    @Test
+    void missing_class_gets_a_classpath_hint() {
+        assertTrue(BuildDiagnostics.hintsFor("[ERROR] Can't find class: java.util.OptionalInt")
+                .stream().anyMatch(h -> h.contains("classpath")));
+        assertTrue(BuildDiagnostics.hintsFor("[ERROR] cannot find symbol")
+                .stream().anyMatch(h -> h.contains("classpath")));
+    }
+
+    @Test
+    void strict_mode_failures_get_a_strict_hint() {
+        assertTrue(BuildDiagnostics.hintsFor("strict compilation failed")
+                .stream().anyMatch(h -> h.contains("strict mode")));
+    }
+
+    @Test
+    void unrelated_lines_produce_no_hints() {
+        assertEquals(List.of(), BuildDiagnostics.hintsFor("[INFO] BUILD SUCCESS"));
+        assertEquals(List.of(), BuildDiagnostics.hintsFor(null));
+        assertEquals(List.of(), BuildDiagnostics.hintsFor(""));
+    }
+
+    @Test
+    void output_hints_are_deduplicated_in_order() {
+        List<String> hints = BuildDiagnostics.hintsForOutput(List.of(
+                "[ERROR] cannot find symbol",
+                "[ERROR] duplicate cannot find symbol",
+                "[INFO] unrelated"));
+
+        assertEquals(1, hints.size());
+    }
 }

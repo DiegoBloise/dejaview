@@ -18,6 +18,16 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <teavm.version>__TEAVM_VERSION__</teavm.version>
         <dejaview.version>__DEJAVIEW_VERSION__</dejaview.version>
+
+        <!-- Production pipeline: `-Pproduction` flips these to optimized settings. -->
+        <dejaview.compiler.profile>development</dejaview.compiler.profile>
+        <dejaview.compiler.optimization-level>SIMPLE</dejaview.compiler.optimization-level>
+        <dejaview.compiler.minify>false</dejaview.compiler.minify>
+        <dejaview.compiler.source-maps>true</dejaview.compiler.source-maps>
+        <dejaview.compiler.size-budget-bytes>2097152</dejaview.compiler.size-budget-bytes>
+
+        <!-- Reproducible archive output across equivalent builds. -->
+        <project.build.outputTimestamp>2026-11-13T00:00:00Z</project.build.outputTimestamp>
     </properties>
 
     <dependencies>
@@ -42,6 +52,12 @@
             <groupId>org.teavm</groupId>
             <artifactId>teavm-jso-apis</artifactId>
             <version>${teavm.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-compiler</artifactId>
+            <version>${dejaview.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -101,9 +117,9 @@
                             <targetDirectory>${project.build.directory}/webapp</targetDirectory>
                             <targetFileName>app.js</targetFileName>
                             <jsModuleType>NONE</jsModuleType>
-                            <optimizationLevel>SIMPLE</optimizationLevel>
-                            <minified>false</minified>
-                            <sourceMapsGenerated>true</sourceMapsGenerated>
+                            <optimizationLevel>${dejaview.compiler.optimization-level}</optimizationLevel>
+                            <minifying>${dejaview.compiler.minify}</minifying>
+                            <sourceMapsGenerated>${dejaview.compiler.source-maps}</sourceMapsGenerated>
                             <strict>true</strict>
                         </configuration>
                     </execution>
@@ -111,30 +127,46 @@
             </plugin>
 
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
                 <version>3.7.0</version>
                 <executions>
                     <execution>
-                        <id>verify-browser-artifacts</id>
-                        <phase>verify</phase>
+                        <id>verify-webapp</id>
+                        <!-- The CLI builds with `package`, so validation is bound there. -->
+                        <phase>package</phase>
                         <goals>
-                            <goal>enforce</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <rules>
-                                <requireFilesExist>
-                                    <files>
-                                        <file>${project.build.directory}/webapp/index.html</file>
-                                        <file>${project.build.directory}/webapp/app.js</file>
-                                    </files>
-                                    <message>TeaVM did not produce the expected browser artifacts.</message>
-                                </requireFilesExist>
-                            </rules>
+                            <mainClass>io.dejaview.compiler.VerifyWebApp</mainClass>
+                            <arguments>
+                                <argument>--webapp</argument>
+                                <argument>${project.build.directory}/webapp</argument>
+                                <argument>--budget-bytes</argument>
+                                <argument>${dejaview.compiler.size-budget-bytes}</argument>
+                            </arguments>
+                            <classpathScope>compile</classpathScope>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <!--
+          Production pipeline: aggressive dead-code elimination (FULL), minification,
+          source maps retained for field diagnostics. Use: ./mvnw clean package -Pproduction
+        -->
+        <profile>
+            <id>production</id>
+            <properties>
+                <dejaview.compiler.profile>production</dejaview.compiler.profile>
+                <dejaview.compiler.optimization-level>FULL</dejaview.compiler.optimization-level>
+                <dejaview.compiler.minify>true</dejaview.compiler.minify>
+                <dejaview.compiler.source-maps>true</dejaview.compiler.source-maps>
+                <dejaview.compiler.size-budget-bytes>786432</dejaview.compiler.size-budget-bytes>
+            </properties>
+        </profile>
+    </profiles>
 </project>

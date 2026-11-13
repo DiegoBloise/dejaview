@@ -77,6 +77,14 @@ final class RunCommand {
                     for (String line : BuildDiagnostics.diagnose(rebuild.outputTail())) {
                         context.err().println("  " + line);
                     }
+                    List<String> hints = BuildDiagnostics.hintsForOutput(rebuild.outputTail());
+                    if (!hints.isEmpty()) {
+                        context.err().println();
+                        context.err().println("Likely cause:");
+                        for (String hint : hints) {
+                            context.err().println("  - " + hint);
+                        }
+                    }
                 }
             }, context.err());
         } catch (IOException e) {

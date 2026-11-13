@@ -36,6 +36,11 @@
             <artifactId>teavm-jso-apis</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-compiler</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -60,23 +65,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-webapp</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/webapp</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/webapp</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>
@@ -91,14 +79,30 @@
                         </goals>
                         <configuration>
                             <mainClass>io.dejaview.examples.counter.CounterApp</mainClass>
-                            <targetType>JAVASCRIPT</targetType>
-                            <targetDirectory>${project.build.directory}/webapp</targetDirectory>
-                            <targetFileName>app.js</targetFileName>
-                            <jsModuleType>NONE</jsModuleType>
-                            <optimizationLevel>SIMPLE</optimizationLevel>
-                            <minified>false</minified>
-                            <sourceMapsGenerated>true</sourceMapsGenerated>
-                            <strict>true</strict>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>verify-webapp</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>io.dejaview.compiler.VerifyWebApp</mainClass>
+                            <arguments>
+                                <argument>--webapp</argument>
+                                <argument>${project.build.directory}/webapp</argument>
+                                <argument>--budget-bytes</argument>
+                                <argument>${dejaview.compiler.size-budget-bytes}</argument>
+                            </arguments>
+                            <classpathScope>compile</classpathScope>
                         </configuration>
                     </execution>
                 </executions>
