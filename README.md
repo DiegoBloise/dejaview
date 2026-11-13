@@ -128,8 +128,8 @@ On Windows, use `mvnw.cmd` instead of `./mvnw`.
 
 The official website lives in `website/` and is itself a DejaView application
 (`examples/website`), compiled to JavaScript and loaded by small static shells.
-The playground examples execute the same pre-compiled TeaVM showcase bundle that
-the counter E2E test validates.
+The playground executes the pre-compiled TeaVM showcase bundle from
+`examples/showcase`, which the showcase E2E test validates.
 
 ```bash
 # Build the showcase and website bundles
@@ -205,6 +205,7 @@ dejaview/
 │   ├── COMPILER.md         # TeaVM feasibility report and constraints
 │   ├── IMPLEMENTATION_STATUS.md
 │   └── ADR/                # Architectural Decision Records
+├── AGENTS.md               # Instructions and Definition of Done for coding agents
 ├── .mvn/
 ├── mvnw
 ├── mvnw.cmd
@@ -387,6 +388,7 @@ Individual modules declare only their own dependencies and build requirements.
 
 | Document | Description |
 |---|---|
+| [`AGENTS.md`](AGENTS.md) | Working rules and the feature → website → documentation Definition of Done |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Long-term architecture specification |
 | [`docs/COMPILER.md`](docs/COMPILER.md) | TeaVM feasibility, validated matrix and constraints |
 | [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md) | Implemented vs planned, limitations, next milestone |
@@ -435,10 +437,15 @@ complete list.
 
 ## Contributing
 
-DejaView is in its early development stage.
+DejaView is in its early development stage. Start with [`AGENTS.md`](AGENTS.md),
+which describes the module boundaries, the build and browser-validation
+commands, and the Definition of Done.
 
-Contribution guidelines, development setup, coding standards and issue templates
-will be published as the project matures.
+The project is bilingual and documentation-driven: a feature is only complete
+when the same change set updates the code, the tests, the English and Portuguese
+website (feature card, guide section and playground example when interactive)
+and the internal documentation. Java samples and their comments stay in English;
+the prose around them is translated.
 
 Before contributing to architectural components, please review the documentation
 and the corresponding Architectural Decision Records.

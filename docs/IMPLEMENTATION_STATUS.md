@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0-SNAPSHOT  
 **Milestone:** Phase 4 — Application Framework  
-**Last updated:** 2026-11-12
+**Last updated:** 2026-11-13
 
 This document separates what is implemented and tested from what is designed
 or planned. If a capability is not listed as implemented here, it should not be
@@ -258,11 +258,18 @@ reconciles the component and updates the existing text node and the counter's
 
 | Document | Purpose |
 |---|---|
+| `AGENTS.md` | Working rules, file map and the feature → website → docs Definition of Done |
 | `README.md` | Project overview, quick start, module status |
 | `docs/ARCHITECTURE.md` | Long-term architecture specification |
 | `docs/COMPILER.md` | TeaVM feasibility and compiler constraints |
 | `docs/IMPLEMENTATION_STATUS.md` | This document |
 | `docs/ADR/` | Architectural Decision Records |
+
+Any new feature, API or behavior must ship with its user-facing surface: the
+bilingual website (landing feature card, guide section in English and
+Portuguese, playground example when interactive) and the internal documents in
+this table. See `AGENTS.md` for the checklist and `docs/ROADMAP.md` §2.3–2.4 for
+the sprint rule.
 
 ---
 

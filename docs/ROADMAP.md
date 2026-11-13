@@ -78,8 +78,33 @@ A feature is considered complete only when:
 - [ ] Performance is acceptable for the feature's scope.
 - [ ] Code follows the project's engineering guidelines.
 - [ ] All changes are integrated into the Maven build.
+- [ ] The official website reflects the feature in **English and Portuguese**
+      (feature card, guide section, playground example when interactive).
+- [ ] `README.md`, `IMPLEMENTATION_STATUS.md`, this roadmap and any affected ADR
+      are updated.
+- [ ] The website/doc sync checklist in [`AGENTS.md`](../AGENTS.md) was followed.
 
-## 2.4. Styling Compatibility
+## 2.4. Documentation and Website Synchronization
+
+The website is part of the product, not an afterthought. Whenever a feature,
+API or behavior changes, the same change set must update the user-facing site
+and the internal documentation:
+
+- Landing page: add or update the feature card in
+  `examples/website/.../home/HomePage.java`.
+- Guide: add or update the matching section in both `TutorialEn` and
+  `TutorialPt`, with code in `Snippets.java` copied from real, compiling code.
+- Playground: publish interactive examples in `Examples.ALL`, implement them in
+  `examples/showcase` and cover them in `WebsiteBrowserIT`.
+- Internal docs: update `IMPLEMENTATION_STATUS.md`, `README.md`, this roadmap,
+  `ARCHITECTURE.md` when boundaries change, and record architectural decisions
+  as ADRs.
+- All new user-facing strings must exist in both languages. Java code samples
+  and their comments remain in English; surrounding prose is translated.
+
+The detailed file map and audit procedure live in [`AGENTS.md`](../AGENTS.md).
+
+## 2.5. Styling Compatibility
 
 Styling is not owned by the framework. DejaView must emit ordinary HTML and
 must not impose a CSS-in-JS runtime or a proprietary styling pipeline.
