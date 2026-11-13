@@ -179,13 +179,20 @@ public final class TutorialPt {
                 prose(text("Traga o seu framework: adicione o CSS dele no head da página, use as classes dele em .classes(...), e pronto. O DejaView não entrega kit de UI nem pipeline de CSS, de propósito.")),
 
                 h2("production", "18. Build de produção"),
-                prose(text("O build que você rodou no passo 2 já é o de produção. ./mvnw clean verify compila tudo para JavaScript e escreve o resultado no diretório target/webapp de cada exemplo — arquivos simples que você pode hospedar em qualquer lugar:")),
+                prose(text("Dois perfis de build compartilham o mesmo pipeline. O build de desenvolvimento padrão usa otimização SIMPLE e JavaScript legível, sem minificação — mais fácil de depurar. O perfil de produção ajusta os mesmos parâmetros para os valores otimizados com uma única flag:")),
+                shell(Snippets.PRODUCTION_BUILD),
+                bullets(
+                        item(code("optimizationLevel=FULL"), text(" — o dead-code elimination do TeaVM remove tudo que o bundle não alcança.")),
+                        item(code("minify"), text(" — o JavaScript emitido é minificado: identificadores curtos e espaços colapsados.")),
+                        item(code("app.js.map"), text(" — o source map é preservado para diagnósticos de campo e não custa nada em runtime."))),
+                prose(text("Todo build também roda o dejaview-compiler sobre o webapp montado antes que ele possa ir para produção: ele falha em assets ausentes ou vazios — reportando cada problema junto com o arquivo que o referencia — e gera a impressão digital SHA-256 da saída:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
                         item(code("app.js"), text(" — sua aplicação, compilada.")),
                         item(code("app.js.map"), text(" — o source map para debugging.")),
+                        item(code("dejaview-assets.json"), text(" — todos os arquivos do webapp com tamanho e SHA-256; gerado pelo build, determinístico entre builds equivalentes.")),
                         item(code("index.html"), text(" — a página de entrada que carrega o bundle."))),
-                prose(text("Suba esses arquivos para qualquer hospedagem estática (nginx, S3, Netlify, GitHub Pages) e você tem um deploy de produção.")),
+                prose(text("A saída é reprodutível: fontes equivalentes sob condições equivalentes produzem JavaScript e manifestos byte-idênticos — arquivos compactados incluídos. Suba esses arquivos para qualquer hospedagem estática (nginx, S3, Netlify, GitHub Pages) e você tem um deploy de produção.")),
 
                 h2("troubleshooting", "19. Problemas comuns"),
                 bullets(

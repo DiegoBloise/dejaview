@@ -156,7 +156,10 @@ public final class HomePage extends AbstractComponent {
                                           "A API são records, interfaces e generics de Java puro. Sua IDE e o compilador pegam erros antes do navegador.")),
                                 feature(Icons.terminal(), t("DejaView CLI", "DejaView CLI"),
                                         t("dejaview new scaffolds a project; dejaview run builds it, serves it with live reload and rebuilds on change. One workflow, no boilerplate.",
-                                          "dejaview new cria o projeto; dejaview run compila, serve com live reload e recompila a cada mudança. Um workflow, sem boilerplate.")))
+                                          "dejaview new cria o projeto; dejaview run compila, serve com live reload e recompila a cada mudança. Um workflow, sem boilerplate.")),
+                                feature(Icons.box(), t("Production builds", "Builds de produção"),
+                                        t("./mvnw package -Pproduction ships a validated, minified bundle — FULL dead-code elimination, a SHA-256 asset manifest and byte-identical output across equivalent builds.",
+                                          "./mvnw package -Pproduction publica um bundle validado e minificado — dead-code elimination FULL, manifesto de assets SHA-256 e saída idêntica entre builds equivalentes.")))
                                 .classes("card-grid"))
                 .id("features")
                 .classes("section", "container")

@@ -45,7 +45,7 @@ class WebsiteBrowserIT {
                 page.navigate(server.url() + "/website/");
 
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
-                assertEquals(12, page.locator("#features .card").count());
+                assertEquals(13, page.locator("#features .card").count());
                 assertEquals("true", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertEquals("http://www.w3.org/2000/svg",
@@ -84,7 +84,7 @@ class WebsiteBrowserIT {
 
                 assertTrue(page.textContent("#hero-title").contains("Reimaginado"));
                 assertEquals("EN", page.textContent(".lang-switch"));
-                assertTrue(page.locator("#features .card").count() == 12);
+                assertTrue(page.locator("#features .card").count() == 13);
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {

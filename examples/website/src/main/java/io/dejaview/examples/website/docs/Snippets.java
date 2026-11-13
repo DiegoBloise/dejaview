@@ -22,7 +22,13 @@ public final class Snippets {
             examples/counter/target/webapp/
             ├── app.js
             ├── app.js.map
+            ├── dejaview-assets.json
             └── index.html""";
+
+    public static final String PRODUCTION_BUILD = """
+            # production pipeline: FULL dead-code elimination,
+            # minified output, 768 KiB output tripwire
+            ./mvnw clean package -Pproduction""";
 
     public static final String SERVE = "python3 -m http.server 4280 -d examples/counter/target/webapp";
 

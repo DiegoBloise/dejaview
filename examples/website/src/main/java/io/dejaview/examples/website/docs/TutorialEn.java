@@ -179,13 +179,20 @@ public final class TutorialEn {
                 prose(text("Bring your own framework: add its CSS to your page's head, use its classes in .classes(...), and you're done. DejaView ships no UI kit and no CSS pipeline on purpose.")),
 
                 h2("production", "18. Building for production"),
-                prose(text("The build you ran in step 2 is the production build. ./mvnw clean verify compiles everything to JavaScript and writes the result to each example's target/webapp directory — plain files you can host anywhere:")),
+                prose(text("Two build profiles share one pipeline. The default development build uses SIMPLE optimization and readable, unminified JavaScript — easier to debug. The production profile flips the same knobs to their optimized values with a single flag:")),
+                shell(Snippets.PRODUCTION_BUILD),
+                bullets(
+                        item(code("optimizationLevel=FULL"), text(" — TeaVM dead-code elimination removes everything the bundle does not reach.")),
+                        item(code("minify"), text(" — the emitted JavaScript is minified: short identifiers and collapsed whitespace.")),
+                        item(code("app.js.map"), text(" — the source map is retained for field diagnostics and costs nothing at runtime."))),
+                prose(text("Every build also runs dejaview-compiler against the assembled webapp before it can ship: it fails on missing or empty assets — reporting each problem with the file that references it — and fingerprints the output with SHA-256:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
                         item(code("app.js"), text(" — your application, compiled.")),
                         item(code("app.js.map"), text(" — the source map for debugging.")),
+                        item(code("dejaview-assets.json"), text(" — every file in the webapp with its size and SHA-256; written by the build, deterministic across equivalent builds.")),
                         item(code("index.html"), text(" — the entry page that loads the bundle."))),
-                prose(text("Upload those files to any static host (nginx, S3, Netlify, GitHub Pages) and you have a production deployment.")),
+                prose(text("The output is reproducible: equivalent sources under equivalent conditions produce byte-identical JavaScript and manifests — archives included. Upload those files to any static host (nginx, S3, Netlify, GitHub Pages) and you have a production deployment.")),
 
                 h2("troubleshooting", "19. Troubleshooting"),
                 bullets(
