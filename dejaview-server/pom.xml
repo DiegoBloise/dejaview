@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.dejaview</groupId>
+        <artifactId>dejaview-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dejaview-server</artifactId>
+    <name>DejaView Server</name>
+    <description>Platform-independent server-side execution for DejaView: request-scoped
+        contexts, a platform-neutral server render tree and serialization boundaries.
+        Contains no browser APIs and no TeaVM imports.</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-di</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-state</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dejaview</groupId>
+            <artifactId>dejaview-http</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

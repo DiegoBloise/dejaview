@@ -22,6 +22,7 @@
         <module>dejaview-http</module>
         <module>dejaview-forms</module>
         <module>dejaview-state</module>
+        <module>dejaview-server</module>
         <module>dejaview-compiler</module>
         <module>dejaview-cli</module>
         <module>examples/counter</module>
@@ -116,6 +117,11 @@
             <dependency>
                 <groupId>io.dejaview</groupId>
                 <artifactId>dejaview-state</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dejaview</groupId>
+                <artifactId>dejaview-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
