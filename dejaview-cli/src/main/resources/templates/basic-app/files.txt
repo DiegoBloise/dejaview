@@ -1,0 +1,13 @@
+# Files of the basic-app template, relative to templates/basic-app/.
+# Paths may contain __PACKAGE_PATH__; contents use the placeholder names
+# documented in ProjectGenerator.
+gitignore
+.mvn/wrapper/maven-wrapper.properties
+README.md
+dejaview.properties
+mvnw
+mvnw.cmd
+pom.xml
+src/main/java/__PACKAGE_PATH__/App.java
+src/main/java/__PACKAGE_PATH__/CounterComponent.java
+src/main/webapp/index.html
