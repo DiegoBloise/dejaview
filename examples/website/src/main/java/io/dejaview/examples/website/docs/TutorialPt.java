@@ -130,12 +130,27 @@ public final class TutorialPt {
                         item(text("Timeouts, cancelamento e credenciais são opções de primeira classe no builder.")),
                         item(text("JSON é tratado por um leitor/escritor pequeno e sem dependências — sem databind de terceiros."))),
 
-                h2("styling", "14. Estilizando seu app"),
+                h2("forms", "14. Formulários reativos"),
+                prose(text("O dejaview-forms adiciona controles, grupos e arrays reativos. Um controle é dono do seu valor, do seu estado de validação e das flags de interação, e toda leitura registra uma dependência:")),
+                java(Snippets.FORMS_CONTROL),
+                prose(text("Validadores são funções simples. Validadores síncronos rodam primeiro; validadores assíncronos só rodam quando o resultado síncrono é válido, e respostas de valores já substituídos são descartadas:")),
+                java(Snippets.FORMS_VALIDATION),
+                prose(text("Grupos agregam seus filhos: o valor é um mapa imutável, os erros recebem o nome do filho como prefixo e o status sobe pela árvore. Arrays fazem o mesmo com chaves posicionais:")),
+                java(Snippets.FORMS_GROUP),
+                prose(text("FormBindings conecta controles DOM comuns ao estado do formulário, então digitar, marcar e selecionar atualizam o controle sem listeners manuais:")),
+                java(Snippets.FORMS_BINDING),
+                bullets(
+                        item(code("touched"), text(" — marcado no blur; use para exibir mensagens de validação.")),
+                        item(code("dirty"), text(" — marcado na primeira mudança de valor.")),
+                        item(code("status()"), text(" — VALID, INVALID, PENDING ou DISABLED, agregado pela árvore."))),
+                note("tip", strong("Valores nunca são null."), text(" Use o valor vazio do tipo — \"\", 0 ou false — para um controle não preenchido.")),
+
+                h2("styling", "15. Estilizando seu app"),
                 prose(text("O DejaView nunca toca no seu CSS. As views carregam atributos class e style simples, então qualquer stylesheet funciona — CSS escrito à mão, Bootstrap, Tailwind CSS, daisyUI:")),
                 java(Snippets.STYLING),
                 prose(text("Traga o seu framework: adicione o CSS dele no head da página, use as classes dele em .classes(...), e pronto. O DejaView não entrega kit de UI nem pipeline de CSS, de propósito.")),
 
-                h2("production", "15. Build de produção"),
+                h2("production", "16. Build de produção"),
                 prose(text("O build que você rodou no passo 2 já é o de produção. ./mvnw clean verify compila tudo para JavaScript e escreve o resultado no diretório target/webapp de cada exemplo — arquivos simples que você pode hospedar em qualquer lugar:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
@@ -144,7 +159,7 @@ public final class TutorialPt {
                         item(code("index.html"), text(" — a página de entrada que carrega o bundle."))),
                 prose(text("Suba esses arquivos para qualquer hospedagem estática (nginx, S3, Netlify, GitHub Pages) e você tem um deploy de produção.")),
 
-                h2("troubleshooting", "16. Problemas comuns"),
+                h2("troubleshooting", "17. Problemas comuns"),
                 bullets(
                         item(code("java -version mostra 8, 17 ou 21"), text(" — seu JAVA_HOME aponta para o JDK errado. Aponte para uma instalação do Java 25 e reabra o terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — rode chmod +x mvnw, ou use mvnw.cmd no Windows.")),
@@ -152,7 +167,7 @@ public final class TutorialPt {
                         item(code("Página em branco, sem contador"), text(" — abra o console do navegador. Um 404 para app.js significa que você está servindo o diretório errado; precisa ser examples/counter/target/webapp, não a raiz do repositório.")),
                         item(code("BUILD FAILURE baixando dependências"), text(" — confira o acesso à rede; o Maven precisa alcançar repo.maven.apache.org no primeiro build."))),
 
-                h2("next-steps", "17. Próximos passos"),
+                h2("next-steps", "18. Próximos passos"),
                 prose(
                         text("Explore o "),
                         link("/website/pt/playground/", "playground interativo"),

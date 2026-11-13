@@ -314,6 +314,83 @@ public final class Examples {
                                 result.set("error: " + outcome.failure().code());
                             }
                         }
+                    }"""),
+
+            new Example("forms",
+                    "Reactive forms", "Formulários reativos",
+                    "Validated controls, async checks, dynamic arrays and submission",
+                    "Controles validados, checagens assíncronas, arrays dinâmicos e submissão",
+                    """
+                    // examples/showcase/src/main/java/io/dejaview/examples/showcase/ShowcaseApp.java
+
+                    private static final class FormsDemo extends AbstractComponent {
+
+                        private final FormControl<String> name =
+                                new FormControl<>("", Validators.required(), Validators.minLength(2));
+                        private final FormControl<String> username =
+                                new FormControl<>("", Validators.required(), Validators.minLength(3));
+                        private final FormControl<Boolean> newsletter = new FormControl<>(false);
+                        private final FormArray tags = new FormArray()
+                                .add(new FormControl<>("", Validators.required()));
+                        private final FormGroup form = new FormGroup();
+                        private final Signal<String> message = new Signal<>("No submission yet.");
+
+                        FormsDemo() {
+                            username.addAsyncValidator(FormsDemo::checkUsername);
+                            form.addControl("name", name)
+                                    .addControl("username", username)
+                                    .addControl("newsletter", newsletter)
+                                    .addControl("tags", tags);
+                        }
+
+                        @Override
+                        public View render() {
+                            return Views.div(
+                                    Views.h1("Reactive forms"),
+                                    Views.p("Status: " + form.status()).id("forms-status"),
+                                    FormBindings.text("forms-name", name),
+                                    FormBindings.text("forms-username", username),
+                                    FormBindings.checkbox("forms-newsletter", newsletter),
+                                    tagRows(),
+                                    Views.button("Add tag")
+                                            .id("forms-add-tag")
+                                            .attr("type", "button")
+                                            .onClick(this::addTag),
+                                    Views.button("Submit")
+                                            .id("forms-submit")
+                                            .attr("type", "button")
+                                            .onClick(this::submit),
+                                    Views.p(message.get()).id("forms-result"));
+                        }
+
+                        private View tagRows() {
+                            List<View> rows = new ArrayList<>();
+                            for (AbstractControl<?> tag : tags.controls()) {
+                                rows.add(FormBindings.text("forms-tag-" + rows.size(),
+                                        (FormControl<String>) tag));
+                            }
+                            return Views.div(rows.toArray(View[]::new));
+                        }
+
+                        private void addTag() {
+                            tags.add(new FormControl<>("", Validators.required()));
+                        }
+
+                        private void submit() {
+                            FormSubmission<Map<String, Object>> submission = form.submit();
+                            message.set(submission.valid()
+                                    ? "Submitted: " + submission.value()
+                                    : "Please fix the highlighted fields.");
+                        }
+
+                        private static void checkUsername(String value, ValidationCallback callback) {
+                            // Simulates a remote availability check.
+                            Window.setTimeout(
+                                    () -> callback.complete(value.equals("admin")
+                                            ? ValidationErrors.of("taken")
+                                            : ValidationErrors.none()),
+                                    600);
+                        }
                     }""")
     );
 

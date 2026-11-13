@@ -221,6 +221,64 @@ public final class Snippets {
             Views.button("Save").classes("btn", "btn-primary");
             Views.p("Tagline").classes("text-muted", "small");""";
 
+    public static final String FORMS_CONTROL = """
+            FormControl<String> email = new FormControl<>(
+                    "",
+                    Validators.required(),
+                    Validators.email());
+
+            FormGroup form = new FormGroup(Map.of(
+                    "email", email,
+                    "age", new FormControl<>(0, Validators.min(18))));
+
+            ControlStatus status = form.status(); // VALID, INVALID, PENDING, DISABLED""";
+
+    public static final String FORMS_VALIDATION = """
+            private static void checkUsername(String value, ValidationCallback callback) {
+                boolean taken = value.equals("admin");
+                callback.complete(taken
+                        ? ValidationErrors.of("taken")
+                        : ValidationErrors.none());
+            }
+
+            FormControl<String> username =
+                    new FormControl<>("", Validators.required(), Validators.minLength(3));
+            username.addAsyncValidator(FormsExample::checkUsername);""";
+
+    public static final String FORMS_GROUP = """
+            FormGroup form = new FormGroup(Map.of(
+                    "email", new FormControl<>("", Validators.required(), Validators.email()),
+                    "tags", new FormArray()
+                            .add(new FormControl<>("", Validators.required()))));
+
+            form.errors().has("email.required");  // prefixed by child name
+            form.errors().has("tags.0.required"); // prefixed by index""";
+
+    public static final String FORMS_BINDING = """
+            private final FormControl<String> email =
+                    new FormControl<>("", Validators.email());
+            private final FormControl<Boolean> accepted = new FormControl<>(false);
+            private final FormGroup form =
+                    new FormGroup(Map.of("email", email, "terms", accepted));
+
+            @Override
+            public View render() {
+                return Views.element("form",
+                        Views.element("label", Views.text("Email")).attr("for", "email"),
+                        FormBindings.email("email", email),
+                        FormBindings.checkbox("terms", accepted),
+                        Views.button("Submit")
+                                .attr("type", "button")
+                                .onClick(this::submit));
+            }
+
+            private void submit() {
+                FormSubmission<Map<String, Object>> result = form.submit();
+                if (result.valid()) {
+                    System.out.println(result.value());
+                }
+            }""";
+
     public static final String JAVA_MAIN = """
             public static void main(String[] args) {
                 DejaView.mount(Views.componentFactory(CounterComponent::new), "app");

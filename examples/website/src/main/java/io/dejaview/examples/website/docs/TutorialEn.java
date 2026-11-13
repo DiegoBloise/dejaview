@@ -130,12 +130,27 @@ public final class TutorialEn {
                         item(text("Timeouts, cancellation and credentials are first-class options on the builder.")),
                         item(text("JSON is handled by a small, dependency-free reader/writer — no third-party databind required."))),
 
-                h2("styling", "14. Styling your app"),
+                h2("forms", "14. Reactive forms"),
+                prose(text("dejaview-forms adds reactive controls, groups and arrays. A control owns its value, its validation state and the interaction flags, and every read tracks a dependency:")),
+                java(Snippets.FORMS_CONTROL),
+                prose(text("Validators are plain functions. Synchronous validators run first; asynchronous validators only run when the synchronous result is valid, and responses for superseded values are discarded:")),
+                java(Snippets.FORMS_VALIDATION),
+                prose(text("Groups aggregate their children: the value is an immutable map, errors are prefixed by name, and status bubbles up. Arrays do the same with positional keys:")),
+                java(Snippets.FORMS_GROUP),
+                prose(text("FormBindings connects regular DOM controls to form state, so typing, checking and selecting update the control without manual listeners:")),
+                java(Snippets.FORMS_BINDING),
+                bullets(
+                        item(code("touched"), text(" — set on blur; show validation messages from it.")),
+                        item(code("dirty"), text(" — set on the first value change.")),
+                        item(code("status()"), text(" — VALID, INVALID, PENDING or DISABLED, aggregated through the tree."))),
+                note("tip", strong("Values are never null."), text(" Use the type's empty value — \"\", 0 or false — for an unfilled control.")),
+
+                h2("styling", "15. Styling your app"),
                 prose(text("DejaView never touches your CSS. Views carry plain class and style attributes, so any stylesheet works — hand-written CSS, Bootstrap, Tailwind CSS, daisyUI:")),
                 java(Snippets.STYLING),
                 prose(text("Bring your own framework: add its CSS to your page's head, use its classes in .classes(...), and you're done. DejaView ships no UI kit and no CSS pipeline on purpose.")),
 
-                h2("production", "15. Building for production"),
+                h2("production", "16. Building for production"),
                 prose(text("The build you ran in step 2 is the production build. ./mvnw clean verify compiles everything to JavaScript and writes the result to each example's target/webapp directory — plain files you can host anywhere:")),
                 shell(Snippets.WEBAPP_LAYOUT),
                 bullets(
@@ -144,7 +159,7 @@ public final class TutorialEn {
                         item(code("index.html"), text(" — the entry page that loads the bundle."))),
                 prose(text("Upload those files to any static host (nginx, S3, Netlify, GitHub Pages) and you have a production deployment.")),
 
-                h2("troubleshooting", "16. Troubleshooting"),
+                h2("troubleshooting", "17. Troubleshooting"),
                 bullets(
                         item(code("java -version shows 8, 17 or 21"), text(" — your JAVA_HOME points at the wrong JDK. Point it at a Java 25 install and reopen the terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — run chmod +x mvnw, or use mvnw.cmd on Windows.")),
@@ -152,7 +167,7 @@ public final class TutorialEn {
                         item(code("Blank page, no counter"), text(" — open the browser console. A 404 for app.js means you're serving the wrong directory; it must be examples/counter/target/webapp, not the repository root.")),
                         item(code("BUILD FAILURE downloading dependencies"), text(" — check network access; Maven needs to reach repo.maven.apache.org on the first build."))),
 
-                h2("next-steps", "17. Next steps"),
+                h2("next-steps", "18. Next steps"),
                 prose(
                         text("Explore the "),
                         link("/website/playground/", "interactive playground"),

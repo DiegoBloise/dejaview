@@ -78,4 +78,8 @@ public final class Icons {
     public static View check() {
         return svg(path("M20 6L9 17l-5-5"));
     }
+
+    public static View forms() {
+        return svg(path("M5 3h14v18H5z"), path("M8 8h8M8 12h8M8 16h4"));
+    }
 }
