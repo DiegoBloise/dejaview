@@ -130,6 +130,16 @@ class WebsiteBrowserIT {
                 page.navigate(server.url() + "/website/playground/");
                 assertEquals(8, page.locator(".example-item").count());
 
+                // The shared site stylesheet styles inline <code>; the editor's
+                // single multi-line <code> must not inherit that box, or every
+                // wrapped line gets a visible background/border.
+                assertEquals("rgba(0, 0, 0, 0)", page.evaluate(
+                        "() => getComputedStyle(document.getElementById('highlight-code')).backgroundColor"));
+                assertEquals("0px", page.evaluate(
+                        "() => getComputedStyle(document.getElementById('highlight-code')).borderTopWidth"));
+                assertEquals("0px", page.evaluate(
+                        "() => getComputedStyle(document.getElementById('highlight-code')).paddingTop"));
+
                 page.click("#btn-run");
                 page.waitForTimeout(500);
                 assertTrue(page.getAttribute("#preview-iframe", "src").contains("example=counter"));

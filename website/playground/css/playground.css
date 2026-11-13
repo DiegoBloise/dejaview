@@ -97,7 +97,7 @@ body {
     padding: 1rem 1.1rem; border: 0; border-radius: 0;
 }
 .editor-highlight { background: var(--bg-raised); color: var(--text); overflow: hidden; pointer-events: none; }
-.editor-highlight code { font-family: inherit; font-size: inherit; }
+.editor-highlight code { font-family: inherit; font-size: inherit; background: none; border: 0; padding: 0; color: inherit; }
 .editor-input { background: transparent; color: transparent; caret-color: var(--accent-cyan); overflow: auto; resize: none; }
 .editor-input::selection { background: rgba(139, 124, 248, 0.35); }
 
