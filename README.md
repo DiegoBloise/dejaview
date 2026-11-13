@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 4 in progress — Sprint 13 (state management) implemented.**
+**Phase 5 in progress — Sprint 14 (CLI and development server) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -71,7 +71,8 @@ test. SSR and tooling do not exist yet.
 | HTTP client (`dejaview-http`): immutable `HttpRequest`/`HttpHeaders`/`HttpResponse`, async exactly-once delivery, request/response interceptors, timeouts, credentials, cancellation, dependency-free JSON, XHR browser adapter (statuses as values; Fetch deferred) | Implemented and tested (Chromium E2E) |
 | Reactive forms (`dejaview-forms`): typed `FormControl`/`FormGroup`/`FormArray`, sync and async validators, touched/dirty/disabled states, prefixed aggregated errors, `FormSubmission` snapshots, `FormBindings` DOM bindings | Implemented and tested (Chromium E2E) |
 | State management (`dejaview-state`): `StateStore` shared holders, named selectors, lazy store-owned `select()` computeds, `Stores.combine` cross-store projections, `AsyncStore` with exactly-once completions and stale-while-revalidate data, `PersistedStore`/`StateCodec` opt-in persistence, `StateRegistry` composition-root registry | Implemented and tested (Chromium E2E) |
-| CLI, DevTools, compiler abstraction | Planned |
+| CLI and development server (`dejaview-cli`): `dejaview new` project generator (embedded template, Maven wrapper), `dejaview build` with actionable diagnostics, `dejaview run` with live reload on a watched source tree, `dejaview doctor` project validation | Implemented and tested (Chromium E2E) |
+| DevTools, compiler abstraction | Planned |
 | SSR, SSG, hydration | Planned |
 
 The authoritative implemented-versus-planned breakdown is
@@ -104,6 +105,22 @@ examples/counter/target/webapp/
 ├── app.js.map
 └── index.html
 ```
+
+### Start your own app
+
+The CLI scaffolds a ready-to-build project (until DejaView is published on
+Central, build the CLI once from this checkout and put it on your `PATH`):
+
+```bash
+./mvnw -pl dejaview-cli -am package
+alias dejaview='java -jar '"$PWD"'/dejaview-cli/target/dejaview-cli-0.1.0-SNAPSHOT.jar'
+dejaview new my-app && cd my-app
+dejaview doctor   # validate JDK, wrapper and layout
+dejaview run      # build, serve on http://localhost:4321, reload on change
+```
+
+`dejaview run` watches `src/` and rebuilds on every change; the browser
+reloads itself. On Windows, call the jar directly (`java -jar …\dejaview-cli-*.jar …`).
 
 ### Run the example
 
@@ -163,6 +180,7 @@ created as empty placeholders.
 | `dejaview-http` | HTTP client: `HttpClient` with async exactly-once delivery, immutable requests and headers, interceptors, timeouts, credentials, cancellation, dependency-free JSON tree. XHR browser adapter behind `HttpTransport`; the API itself has no browser or TeaVM imports. | Implemented |
 | `dejaview-forms` | Platform-independent reactive forms: `FormControl`, `FormGroup`, `FormArray`, sync/async validators, stable error keys, `FormBindings` DOM bindings. Depends on `dejaview-core` and `dejaview-reactivity`; no browser or TeaVM imports. | Implemented |
 | `dejaview-state` | Platform-independent state management: `StateStore`, `Selector`, `Stores.combine`, `StateRegistry`, `AsyncStore` with `AsyncState`/`AsyncStatus`/`AsyncError`, persistence contracts (`StateStorage`, `StateCodec`, `PersistedStore`) with a `localStorage`/`sessionStorage` browser adapter. Depends on `dejaview-core` and `dejaview-reactivity`; no browser types on the API surface. | Implemented |
+| `dejaview-cli` | Zero-dependency developer workflow: `dejaview new` (project generator from the embedded `basic-app` template), `dejaview build`, `dejaview run` (JDK HTTP development server with `WatchService` rebuilds and poll-based live reload) and `dejaview doctor` (JDK, wrapper, layout and configuration validation). Invokes the project's Maven wrapper; no reflection, no daemon. | Implemented |
 | `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
 | `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
@@ -178,6 +196,7 @@ dejaview-router → dejaview-core, dejaview-reactivity
 dejaview-http → dejaview-core
 dejaview-forms → dejaview-core, dejaview-reactivity
 dejaview-state → dejaview-core, dejaview-reactivity
+dejaview-cli → (no runtime dependencies)
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -202,6 +221,7 @@ dejaview/
 ├── dejaview-http/          # HTTP client (pure Java API + TeaVM XHR adapter)
 ├── dejaview-forms/         # Reactive forms (pure Java)
 ├── dejaview-state/         # State management (pure Java)
+├── dejaview-cli/           # CLI and development server (zero dependencies)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
@@ -309,13 +329,32 @@ API — see
 | 1 | Foundation and JavaScript runtime | Implemented |
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
-| 4 | Application Framework | In progress — Sprints 09–13 implemented (dependency injection, router, HTTP client, reactive forms, state management); CLI next |
-| 5 | Compiler and Tooling | Planned |
+| 4 | Application Framework | Completed — Sprints 09–13 implemented (dependency injection, router, HTTP client, reactive forms, state management) |
+| 5 | Compiler and Tooling | In progress — Sprint 14 (CLI and development server) implemented; Sprint 15 (production compiler) next |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 14 — CLI and Development Server
+### Next milestone: Sprint 15 — Production Compiler and Build Optimization
+
+Sprint 14 delivered the official developer workflow (`dejaview-cli`, zero
+runtime dependencies): `dejaview new <name>` generates a self-contained
+project from the embedded `basic-app` template (generated `./mvnw` wrapper,
+a standalone pom, a working counter component and the host page — empty
+directory required; `.gitignore` restored; `mvnw` marked executable);
+`dejaview build` runs the wrapper and reports the actionable `[ERROR]` lines
+(Maven boilerplate filtered) when it fails; `dejaview run` builds once,
+then serves `target/webapp` on `http://localhost:4321` with a recursive,
+300 ms-debounced `WatchService` watching `src/`, rebuilding on change and
+reloading the browser through an injected poll-based client and a
+`/__dejaview__/version` endpoint — a failed rebuild keeps the last good
+build serving; `dejaview doctor` validates the JDK (≥ 25), the compiler,
+the wrapper, the project layout, `dejaview.properties` (`port`/`host`/
+`webappDir`, flags win) and local dependency availability. The whole loop
+is verified in Chromium by `CliWorkflowIT` (generate → wrapper build →
+serve → render → source edit → rebuild → live reload), and the bilingual
+guide documents the workflow in section 16. See
+[ADR-0021](docs/ADR/0021-cli-and-dev-server.md).
 
 Sprint 13 delivered a platform-independent state management module (`dejaview-state`,
 depending on `dejaview-core` and `dejaview-reactivity`): `StateStore` shared
@@ -334,9 +373,9 @@ The showcase `StateDemo` (`?example=state`) demonstrates a shared cart store,
 selectors, a cross-store discount, an async checkout and a `localStorage`-
 persisted theme, verified in Chromium by
 `ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState` — including
-restore across reload. The website feature card, tutorial section (heading 15
-of 19 in both languages) and playground example are wired; `WebsiteBrowserIT`
-asserts 11 feature cards and 10 playground examples.
+restore across reload. The website feature card, tutorial section (heading 15 in both
+languages) and playground example are wired; `WebsiteBrowserIT`
+asserted 11 feature cards and 10 playground examples (12 cards since Sprint 14).
 See [ADR-0020](docs/ADR/0020-state-management-model.md).
 
 Earlier in this phase, Sprint 12 delivered a platform-independent reactive forms module (`dejaview-forms`,
@@ -424,7 +463,7 @@ Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 ./mvnw clean package -DskipTests
 
 # Opt-in browser end-to-end tests (unit + examples)
-./mvnw -Pe2e -pl examples/counter,examples/showcase,examples/website -am verify
+./mvnw -Pe2e -pl dejaview-cli,examples/counter,examples/showcase,examples/website -am verify
 ```
 
 The root `pom.xml` declares the modules, centralizes dependency and plugin

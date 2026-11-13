@@ -284,9 +284,21 @@ dejaview analyze
 
 O processo de build deverá suportar otimizações, geração de bundles, resolução de dependências e preparação dos recursos necessários para execução no navegador.
 
-> Os comandos `dejaview build` acima descrevem a CLI planejada (Phase 5). No
-> estado atual, o build é executado com Maven: `./mvnw clean verify` gera
-> `examples/counter/target/webapp/`.
+> Os comandos acima descrevem a CLI planejada (Phase 5). O modelo implementado
+> no Sprint 14 é deliberadamente menor: a `dejaview-cli` orquestra o Maven
+> wrapper em vez de substituí-lo — `dejaview build` roda `./mvnw package` e
+> reporta as linhas `[ERROR]` (ruído do Maven filtrado) quando o build falha;
+> `dejaview run` constrói uma vez e serve `target/webapp` em
+> `http://localhost:4321` com um `WatchService` recursivo (debounce de
+> 300 ms) sobre `src/`, reconstruindo a cada mudança; o navegador recarrega
+> sozinho por meio de um cliente injetado que consulta `/__dejaview__/version`
+> (contador monotônico). `dejaview new` gera um projeto autocontido a partir de
+> um template embutido (`basic-app`: wrapper, pom standalone, componente
+> contador, página host e `dejaview.properties`); `dejaview doctor` valida o
+> JDK (≥ 25), o compilador, o wrapper, a estrutura do projeto e o
+> `dejaview.properties`. O servidor de desenvolvimento é uma ferramenta de
+> desenvolvimento — não faz cache, TLS nem compressão. O build em si continua
+> sendo `./mvnw clean verify`. Detalhes em [ADR-0021](ADR/0021-cli-and-dev-server.md).
 
 # 4. Rendering Engine
 
@@ -1405,9 +1417,9 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 - [ ] Tree Shaking.
 - [ ] Code Splitting.
 - [ ] Source Maps.
-- [ ] CLI.
-- [ ] Development Server.
-- [ ] Hot Reload.
+- [x] CLI. (Sprint 14)
+- [x] Development Server. (Sprint 14)
+- [x] Hot Reload. (Sprint 14 — poll-based live reload; full HMR remains proposto)
 
 **Objetivo:** proporcionar uma experiência profissional de desenvolvimento.
 

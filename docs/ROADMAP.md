@@ -836,19 +836,19 @@ Applications must be able to manage local, shared, derived, asynchronous and per
 
 ### Implementation
 
-- [ ] Create `dejaview-cli`.
-- [ ] Implement project initialization.
-- [ ] Implement project templates.
-- [ ] Implement development commands.
-- [ ] Implement build commands.
-- [ ] Implement development server.
-- [ ] Implement static asset serving.
-- [ ] Implement file watching.
-- [ ] Implement automatic rebuilds.
-- [ ] Implement browser reload.
-- [ ] Implement environment configuration.
-- [ ] Implement useful build diagnostics.
-- [ ] Implement project validation.
+- [x] Create `dejaview-cli`.
+- [x] Implement project initialization.
+- [x] Implement project templates.
+- [x] Implement development commands.
+- [x] Implement build commands.
+- [x] Implement development server.
+- [x] Implement static asset serving.
+- [x] Implement file watching.
+- [x] Implement automatic rebuilds.
+- [x] Implement browser reload.
+- [x] Implement environment configuration.
+- [x] Implement useful build diagnostics.
+- [x] Implement project validation.
 
 ### Deliverables
 
@@ -859,17 +859,19 @@ Applications must be able to manage local, shared, derived, asynchronous and per
 
 ### Tests
 
-- [ ] CLI creates a valid project.
-- [ ] Generated projects compile.
-- [ ] Development server starts.
-- [ ] Static files are served.
-- [ ] Source changes trigger rebuilds.
-- [ ] Build errors are reported clearly.
-- [ ] Generated projects can run in a browser.
+- [x] CLI creates a valid project. (`ProjectGeneratorTest`, `MainTest`, `CliWorkflowIT#generates_a_valid_project_layout`)
+- [x] Generated projects compile. (`CliWorkflowIT` — the generated wrapper builds the project with TeaVM)
+- [x] Development server starts. (`DevServerTest`, `CliWorkflowIT#dev_server_serves_the_app_and_the_live_reload_client`)
+- [x] Static files are served. (`DevServerTest` — content types, 404/403 handling, directory index)
+- [x] Source changes trigger rebuilds. (`CliWorkflowIT#source_changes_trigger_a_rebuild_and_a_browser_reload`)
+- [x] Build errors are reported clearly. (`BuildDiagnosticsTest` — `[ERROR]` extraction with Maven noise filtered)
+- [x] Generated projects can run in a browser. (`CliWorkflowIT#browser_runs_the_generated_app` and live reload verified in Chromium)
 
 ### Acceptance Criteria
 
 A developer must be able to create and run a basic DejaView application using the CLI.
+
+**✅ Met (2026-11-13).** `dejaview new my-app && cd my-app && dejaview run` creates, builds and serves a working DejaView application with live reload; verified end-to-end by `CliWorkflowIT` (generate → wrapper build → Chromium render → source edit → rebuild → reload). See ADR-0021.
 
 ---
 
@@ -1512,8 +1514,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-13):** Sprints 00 through 13 are complete. The
-authoritative implemented-versus-planned list is
+**Current status (2026-11-13):** Sprints 00 through 14 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is underway with Sprint 14 delivered; Sprint 15 (Production Compiler) is next. The authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Sprint | Feature | Status |
@@ -1532,7 +1533,7 @@ authoritative implemented-versus-planned list is
 | 11 | HTTP Client | Completed |
 | 12 | Reactive Forms | Completed |
 | 13 | State Management | Completed |
-| 14 | CLI and Development Server | Not Started |
+| 14 | CLI and Development Server | Completed |
 | 15 | Production Compiler and Optimization | Not Started |
 | 16 | Server Platform Abstraction | Not Started |
 | 17 | Server-Side Rendering | Not Started |

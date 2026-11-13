@@ -1,7 +1,7 @@
 # Implementation Status
 
 **Version:** 0.1.0-SNAPSHOT  
-**Milestone:** Phase 4 — Application Framework  
+**Milestone:** Phase 5 — Developer Tooling and Compiler  
 **Last updated:** 2026-11-13
 
 This document separates what is implemented and tested from what is designed
@@ -84,7 +84,7 @@ treated as available.
 | Click event handling | example | Playwright E2E |
 | Generated browser bundle | example | `target/webapp/app.js` |
 | Source maps | example | `app.js.map` |
-| Browser E2E test | `examples/counter`, `examples/showcase`, `examples/website` | `-Pe2e` Failsafe test (Chromium via Playwright) |
+| Browser E2E test | `dejaview-cli`, `examples/counter`, `examples/showcase`, `examples/website` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, user guide, playground) rendered by DejaView itself, in English and Portuguese | `examples/website` + `website/` | `WebsiteBrowserIT` (`-Pe2e`); static shells load the compiled bundle |
 | Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http, forms, state) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
@@ -140,6 +140,13 @@ treated as available.
 | State showcase example (`?example=state`): shared cart store, selectors, cross-store discount, async checkout, persisted theme | `examples/showcase` | Playwright E2E |
 | State example published in the playground | `website/playground` | Static bundle served by the showcase |
 | Feature card, bilingual tutorial sections, playground list updates | `examples/website` | Playwright E2E |
+| `dejaview-cli` — `dejaview new` project generator (embedded `basic-app` template, Maven wrapper, standalone pom, placeholder substitution) | `dejaview-cli` | JUnit tests (`ProjectGeneratorTest`, `MainTest`) |
+| `dejaview build` — wrapper orchestration with `[ERROR]` diagnostics (Maven noise filtered, bounded) | `dejaview-cli` | JUnit tests (`BuildDiagnosticsTest`) |
+| `dejaview run` — development server on `com.sun.net.httpserver`: static serving with containment check, content types, injected poll-based live reload, `/__dejaview__/version` | `dejaview-cli` | JUnit tests (`DevServerTest`); Chromium E2E |
+| File watching (`WatchService`, recursive, 300 ms debounce) with automatic rebuilds; failed rebuilds serve the last good build | `dejaview-cli` | JUnit tests; Chromium E2E (`CliWorkflowIT`) |
+| `dejaview doctor` — environment and project validation (JDK ≥ 25, compiler, wrapper, layout, `dejaview.properties`, local repo, port) | `dejaview-cli` | JUnit tests (`MainTest`) |
+| `dejaview.properties` — per-project port/host/webappDir configuration; flags take precedence; line-numbered errors | `dejaview-cli` | JUnit tests (`ProjectConfigTest`) |
+| CLI end-to-end workflow: generate → wrapper build → serve → Chromium render → source edit → rebuild → reload | `dejaview-cli` | Playwright E2E (`CliWorkflowIT`) |
 
 ### End-to-end proof
 
@@ -188,7 +195,7 @@ reconciles the component and updates the existing text node and the counter's
 | SSR | Planned (Phase 6) | |
 | SSG | Planned (Phase 6) | |
 | Hydration | Planned (Phase 6) | |
-| CLI | Planned (Phase 5) | |
+| CLI | Implemented (Sprint 14) | See implemented table; `dejaview-cli` with `new`/`build`/`run`/`doctor`, the development server with live reload and Chromium E2E coverage (`CliWorkflowIT`) (ADR-0021) | |
 | DevTools | Planned | |
 | Spring Boot integration | Planned (Phase 8) | |
 | Testing utilities | Planned | JUnit/Playwright are used directly |
@@ -291,7 +298,27 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 14 — CLI and Development Server** (see `docs/ROADMAP.md`).
+**Sprint 15 — Production Compiler and Build Optimization** (see `docs/ROADMAP.md`).
+
+Sprint 14 is implemented and tested: `dejaview-cli` with
+`dejaview new` (embedded `basic-app` template: generated project with the
+Maven wrapper, a standalone pom, a counter component and the host page —
+refuses non-empty directories, restores `.gitignore`, marks `mvnw` executable),
+`dejaview build` (wrapper orchestration with `[ERROR]` diagnostics and
+filtered noise), `dejaview run` (development server on
+`com.sun.net.httpserver`: static serving with a containment check, correct
+content types, `no-store` responses, HTML responses with the live-reload
+client injected, `/__dejaview__/version` and `/__dejaview__/live.js`
+endpoints; `WatchService`-based recursive watching with a 300 ms debounce;
+rebuilds run inline so they never overlap; a failed rebuild keeps the last
+good build serving), `dejaview doctor` (JDK ≥ 25, compiler, wrapper, layout,
+`dejaview.properties`, local repo, port checks) and
+`dejaview.properties` (`port`/`host`/`webappDir`; flags take precedence).
+The whole loop is validated in Chromium by `CliWorkflowIT` (generate →
+wrapper build → serve → render → source edit → rebuild → live reload). The
+bilingual website documents the CLI in the guide (section 16, both languages)
+and ships a twelfth feature card; the CLI has no playground example by
+design (it is a terminal workflow, not a browser one). See ADR-0021.
 
 Sprint 13 is implemented and tested: `dejaview-state` with `StateStore`
 (shared, observable holder with tracked reads and synchronous writes), named
@@ -310,7 +337,7 @@ the shared cart store, selectors, a cross-store discount and an async checkout
 with a persisted theme; `ShowcaseBrowserIT#stateExampleManagesSharedDerivedAndAsyncState`
 validates it in Chromium. The website feature card, tutorial section (heading
 15 in both languages) and playground example are wired; `WebsiteBrowserIT`
-asserts 11 feature cards and 10 playground examples. See ADR-0020.
+asserted 11 feature cards and 10 playground examples (12 cards since Sprint 14). See ADR-0020.
 
 Sprint 12 is implemented and tested: `dejaview-forms` with `FormControl`,
 `FormGroup` and `FormArray` (value, `touched`/`dirty`/`disabled`, aggregated
@@ -325,7 +352,7 @@ touched; `aria-invalid` and `disabled` reflect control state. The showcase
 `FormsDemo` (`?example=forms`) demonstrates sync + async validation, a dynamic
 tag array and a submission snapshot; `ShowcaseBrowserIT#formsExampleValidatesAndSubmits`
 validates it in Chromium. The website feature card, tutorial section (heading 14 in both languages) and playground example are wired; `WebsiteBrowserIT`
-asserts 11 feature cards and 10 playground examples. See ADR-0019.
+asserted 11 feature cards and 10 playground examples (12 cards since Sprint 14). See ADR-0019.
 
 Sprint 11 is implemented and tested: `dejaview-http` with immutable
 `HttpRequest` (`get`/`post`/`put`/`patch`/`delete`, fluent withers,
