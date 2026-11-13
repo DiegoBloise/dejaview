@@ -30,6 +30,18 @@ public final class Snippets {
             # minified output, 768 KiB output tripwire
             ./mvnw clean package -Pproduction""";
 
+    public static final String SERVER_PLATFORM = """
+            InjectorBuilder builder = Injector.builder().name("server");
+            ServerBindings.apply(builder);
+
+            try (Injector root = builder.build();
+                 ServerContext context = ServerContext.create(
+                         root, ServerRequest.of("GET", "/"))) {
+
+                ServerTree tree = ServerRenderer.render(
+                        Views.p("Hello from the server"), context);
+            }""";
+
     public static final String SERVE = "python3 -m http.server 4280 -d examples/counter/target/webapp";
 
     public static final String COUNTER_COMPONENT = """

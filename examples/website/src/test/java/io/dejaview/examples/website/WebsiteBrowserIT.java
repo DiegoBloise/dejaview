@@ -45,7 +45,7 @@ class WebsiteBrowserIT {
                 page.navigate(server.url() + "/website/");
 
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
-                assertEquals(13, page.locator("#features .card").count());
+                assertEquals(14, page.locator("#features .card").count());
                 assertEquals("true", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertEquals("http://www.w3.org/2000/svg",
@@ -84,7 +84,7 @@ class WebsiteBrowserIT {
 
                 assertTrue(page.textContent("#hero-title").contains("Reimaginado"));
                 assertEquals("EN", page.textContent(".lang-switch"));
-                assertTrue(page.locator("#features .card").count() == 13);
+                assertTrue(page.locator("#features .card").count() == 14);
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {
@@ -112,6 +112,9 @@ class WebsiteBrowserIT {
                 assertTrue(page.locator(".docs-toc-nav a[href='#state']").count() == 1);
                 assertTrue(page.locator("#cli").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#cli']").count() == 1);
+                assertTrue(page.locator("#server").count() == 1);
+                assertTrue(page.locator(".docs-toc-nav a[href='#server']").count() == 1);
+                assertTrue(page.locator("#server").textContent().contains("Server platform"));
 
                 // Anchor navigation must clear the sticky header.
                 page.click(".docs-toc-nav a[href='#composition']");
@@ -137,6 +140,7 @@ class WebsiteBrowserIT {
                 assertTrue(page.locator("#forms").textContent().contains("Formulários reativos"));
                 assertTrue(page.locator("#state").textContent().contains("Gerenciamento de estado"));
                 assertTrue(page.locator("#cli").textContent().contains("A DejaView CLI"));
+                assertTrue(page.locator("#server").textContent().contains("Plataforma servidor"));
                 assertTrue(page.textContent(".docs-content h2") != null);
                 assertTrue(page.locator(".docs-toc-nav a").allTextContents().stream()
                         .anyMatch(text -> text.contains("Pré-requisitos")));

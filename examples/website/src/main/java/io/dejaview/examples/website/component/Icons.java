@@ -98,4 +98,12 @@ public final class Icons {
     public static View terminal() {
         return svg(path("M4 5h16v14H4z"), path("M7 10l4 3-4 3"), path("M13 16h4", "0.45"));
     }
+
+    public static View server() {
+        return svg(
+                path("M4 4h16v6H4z"),
+                path("M4 14h16v6H4z"),
+                circle("8", "7", "0.5"),
+                circle("8", "17", "0.5"));
+    }
 }

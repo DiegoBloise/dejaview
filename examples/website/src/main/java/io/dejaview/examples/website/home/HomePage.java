@@ -159,7 +159,10 @@ public final class HomePage extends AbstractComponent {
                                           "dejaview new cria o projeto; dejaview run compila, serve com live reload e recompila a cada mudança. Um workflow, sem boilerplate.")),
                                 feature(Icons.box(), t("Production builds", "Builds de produção"),
                                         t("./mvnw package -Pproduction ships a validated, minified bundle — FULL dead-code elimination, a SHA-256 asset manifest and byte-identical output across equivalent builds.",
-                                          "./mvnw package -Pproduction publica um bundle validado e minificado — dead-code elimination FULL, manifesto de assets SHA-256 e saída idêntica entre builds equivalentes.")))
+                                          "./mvnw package -Pproduction publica um bundle validado e minificado — dead-code elimination FULL, manifesto de assets SHA-256 e saída idêntica entre builds equivalentes.")),
+                                feature(Icons.server(), t("Server platform", "Plataforma servidor"),
+                                        t("dejaview-server runs component trees on the JVM with request-scoped contexts, browser-only components rejected up front and state isolated per request — the foundation for SSR.",
+                                          "o dejaview-server executa árvores de componentes na JVM com contextos por requisição, componentes browser-only rejeitados de início e estado isolado por requisição — a base para SSR.")))
                                 .classes("card-grid"))
                 .id("features")
                 .classes("section", "container")

@@ -194,7 +194,18 @@ public final class TutorialEn {
                         item(code("index.html"), text(" — the entry page that loads the bundle."))),
                 prose(text("The output is reproducible: equivalent sources under equivalent conditions produce byte-identical JavaScript and manifests — archives included. Upload those files to any static host (nginx, S3, Netlify, GitHub Pages) and you have a production deployment.")),
 
-                h2("troubleshooting", "19. Troubleshooting"),
+                h2("server", "19. Server platform (alpha)"),
+                prose(text("dejaview-server is the foundation for server-side rendering: it runs component trees on the JVM — no browser, no DOM — and produces a platform-neutral description of the output. Add it to your application to try server-side execution today; HTML serialization itself arrives with Sprint 17.")),
+                java(Snippets.SERVER_PLATFORM),
+                bullets(
+                        item(code("ServerContext"), text(" — one per request: a child injector that binds REQUEST/CONTEXT inside the request scope only, and a fresh MemoryStateStorage per request (unless you bind your own), so requests never see each other's state.")),
+                        item(code("ServerRenderer.render(view, context)"), text(" — walks your View tree and returns a ServerTree: ServerElement, ServerText and ServerFragment nodes, with element event handlers dropped by design and reported in tree.droppedEvents().")),
+                        item(code("BrowserOnlyComponent"), text(" — implement this marker on a component (or register it in context.compatibility()) and the server rejects it with browser-only-component before bind/onInit/render runs — fail fast, never an obscure null pointer deep in browser code.")),
+                        item(code("SerializationBoundary.write(value)"), text(" — the strict JSON gateway: null, JsonValue trees, strings, booleans, finite numbers, string-keyed maps and lists pass through; everything else fails fast with not-serializable."))),
+                prose(text("Components on the server go through the same mount pipeline as in the browser — created once per mounted node, bound, initialized, rendered once — and are destroyed and closed in reverse order when the render finishes or fails. Your components do not change; only the platform differs.")),
+                note("info", strong("Early and intentionally narrow."), text(" There is no HTML output yet, no streaming and no servlet integration — those are Sprint 17+ and Sprint 21. Event handlers never cross the boundary. Server-only execution is a renderer, not a runtime: dejaview-server contains no browser APIs and no TeaVM imports.")),
+
+                h2("troubleshooting", "20. Troubleshooting"),
                 bullets(
                         item(code("java -version shows 8, 17 or 21"), text(" — your JAVA_HOME points at the wrong JDK. Point it at a Java 25 install and reopen the terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — run chmod +x mvnw, or use mvnw.cmd on Windows.")),
@@ -202,7 +213,7 @@ public final class TutorialEn {
                         item(code("Blank page, no counter"), text(" — open the browser console. A 404 for app.js means you're serving the wrong directory; it must be examples/counter/target/webapp, not the repository root.")),
                         item(code("BUILD FAILURE downloading dependencies"), text(" — check network access; Maven needs to reach repo.maven.apache.org on the first build."))),
 
-                h2("next-steps", "20. Next steps"),
+                h2("next-steps", "21. Next steps"),
                 prose(
                         text("Explore the "),
                         link("/website/playground/", "interactive playground"),
