@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -283,6 +284,145 @@ class ServerRendererTest {
                 context);
 
         assertEquals(List.of("submit", "click"), tree.droppedEvents());
+    }
+
+    // --- error boundaries -------------------------------------------------
+
+    @Test
+    void boundaryRendersItsFallbackInPlaceOfTheFailedSubtree() {
+        List<String> log = new ArrayList<>();
+        FallbackBoundary boundary = new FallbackBoundary("page", false, log);
+
+        ServerTree tree = ServerRenderer.render(
+                Views.componentFactory(() -> boundary)
+                        .slot(Views.componentFactory(() -> new ExplodingComponent("widget", "db down", log))),
+                context);
+
+        assertEquals("fallback:page", assertInstanceOf(ServerText.class, tree.root()).value());
+        assertEquals(List.of(new BoundaryError(
+                        FallbackBoundary.class.getName(),
+                        RuntimeException.class.getName(),
+                        "db down")),
+                tree.boundaryErrors());
+        assertEquals(List.of(), tree.droppedEvents());
+        assertFalse(tree.isComplete(), "a contained failure is not a complete render");
+
+        Throwable captured = boundary.captured();
+        assertInstanceOf(DejaViewException.class, captured);
+        assertEquals("server-render-failed", ((DejaViewException) captured).code());
+        assertEquals("db down", captured.getMessage());
+    }
+
+    @Test
+    void boundaryDestroysTheFailedSubtreeAndStaysMountedUntilTheEnd() {
+        List<String> log = new ArrayList<>();
+
+        ServerTree tree = ServerRenderer.render(
+                Views.componentFactory(() -> new FallbackBoundary("page", false, log))
+                        .slot(
+                                Views.componentFactory(() -> new RecordingComponent("kept", log)),
+                                Views.componentFactory(() -> new ExplodingComponent("broken", log))),
+                context);
+
+        assertEquals(
+                List.of(
+                        "bind:boundary-page", "init:boundary-page", "render:boundary-page",
+                        "bind:kept", "init:kept", "render:kept",
+                        "bind:broken", "init:broken", "render:broken",
+                        "destroy:broken", "close:broken",
+                        "destroy:kept", "close:kept",
+                        "fallback:boundary-page",
+                        "destroy:boundary-page", "close:boundary-page"),
+                log,
+                "the failed subtree closes in reverse creation order before the fallback renders");
+        assertEquals("fallback:page", assertInstanceOf(ServerText.class, tree.root()).value());
+    }
+
+    @Test
+    void nestedBoundariesReportOnlyTheInnermostContainment() {
+        List<String> log = new ArrayList<>();
+
+        View inner = Views.componentFactory(() -> new FallbackBoundary("inner", false, log))
+                .slot(Views.componentFactory(() -> new ExplodingComponent("widget", log)));
+        ServerTree tree = ServerRenderer.render(
+                Views.componentFactory(() -> new FallbackBoundary("outer", false, log)).slot(inner),
+                context);
+
+        assertEquals("fallback:inner", assertInstanceOf(ServerText.class, tree.root()).value());
+        assertEquals(1, tree.boundaryErrors().size());
+        assertEquals(FallbackBoundary.class.getName(), tree.boundaryErrors().get(0).boundaryType());
+        assertFalse(log.contains("fallback:boundary-outer"),
+                "the outer boundary must not run when the inner one handled the failure");
+    }
+
+    @Test
+    void fallbackFailurePropagatesToTheEnclosingBoundary() {
+        List<String> log = new ArrayList<>();
+
+        View inner = Views.componentFactory(() -> new FallbackBoundary("inner", true, log))
+                .slot(Views.componentFactory(() -> new ExplodingComponent("widget", log)));
+        ServerTree tree = ServerRenderer.render(
+                Views.componentFactory(() -> new FallbackBoundary("outer", false, log)).slot(inner),
+                context);
+
+        assertEquals("fallback:outer", assertInstanceOf(ServerText.class, tree.root()).value());
+        assertEquals(List.of("boom:widget", "fallback exploded"), tree.boundaryErrors().stream()
+                .map(BoundaryError::message)
+                .toList());
+    }
+
+    @Test
+    void unhandledFallbackFailureFailsTheWholeRender() {
+        List<String> log = new ArrayList<>();
+
+        DejaViewException failure = assertThrows(DejaViewException.class,
+                () -> ServerRenderer.render(
+                        Views.componentFactory(() -> new FallbackBoundary("page", true, log))
+                                .slot(Views.componentFactory(() -> new ExplodingComponent("widget", log))),
+                        context));
+
+        assertEquals("server-render-failed", failure.code());
+        assertEquals("fallback exploded", failure.getMessage());
+        assertEquals(
+                List.of(
+                        "bind:boundary-page", "init:boundary-page", "render:boundary-page",
+                        "bind:widget", "init:widget", "render:widget",
+                        "destroy:widget", "close:widget",
+                        "fallback:boundary-page",
+                        "destroy:boundary-page", "close:boundary-page"),
+                log);
+    }
+
+    @Test
+    void cleanBoundaryReportsNoContainment() {
+        List<String> log = new ArrayList<>();
+
+        ServerTree tree = ServerRenderer.render(
+                Views.componentFactory(() -> new FallbackBoundary("page", false, log))
+                        .slot(Views.componentFactory(() -> new RecordingComponent("kept", log))),
+                context);
+
+        assertEquals("kept", assertInstanceOf(ServerText.class, tree.root()).value());
+        assertEquals(List.of(), tree.boundaryErrors());
+        assertTrue(tree.isComplete());
+    }
+
+    @Test
+    void failureOutsideABoundaryStillFailsTheRenderAndClosesEverything() {
+        List<String> log = new ArrayList<>();
+        View boundary = Views.componentFactory(() -> new FallbackBoundary("page", false, log))
+                .slot(Views.componentFactory(() -> new RecordingComponent("kept", log)));
+        View exploding = Views.componentFactory(() -> new ExplodingComponent("outside", log));
+
+        DejaViewException failure = assertThrows(DejaViewException.class,
+                () -> ServerRenderer.render(
+                        Views.fragment(boundary, exploding),
+                        context));
+
+        assertEquals("server-render-failed", failure.code());
+        assertEquals("boom:outside", failure.getMessage());
+        assertTrue(log.contains("close:boundary-page"));
+        assertTrue(log.contains("close:kept"));
     }
 
     // --- fixtures ---------------------------------------------------------
@@ -554,6 +694,128 @@ class ServerRendererTest {
             return Views.element("form")
                     .on("submit", () -> { })
                     .addChildren(Views.button("Go").on("click", () -> { }));
+        }
+    }
+
+    private static final class FallbackBoundary extends AbstractComponent implements ServerErrorBoundary {
+        private final String name;
+        private final boolean failFallback;
+        private final List<String> log;
+        private Throwable captured;
+
+        FallbackBoundary(String name, boolean failFallback, List<String> log) {
+            this.name = name;
+            this.failFallback = failFallback;
+            this.log = log;
+            onDispose(() -> log.add("close:boundary-" + name));
+        }
+
+        Throwable captured() {
+            return captured;
+        }
+
+        @Override
+        public void bind(ComponentBindings bindings) {
+            super.bind(bindings);
+            log.add("bind:boundary-" + name);
+        }
+
+        @Override
+        public void onInit() {
+            log.add("init:boundary-" + name);
+        }
+
+        @Override
+        public View render() {
+            log.add("render:boundary-" + name);
+            return Views.fragment(slot().toArray(View[]::new));
+        }
+
+        @Override
+        public void onDestroy() {
+            log.add("destroy:boundary-" + name);
+        }
+
+        @Override
+        public View fallback(Throwable error) {
+            log.add("fallback:boundary-" + name);
+            captured = error;
+            if (failFallback) {
+                throw new RuntimeException("fallback exploded");
+            }
+            return Views.text("fallback:" + name);
+        }
+    }
+
+    private static final class RecordingComponent extends AbstractComponent {
+        private final String name;
+        private final List<String> log;
+
+        RecordingComponent(String name, List<String> log) {
+            this.name = name;
+            this.log = log;
+            onDispose(() -> log.add("close:" + name));
+        }
+
+        @Override
+        public void bind(ComponentBindings bindings) {
+            super.bind(bindings);
+            log.add("bind:" + name);
+        }
+
+        @Override
+        public void onInit() {
+            log.add("init:" + name);
+        }
+
+        @Override
+        public View render() {
+            log.add("render:" + name);
+            return Views.text(name);
+        }
+
+        @Override
+        public void onDestroy() {
+            log.add("destroy:" + name);
+        }
+    }
+
+    private static final class ExplodingComponent extends AbstractComponent {
+        private final String name;
+        private final String message;
+        private final List<String> log;
+
+        ExplodingComponent(String name, List<String> log) {
+            this(name, "boom:" + name, log);
+        }
+
+        ExplodingComponent(String name, String message, List<String> log) {
+            this.name = name;
+            this.message = message;
+            this.log = log;
+            onDispose(() -> log.add("close:" + name));
+        }
+
+        @Override
+        public void bind(ComponentBindings bindings) {
+            super.bind(bindings);
+            log.add("bind:" + name);
+        }
+
+        @Override
+        public void onInit() {
+            log.add("init:" + name);
+        }
+
+        @Override
+        public View render() {
+            log.add("render:" + name);
+            throw new RuntimeException(message);
+        }
+
+        @Override
+        public void onDestroy() {
+            log.add("destroy:" + name);
         }
     }
 }

@@ -41,6 +41,12 @@ import java.util.Set;
  *       before returning. If the render or any cleanup step fails, every created
  *       component is still destroyed and closed, and all failures are attached to
  *       the thrown exception.</li>
+ *   <li>components implementing {@link ServerErrorBoundary} contain failures of
+ *       the subtree they render: the failed subtree is destroyed and closed in
+ *       reverse creation order, the failure is reported on
+ *       {@link ServerTree#boundaryErrors()}, and the boundary's fallback is
+ *       rendered in place of the failed subtree. Failures inside the fallback
+ *       propagate to the next enclosing boundary, or fail the render.</li>
  * </ol>
  *
  * <p>Fragments splice their children into the parent: no wrapper node is
@@ -63,7 +69,8 @@ public final class ServerRenderer {
      * @param view    the view tree to render; never {@code null}
      * @param context the request context whose compatibility registry classifies
      *                components; never {@code null}, must not be closed
-     * @return the server tree and the list of dropped event types
+     * @return the server tree, the dropped event types and the boundary
+     *         containments reported during the render
      * @throws DejaViewException with code {@code browser-only-component} when the
      *                           view tree mounts a browser-only component
      * @throws DejaViewException with code {@code server-render-failed} when the
@@ -93,7 +100,7 @@ public final class ServerRenderer {
             throw closeFailure;
         }
         ServerNode root = nodes.size() == 1 ? nodes.get(0) : new ServerFragment(nodes);
-        return new ServerTree(root, List.copyOf(state.droppedEvents));
+        return new ServerTree(root, List.copyOf(state.droppedEvents), List.copyOf(state.boundaryErrors));
     }
 
     private static List<ServerNode> walk(View view, ServerContext context, RenderState state) {
@@ -139,6 +146,25 @@ public final class ServerRenderer {
         state.initialized.add(instance);
         View rendered = Objects.requireNonNull(
                 instance.render(), () -> "component '" + instance.getClass().getName() + "' returned null from render()");
+        if (instance instanceof ServerErrorBoundary boundary) {
+            // Everything created after the boundary was pushed belongs to the
+            // protected subtree; the boundary itself sits at the marker.
+            int subtreeMark = state.created.size();
+            try {
+                return walk(rendered, context, state);
+            } catch (RuntimeException | Error failure) {
+                RuntimeException normalized = asRenderFailure(failure);
+                RuntimeException subtreeClose = closeSubtree(state, subtreeMark);
+                if (subtreeClose != null) {
+                    normalized.addSuppressed(subtreeClose);
+                }
+                state.boundaryErrors.add(new BoundaryError(
+                        instance.getClass().getName(),
+                        failure.getClass().getName(),
+                        failure.getMessage() == null ? "" : failure.getMessage()));
+                return walk(boundary.fallback(normalized), context, state);
+            }
+        }
         return walk(rendered, context, state);
     }
 
@@ -153,8 +179,17 @@ public final class ServerRenderer {
     }
 
     private static RuntimeException closeCreated(RenderState state) {
+        return closeSubtree(state, 0);
+    }
+
+    /**
+     * Destroys and closes every component created after {@code mark}, in
+     * reverse creation order. Returns the first failure, with later failures
+     * attached as suppressed exceptions, or {@code null} when nothing failed.
+     */
+    private static RuntimeException closeSubtree(RenderState state, int mark) {
         RuntimeException first = null;
-        while (!state.created.isEmpty()) {
+        while (state.created.size() > mark) {
             Component component = state.created.pop();
             // onDestroy only for components whose onInit completed; a component
             // rejected before or during initialization is closed, not destroyed.
@@ -202,5 +237,6 @@ public final class ServerRenderer {
         private final Deque<Component> created = new ArrayDeque<>();
         private final Set<Component> initialized = new HashSet<>();
         private final Set<String> droppedEvents = new LinkedHashSet<>();
+        private final List<BoundaryError> boundaryErrors = new ArrayList<>();
     }
 }

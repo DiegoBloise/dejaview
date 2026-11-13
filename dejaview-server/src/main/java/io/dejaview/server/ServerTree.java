@@ -14,19 +14,31 @@ import java.util.Objects;
  *                      whose handlers were dropped during rendering (for example
  *                      {@code "click"}, {@code "input"}). Empty when the view had
  *                      no events. Never {@code null}
+ * @param boundaryErrors one report per {@link ServerErrorBoundary} containment,
+ *                      in containment order. Empty when no boundary caught an
+ *                      error. Never {@code null}
  */
-public record ServerTree(ServerNode root, List<String> droppedEvents) {
+public record ServerTree(ServerNode root, List<String> droppedEvents, List<BoundaryError> boundaryErrors) {
 
     public ServerTree {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(droppedEvents, "droppedEvents");
+        Objects.requireNonNull(boundaryErrors, "boundaryErrors");
         droppedEvents = List.copyOf(droppedEvents);
+        boundaryErrors = List.copyOf(boundaryErrors);
     }
 
     /**
-     * Returns whether nothing was dropped during this render.
+     * Creates a tree without boundary reports.
+     */
+    public ServerTree(ServerNode root, List<String> droppedEvents) {
+        this(root, droppedEvents, List.of());
+    }
+
+    /**
+     * Returns whether nothing was dropped or contained during this render.
      */
     public boolean isComplete() {
-        return droppedEvents.isEmpty();
+        return droppedEvents.isEmpty() && boundaryErrors.isEmpty();
     }
 }

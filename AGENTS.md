@@ -91,7 +91,7 @@ applicable items below in the same change set.
 ./mvnw clean verify
 
 # Browser E2E (Chromium via Playwright)
-./mvnw -Pe2e -pl dejaview-compiler,dejaview-cli,examples/counter,examples/showcase,examples/website -am verify
+./mvnw -Pe2e -pl dejaview-compiler,dejaview-cli,examples/counter,examples/showcase,examples/website,examples/ssr -am verify
 ```
 
 - [ ] Both commands pass.
