@@ -12,7 +12,7 @@
 **Rendering:** CSR, SSR, SSG  
 **License:** TBD
 
-> **Implementation note (2026-11-12).** This document describes the long-term
+> **Implementation note (2026-11-13).** This document describes the long-term
 > target architecture. The current repository implements the foundation described
 > in [ADR-0003](ADR/0003-initial-module-boundaries.md) and
 > [ADR-0007](ADR/0007-first-milestone-scope.md), the reactivity slices from
@@ -25,9 +25,13 @@
 > application context, resource registry, logging and lifecycle contracts),
 > `dejaview-reactivity` (`Signal`, `Effect`, `Computed`, batching and scopes),
 > `dejaview-dom` (DOM contracts, render tree, reactive renderer, positional
-> reconciler, TeaVM JSO adapter) and `dejaview-di` (dependency injection:
+> reconciler, TeaVM JSO adapter), `dejaview-di` (dependency injection:
 > `InjectionToken`, `Provider`, scopes, hierarchical injectors; see
-> [ADR-0016](ADR/0016-dependency-injection-model.md)), and `examples/counter`.
+> [ADR-0016](ADR/0016-dependency-injection-model.md)), `dejaview-router` (see
+> [ADR-0017](ADR/0017-routing-model.md)), `dejaview-http` (see
+> [ADR-0018](ADR/0018-http-client-model.md)), `dejaview-forms` (reactive forms:
+> `FormControl`, `FormGroup`, `FormArray`, sync/async validators; see
+> [ADR-0019](ADR/0019-reactive-forms.md)), and `examples/counter`.
 > TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
@@ -1360,11 +1364,11 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 ## Phase 4 — Application Framework
 
 - [x] Dependency Injection.
-- [ ] Router.
+- [x] Router.
 - [ ] Route Guards.
 - [ ] Lazy Loading.
-- [ ] HTTP Client.
-- [ ] Reactive Forms.
+- [x] HTTP Client.
+- [x] Reactive Forms.
 - [ ] Error Boundaries.
 - [ ] Styling integrations.
 

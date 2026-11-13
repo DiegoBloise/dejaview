@@ -751,19 +751,19 @@ Components and services must be able to consume external APIs through a consiste
 
 ### Implementation
 
-- [ ] Implement form controls.
-- [ ] Implement form groups.
-- [ ] Implement form arrays.
-- [ ] Implement control values.
-- [ ] Implement validation contracts.
-- [ ] Implement synchronous validators.
-- [ ] Implement asynchronous validators.
-- [ ] Implement touched and dirty states.
-- [ ] Implement disabled states.
-- [ ] Implement form submission.
-- [ ] Implement validation messages.
-- [ ] Implement DOM form bindings.
-- [ ] Implement form-level state aggregation.
+- [x] Implement form controls.
+- [x] Implement form groups.
+- [x] Implement form arrays.
+- [x] Implement control values.
+- [x] Implement validation contracts.
+- [x] Implement synchronous validators.
+- [x] Implement asynchronous validators.
+- [x] Implement touched and dirty states.
+- [x] Implement disabled states.
+- [x] Implement form submission.
+- [x] Implement validation messages. (Stable error keys; the application maps keys to localized copy)
+- [x] Implement DOM form bindings.
+- [x] Implement form-level state aggregation.
 
 ### Deliverables
 
@@ -773,18 +773,18 @@ Components and services must be able to consume external APIs through a consiste
 
 ### Tests
 
-- [ ] Form values update correctly.
-- [ ] Validators execute correctly.
-- [ ] Invalid controls expose their errors.
-- [ ] Async validators work.
-- [ ] Dirty and touched states are maintained.
-- [ ] Form groups aggregate child states.
-- [ ] Disabled controls behave correctly.
-- [ ] Browser inputs remain synchronized with form state.
+- [x] Form values update correctly.
+- [x] Validators execute correctly.
+- [x] Invalid controls expose their errors.
+- [x] Async validators work. (Stale responses discarded via generation counters)
+- [x] Dirty and touched states are maintained.
+- [x] Form groups aggregate child states.
+- [x] Disabled controls behave correctly.
+- [x] Browser inputs remain synchronized with form state.
 
 ### Acceptance Criteria
 
-Developers must be able to create and validate forms using Java APIs and reactive state.
+Developers must be able to create and validate forms using Java APIs and reactive state. ✅ Met — `dejaview-forms` ships with 53 JVM unit tests, Chromium E2E (`ShowcaseBrowserIT#formsExampleValidatesAndSubmits`), a playground example and tutorial coverage in both languages. See ADR-0019.
 
 ---
 
@@ -1511,7 +1511,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-12):** Sprints 00 through 11 are complete. The
+**Current status (2026-11-13):** Sprints 00 through 12 are complete. The
 authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -1529,7 +1529,7 @@ authoritative implemented-versus-planned list is
 | 09 | Dependency Injection | Completed |
 | 10 | Router | Completed |
 | 11 | HTTP Client | Completed |
-| 12 | Reactive Forms | Not Started |
+| 12 | Reactive Forms | Completed |
 | 13 | State Management | Not Started |
 | 14 | CLI and Development Server | Not Started |
 | 15 | Production Compiler and Optimization | Not Started |

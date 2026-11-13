@@ -86,7 +86,7 @@ treated as available.
 | Source maps | example | `app.js.map` |
 | Browser E2E test | `examples/counter`, `examples/showcase`, `examples/website` | `-Pe2e` Failsafe test (Chromium via Playwright) |
 | Official website (landing, user guide, playground) rendered by DejaView itself, in English and Portuguese | `examples/website` + `website/` | `WebsiteBrowserIT` (`-Pe2e`); static shells load the compiled bundle |
-| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
+| Interactive playground with pre-compiled examples (counter, greeting, composition, conditional, usercard, list, router, http, forms) | `examples/website` + `website/playground/` | Rendered by DejaView, zero CDN dependencies; Java highlighting and overlay editor are site assets; examples execute real TeaVM bundles |
 | Showcase module (website data) | `examples/showcase` | Pre-compiled TeaVM bundle used by the playground iframes |
 | Showcase examples: `usercard` (inputs/outputs/slots/lifecycle) and `list` (keyed reconciliation) | `examples/showcase` | Playwright E2E in Chromium |
 | `InjectionToken<T>` (identity-based; canonical `of(Class)` overload; diagnostic `name()`) | `dejaview-di` | JUnit tests |
@@ -124,6 +124,14 @@ treated as available.
 | `BrowserHttpTransport` (TeaVM XHR adapter; `timeout`/`withCredentials` via one-line JS interop; status 0 → `network-error`; Fetch deliberately not used — see ADR-0018) | `dejaview-http` | Chromium E2E |
 | HTTP showcase example (`?example=http`), fetches `ping.json` and renders the body | `examples/showcase` | Playwright E2E |
 | HTTP example published in the playground | `website/playground` | Static bundle served by the showcase |
+| `FormControl`, `FormGroup`, `FormArray` with value, `touched`/`dirty`/`disabled`, aggregated `status()`, prefixed `errors()` | `dejaview-forms` | JUnit tests |
+| Synchronous validators (`required`, `minLength`, `maxLength`, `email`, `pattern`, `min`, `max`, `custom`) | `dejaview-forms` | JUnit tests |
+| Asynchronous validators with generation-counter staleness rejection; sync validators run first, async only on sync success | `dejaview-forms` | JUnit tests |
+| Child error prefixing (`email.required`, `tags.0.required`); disabled children excluded from group/array values; `reset()`/`dispose()` semantics | `dejaview-forms` | JUnit tests |
+| `FormBindings`: `input`/`textarea` (input), `checkbox`/`select` (change), blur → touched, `aria-invalid`/`disabled` reflect status | `dejaview-forms` | JUnit tests |
+| Forms showcase example (`?example=forms`): sync + async validation, dynamic array, submission snapshot | `examples/showcase` | Playwright E2E |
+| Forms example published in the playground | `website/playground` | Static bundle served by the showcase |
+| Feature card, bilingual tutorial section (14–18), playground list update | `examples/website` | Playwright E2E |
 
 ### End-to-end proof
 
@@ -167,7 +175,7 @@ reconciles the component and updates the existing text node and the counter's
 | Hydration | Planned (Phase 6) | |
 | Routing | Implemented (Sprint 10) | See implemented table; bundle-level lazy route loading is deferred to Sprint 15 |
 | HTTP client | Implemented (Sprint 11) | See implemented table; Fetch adapter deferred — XHR transport shipped instead (ADR-0018) |
-| Reactive forms | Planned (Phase 4) | |
+| Reactive forms | Implemented (Sprint 12) | See implemented table; `dejaview-forms` with controls, groups, arrays, sync/async validators, stable error keys, DOM bindings and E2E coverage (ADR-0019) |
 | State management | Planned | |
 | SSR | Planned (Phase 6) | |
 | SSG | Planned (Phase 6) | |
@@ -218,9 +226,9 @@ reconciles the component and updates the existing text node and the counter's
    (`componentFactory(Class, Supplier)`) swap the instance; unkeyed tokenless
    views reuse positionally, so dynamic swaps without keys or tokens keep
    the previous instance. There is no state migration.
-10. **Eight examples across two modules.** `examples/counter` (one,
+10. **Nine examples across two modules.** `examples/counter` (one,
     class-based counter) and `examples/showcase` (counter, greeting,
-    composition, conditional, usercard, list, router, http), plus the conceptual previews in
+    composition, conditional, usercard, list, router, http, forms), plus the conceptual previews in
     the playground that are not executable.
 11. **Browser coverage.** The E2E test covers Chromium. Firefox and WebKit are
     not part of the automated matrix yet.
@@ -275,7 +283,23 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 12 — Reactive Forms** (see `docs/ROADMAP.md`).
+**Sprint 13 — State Management** (see `docs/ROADMAP.md`).
+
+Sprint 12 is implemented and tested: `dejaview-forms` with `FormControl`,
+`FormGroup` and `FormArray` (value, `touched`/`dirty`/`disabled`, aggregated
+`status()`, prefixed `errors()`), synchronous validators (`required`,
+`minLength`, `maxLength`, `email`, `pattern`, `min`, `max`, `custom`),
+asynchronous validators with generation-counter staleness rejection (sync runs
+first, async only on sync success), `reset()` restores initial values and
+clears touched/dirty, `dispose()` invalidates pending async work, `FormSubmission`
+snapshots validity and value. `FormBindings` connects DOM controls (`input`,
+`textarea`, `checkbox`, `select`) to controls via value events; blur marks
+touched; `aria-invalid` and `disabled` reflect control state. The showcase
+`FormsDemo` (`?example=forms`) demonstrates sync + async validation, a dynamic
+tag array and a submission snapshot; `ShowcaseBrowserIT#formsExampleValidatesAndSubmits`
+validates it in Chromium. The website feature card, tutorial section (headings
+14–18 in both languages) and playground example are wired; `WebsiteBrowserIT`
+asserts 10 feature cards and 9 playground examples. See ADR-0019.
 
 Sprint 11 is implemented and tested: `dejaview-http` with immutable
 `HttpRequest` (`get`/`post`/`put`/`patch`/`delete`, fluent withers,

@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 4 in progress — Sprint 11 (HTTP client) implemented.**
+**Phase 4 in progress — Sprint 12 (reactive forms) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -47,7 +47,7 @@ Java source
 ```
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end
-test. Forms, state management, SSR or tooling do not exist yet.
+test. State management, SSR or tooling do not exist yet.
 
 | Capability | Status |
 |---|---|
@@ -69,7 +69,8 @@ test. Forms, state management, SSR or tooling do not exist yet.
 | Routing (`dejaview-router`): immutable route definitions, nested routes, query parameters, guards, redirects, not-found routes, route-level metadata, `RouterOutlet` with route params as inputs, browser history, keyed component swaps at a single position | Implemented and tested (Chromium E2E) |
 | Equality short-circuit and topological ordering | Planned (Phase 2 refinement) |
 | HTTP client (`dejaview-http`): immutable `HttpRequest`/`HttpHeaders`/`HttpResponse`, async exactly-once delivery, request/response interceptors, timeouts, credentials, cancellation, dependency-free JSON, XHR browser adapter (statuses as values; Fetch deferred) | Implemented and tested (Chromium E2E) |
-| Forms, state management | Planned (Phase 4; DI, router and HTTP done) |
+| Reactive forms (`dejaview-forms`): typed `FormControl`/`FormGroup`/`FormArray`, sync and async validators, touched/dirty/disabled states, prefixed aggregated errors, `FormSubmission` snapshots, `FormBindings` DOM bindings | Implemented and tested (Chromium E2E) |
+| State management | Planned (Phase 4; DI, router, HTTP and forms done) |
 | CLI, DevTools, compiler abstraction | Planned |
 | SSR, SSG, hydration | Planned |
 
@@ -160,6 +161,7 @@ created as empty placeholders.
 | `dejaview-di` | Platform-independent dependency injection: `InjectionToken`, `Provider`, scopes, hierarchical injectors, `inject()`/`has()`. No browser or TeaVM imports. | Implemented |
 | `dejaview-router` | Client-side routing: `Route` definitions, matching, parameters, query parameters, nested routes, guards, redirects, `RouterOutlet`, browser/memory history, navigation events. TeaVM JSO only in the browser history adapter. | Implemented |
 | `dejaview-http` | HTTP client: `HttpClient` with async exactly-once delivery, immutable requests and headers, interceptors, timeouts, credentials, cancellation, dependency-free JSON tree. XHR browser adapter behind `HttpTransport`; the API itself has no browser or TeaVM imports. | Implemented |
+| `dejaview-forms` | Platform-independent reactive forms: `FormControl`, `FormGroup`, `FormArray`, sync/async validators, stable error keys, `FormBindings` DOM bindings. Depends on `dejaview-core` and `dejaview-reactivity`; no browser or TeaVM imports. | Implemented |
 | `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
 | `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
@@ -168,11 +170,12 @@ Dependency direction:
 
 ```text
 examples/counter → dejaview-dom → dejaview-reactivity → dejaview-core
-examples/showcase → dejaview-dom, dejaview-router, dejaview-http → dejaview-core
+examples/showcase → dejaview-dom, dejaview-router, dejaview-http, dejaview-forms → dejaview-core
 examples/website → dejaview-dom, dejaview-reactivity → dejaview-core
 dejaview-di → dejaview-core
 dejaview-router → dejaview-core, dejaview-reactivity
 dejaview-http → dejaview-core
+dejaview-forms → dejaview-core, dejaview-reactivity
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -195,6 +198,7 @@ dejaview/
 ├── dejaview-di/            # Dependency injection (pure Java)
 ├── dejaview-router/        # Client-side router (pure Java + TeaVM history adapter)
 ├── dejaview-http/          # HTTP client (pure Java API + TeaVM XHR adapter)
+├── dejaview-forms/         # Reactive forms (pure Java)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
@@ -302,15 +306,34 @@ API — see
 | 1 | Foundation and JavaScript runtime | Implemented |
 | 2 | Reactivity Engine | Completed — `Signal`, `Effect`, `Computed`, batching, scheduling, scopes and component-scoped renderer bindings implemented |
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
-| 4 | Application Framework | In progress — Sprints 09–11 implemented (dependency injection, router, HTTP client); reactive forms next |
+| 4 | Application Framework | In progress — Sprints 09–12 implemented (dependency injection, router, HTTP client, reactive forms); state management next |
 | 5 | Compiler and Tooling | Planned |
 | 6 | SSR and SSG | Planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 12 — Reactive Forms
+### Next milestone: Sprint 13 — State Management
 
-Sprint 11 delivered a platform-independent HTTP client (`dejaview-http`,
+Sprint 12 delivered a platform-independent reactive forms module (`dejaview-forms`,
+depending on `dejaview-core` and `dejaview-reactivity`): `FormControl`,
+`FormGroup` and `FormArray` with value, `touched`/`dirty`/`disabled` states,
+aggregated `status()` (`VALID`/`INVALID`/`PENDING`/`DISABLED`) and prefixed
+`errors()` (`email.required`, `tags.0.required`), synchronous validators
+(`required`, `minLength`, `maxLength`, `email`, `pattern`, `min`, `max`,
+`custom`), asynchronous validators with generation-counter staleness rejection
+(synchronous validators must pass before async runs), `reset()`/`dispose()`
+lifecycle semantics and `FormSubmission` snapshots with an `ifValid` guard.
+`FormBindings` connects DOM controls to controls: `input`/`textarea` on
+`input`, `checkbox`/`select` on `change`, blur marks touched, and
+`aria-invalid`/`disabled` reflect the control status. The showcase
+`FormsDemo` (`?example=forms`) demonstrates sync + async validation, a dynamic
+tag `FormArray` and a submission snapshot, verified in Chromium by
+`ShowcaseBrowserIT#formsExampleValidatesAndSubmits`. The website feature card,
+tutorial section (headings 14–18 in both languages) and playground example are
+wired; `WebsiteBrowserIT` asserts 10 feature cards and 9 playground examples.
+See [ADR-0019](docs/ADR/0019-reactive-forms.md).
+
+Earlier in this phase, Sprint 11 delivered a platform-independent HTTP client (`dejaview-http`,
 depending on `dejaview-core`): immutable `HttpRequest` (`get`/`post`/`put`/
 `patch`/`delete`, fluent withers, percent-encoded query parameters with `+`
 for space), immutable case-insensitive `HttpHeaders` with multi-valued
