@@ -221,7 +221,22 @@ public final class TutorialPt {
                 shell(Snippets.SSR_RUN),
                 note("warning", strong("Alpha e propositalmente estreito."), text(" O resultado é uma página completa, não um aplicativo hidratado: serialização de estado e hydration são marcos futuros, e as variantes com Writer renderizam e validam uma vez em vez de transmitir progressivamente. Apenas as propriedades DOM value e booleanas são serializadas; as demais são omitidas e reportadas como warnings. O dejaview-ssr é código JVM puro — sem APIs de navegador, sem imports de TeaVM — e texto dentro de elementos script ou style é escapado em vez de executado.")),
 
-                h2("troubleshooting", "21. Problemas comuns"),
+                h2("ssg", "21. Geração de site estático (alpha)"),
+                prose(text("O dejaview-ssg transforma o pipeline de SSR em uma etapa de build: ele renderiza cada rota declarada em um arquivo, copia assets, valida se cada href e src local resolve para um arquivo gerado e emite um sitemap. O resultado é um diretório que você sobe para GitHub Pages, S3, Netlify ou nginx — sem servidor, sem JavaScript, sem runtime.")),
+                prose(text("As rotas são declaradas explicitamente em Java, porque o framework não tem reflection nem scanning de anotações. Uma página estática é criada com SsgRoute.page; uma rota dinâmica é criada com SsgRoute.parametrized, que expande um placeholder {name} por conjunto de parâmetros que a aplicação fornece no build:")),
+                java(Snippets.SSG_ROUTE),
+                prose(text("O gerador renderiza cada página com seu próprio injetor e ServerContext com escopo de requisição, então rotas não podem vazar estado umas para as outras. Todo caminho e valor de parâmetro é validado antes de virar nome de arquivo, caminhos duplicados falham o build, e o diretório de saída é limpo por padrão para que páginas antigas nunca sobrevivam a um build:")),
+                java(Snippets.SSG_SITE),
+                bullets(
+                        item(code("SsgGenerator.generate"), text(" — planeja rotas, renderiza páginas, copia assets, escreve o sitemap e verifica referências locais. Uma falha nomeia a rota ou o asset que a causou.")),
+                        item(code("SsgRoute"), text(" — page(path, lang, view) para uma página estática; parametrized(pattern, lang, parameterSets, view) para uma dinâmica. Caminhos devem ser segmentos seguros; valores de parâmetros não podem conter '..', '/', espaços ou travessia percent-encoded.")),
+                        item(code("SsgAsset"), text(" — copia um arquivo ou diretório para o site. Um diretório é copiado recursivamente, mantendo seu layout interno.")),
+                        item(code("SsgSite"), text(" — a descrição do site: diretório de saída, rotas, assets, URL base opcional (habilita links canônicos e sitemap.xml) e a flag clean."))),
+                prose(text("Páginas geradas carregam os metadados que seus componentes escreveram — lang, title, description, canonical e tags meta/Open Graph — e cada referência local é verificada contra os arquivos escritos, então um link quebrado falha o build em vez de publicar um 404 em produção:")),
+                shell(Snippets.SSG_RUN),
+                note("warning", strong("Alpha e propositalmente estreito."), text(" A saída é uma página completa, não um aplicativo hidratado: serialização de estado e hydration são marcos futuros. Páginas geradas são escritas uma vez, não transmitidas em streaming, e apenas o subconjunto de propriedades do SSR é representável. O gerador é JVM-only — sem APIs de navegador, sem imports de TeaVM — e roda no build, não no navegador.")),
+
+                h2("troubleshooting", "22. Problemas comuns"),
                 bullets(
                         item(code("java -version mostra 8, 17 ou 21"), text(" — seu JAVA_HOME aponta para o JDK errado. Aponte para uma instalação do Java 25 e reabra o terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — rode chmod +x mvnw, ou use mvnw.cmd no Windows.")),
@@ -229,7 +244,7 @@ public final class TutorialPt {
                         item(code("Página em branco, sem contador"), text(" — abra o console do navegador. Um 404 para app.js significa que você está servindo o diretório errado; precisa ser examples/counter/target/webapp, não a raiz do repositório.")),
                         item(code("BUILD FAILURE baixando dependências"), text(" — confira o acesso à rede; o Maven precisa alcançar repo.maven.apache.org no primeiro build."))),
 
-                h2("next-steps", "22. Próximos passos"),
+                h2("next-steps", "23. Próximos passos"),
                 prose(
                         text("Explore o "),
                         link("/website/pt/playground/", "playground interativo"),

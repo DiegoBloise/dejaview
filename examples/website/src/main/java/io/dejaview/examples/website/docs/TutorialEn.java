@@ -221,7 +221,22 @@ public final class TutorialEn {
                 shell(Snippets.SSR_RUN),
                 note("warning", strong("Alpha and intentionally narrow."), text(" The result is a complete page, not a hydrated application: state serialization and hydration are later milestones, and the Writer variants render and validate once instead of streaming progressively. Only the value and boolean DOM properties are serialized; other properties are skipped and reported as warnings. dejaview-ssr is pure JVM code — no browser APIs, no TeaVM imports — and text inside script or style elements is escaped rather than executed.")),
 
-                h2("troubleshooting", "21. Troubleshooting"),
+                h2("ssg", "21. Static site generation (alpha)"),
+                prose(text("dejaview-ssg turns the SSR pipeline into a build step: it renders every declared route into a file, copies assets, validates that every local href and src resolves to a generated file, and emits a sitemap. The result is a directory you can upload to GitHub Pages, S3, Netlify or nginx — no server, no JavaScript, no runtime.")),
+                prose(text("Routes are declared explicitly in Java, because the framework has no reflection and no annotation scanning. A static page is created with SsgRoute.page; a dynamic route is created with SsgRoute.parametrized, which expands one {name} placeholder per parameter set the application supplies at build time:")),
+                java(Snippets.SSG_ROUTE),
+                prose(text("The generator renders every page with its own injector and request-scoped ServerContext, so routes cannot leak state into each other. Every path and parameter value is validated before it becomes a file name, duplicate paths fail the build, and the output directory is cleaned by default so stale pages never survive a build:")),
+                java(Snippets.SSG_SITE),
+                bullets(
+                        item(code("SsgGenerator.generate"), text(" — plans routes, renders pages, copies assets, writes the sitemap and checks local references. A failure names the route or asset that caused it.")),
+                        item(code("SsgRoute"), text(" — page(path, lang, view) for a static page; parametrized(pattern, lang, parameterSets, view) for a dynamic one. Paths must be safe segments; parameter values may not contain '..', '/', whitespace or percent-encoded traversal.")),
+                        item(code("SsgAsset"), text(" — copies a file or a directory into the site. A directory is copied recursively, keeping its internal layout.")),
+                        item(code("SsgSite"), text(" — the site description: output directory, routes, assets, optional base URL (enables canonical links and sitemap.xml) and the clean flag."))),
+                prose(text("Generated pages carry the metadata their components wrote — lang, title, description, canonical and meta/Open Graph tags — and every local reference is checked against the files that were written, so a broken link fails the build instead of shipping a 404 in production:")),
+                shell(Snippets.SSG_RUN),
+                note("warning", strong("Alpha and intentionally narrow."), text(" The output is a complete page, not a hydrated application: state serialization and hydration are later milestones. Generated pages are written once, not streamed, and only the SSR property subset is representable. The generator is JVM-only — no browser APIs, no TeaVM imports — and it runs at build time, not in the browser.")),
+
+                h2("troubleshooting", "22. Troubleshooting"),
                 bullets(
                         item(code("java -version shows 8, 17 or 21"), text(" — your JAVA_HOME points at the wrong JDK. Point it at a Java 25 install and reopen the terminal.")),
                         item(code("permission denied: ./mvnw"), text(" — run chmod +x mvnw, or use mvnw.cmd on Windows.")),
@@ -229,7 +244,7 @@ public final class TutorialEn {
                         item(code("Blank page, no counter"), text(" — open the browser console. A 404 for app.js means you're serving the wrong directory; it must be examples/counter/target/webapp, not the repository root.")),
                         item(code("BUILD FAILURE downloading dependencies"), text(" — check network access; Maven needs to reach repo.maven.apache.org on the first build."))),
 
-                h2("next-steps", "22. Next steps"),
+                h2("next-steps", "23. Next steps"),
                 prose(
                         text("Explore the "),
                         link("/website/playground/", "interactive playground"),

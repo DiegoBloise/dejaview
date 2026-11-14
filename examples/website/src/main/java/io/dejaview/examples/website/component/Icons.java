@@ -114,4 +114,11 @@ public final class Icons {
                 path("M9 12h6", "0.45"),
                 path("M9 16h6", "0.45"));
     }
+
+    public static View layers() {
+        return svg(
+                path("M12 3 3 7.5l9 4.5 9-4.5z"),
+                path("M3 12l9 4.5 9-4.5", "0.55"),
+                path("M3 16.5 12 21l9-4.5", "0.35"));
+    }
 }

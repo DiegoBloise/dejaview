@@ -97,6 +97,36 @@ public final class Snippets {
             ./mvnw -pl examples/ssr -am -Prun package
             # open http://127.0.0.1:8080/ with JavaScript disabled""";
 
+    public static final String SSG_ROUTE = """
+            public static SsgSite site(Path outputDir, Path assetsDir) {
+                return SsgSite.builder(outputDir)
+                        .route(SsgRoute.page("/", "en",
+                                meta -> Views.componentFactory(() -> new HomePage(meta))))
+                        .route(SsgRoute.page("/about", "en",
+                                meta -> Views.componentFactory(() -> new AboutPage(meta))))
+                        .route(SsgRoute.parametrized(
+                                "/products/{slug}", "en",
+                                CATALOGUE.stream().map(p -> Map.of("slug", p.slug())).toList(),
+                                ctx -> Views.componentFactory(() ->
+                                        new ProductPage(ctx.meta(), product(ctx.param("slug"))))))
+                        .route(SsgRoute.page("/404.html", "en",
+                                meta -> Views.componentFactory(() -> new NotFoundPage(meta))))
+                        .asset(assetsDir, "assets")
+                        .build();
+            }""";
+
+    public static final String SSG_SITE = """
+            SsgSite.builder(Path.of("target/site"))
+                    .baseUrl("https://dejaview.example")   // canonical links + sitemap.xml
+                    .route(...)                            // declared explicitly, no reflection
+                    .asset(Path.of("src/main/webapp/assets"), "assets")
+                    .clean(true)                           // default; stale pages never survive
+                    .build();""";
+
+    public static final String SSG_RUN = """
+            ./mvnw -pl examples/ssg -am package
+            # deploy examples/ssg/target/site to any static host; no JavaScript required""";
+
     public static final String SERVE = "python3 -m http.server 4280 -d examples/counter/target/webapp";
 
     public static final String COUNTER_COMPONENT = """

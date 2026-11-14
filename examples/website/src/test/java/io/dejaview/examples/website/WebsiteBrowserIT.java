@@ -45,7 +45,7 @@ class WebsiteBrowserIT {
                 page.navigate(server.url() + "/website/");
 
                 assertTrue(page.textContent("#hero-title").contains("Reimagined"));
-                assertEquals(15, page.locator("#features .card").count());
+                assertEquals(16, page.locator("#features .card").count());
                 assertEquals("true", page.getAttribute("#tab-counter", "aria-pressed"));
 
                 assertEquals("http://www.w3.org/2000/svg",
@@ -84,7 +84,7 @@ class WebsiteBrowserIT {
 
                 assertTrue(page.textContent("#hero-title").contains("Reimaginado"));
                 assertEquals("EN", page.textContent(".lang-switch"));
-                assertTrue(page.locator("#features .card").count() == 15);
+                assertTrue(page.locator("#features .card").count() == 16);
 
                 assertTrue(pageErrors.isEmpty(), () -> "Browser errors: " + pageErrors);
             } finally {
@@ -104,8 +104,8 @@ class WebsiteBrowserIT {
                 page.onPageError(pageErrors::add);
 
                 page.navigate(server.url() + "/website/get-started.html");
-                assertTrue(page.locator(".docs-toc-nav a").count() >= 20);
-                assertTrue(page.locator(".docs-content h2").count() >= 20);
+                assertTrue(page.locator(".docs-toc-nav a").count() >= 22);
+                assertTrue(page.locator(".docs-content h2").count() >= 22);
                 assertTrue(page.locator("#forms").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#forms']").count() == 1);
                 assertTrue(page.locator("#state").count() == 1);
@@ -118,6 +118,9 @@ class WebsiteBrowserIT {
                 assertTrue(page.locator("#ssr").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#ssr']").count() == 1);
                 assertTrue(page.locator("#ssr").textContent().contains("Server-side rendering"));
+                assertTrue(page.locator("#ssg").count() == 1);
+                assertTrue(page.locator(".docs-toc-nav a[href='#ssg']").count() == 1);
+                assertTrue(page.locator("#ssg").textContent().contains("Static site generation"));
 
                 // Anchor navigation must clear the sticky header.
                 page.click(".docs-toc-nav a[href='#composition']");
@@ -139,7 +142,7 @@ class WebsiteBrowserIT {
                 page.setViewportSize(1280, 720);
 
                 page.navigate(server.url() + "/website/pt/get-started.html");
-                assertTrue(page.locator(".docs-content h2").count() >= 20);
+                assertTrue(page.locator(".docs-content h2").count() >= 22);
                 assertTrue(page.locator("#forms").textContent().contains("Formulários reativos"));
                 assertTrue(page.locator("#state").textContent().contains("Gerenciamento de estado"));
                 assertTrue(page.locator("#cli").textContent().contains("A DejaView CLI"));
@@ -147,6 +150,9 @@ class WebsiteBrowserIT {
                 assertTrue(page.locator("#ssr").count() == 1);
                 assertTrue(page.locator(".docs-toc-nav a[href='#ssr']").count() == 1);
                 assertTrue(page.locator("#ssr").textContent().contains("Renderização no servidor"));
+                assertTrue(page.locator("#ssg").count() == 1);
+                assertTrue(page.locator(".docs-toc-nav a[href='#ssg']").count() == 1);
+                assertTrue(page.locator("#ssg").textContent().contains("Geração de site estático"));
                 assertTrue(page.textContent(".docs-content h2") != null);
                 assertTrue(page.locator(".docs-toc-nav a").allTextContents().stream()
                         .anyMatch(text -> text.contains("Pré-requisitos")));
