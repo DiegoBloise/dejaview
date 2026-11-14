@@ -45,9 +45,13 @@
 > [ADR-0023](ADR/0023-server-platform-abstraction.md)), `dejaview-ssr`
 > (server-side rendering: validated, escaped HTML documents and fragments,
 > `ServerErrorBoundary` containment, per-request `PageMeta`, generic 500 page;
-> see [ADR-0024](ADR/0024-server-side-rendering.md)), and
-> `examples/counter`, `examples/showcase`, `examples/website` and
-> `examples/ssr`.
+> see [ADR-0024](ADR/0024-server-side-rendering.md)), `dejaview-ssg`
+> (static site generation: explicit build-time routes, SSR pipeline rendered
+> to a deployable HTML tree, copied assets, validated local references,
+> sitemap, clean-by-default output; see
+> [ADR-0025](ADR/0025-static-site-generation.md)), and
+> `examples/counter`, `examples/showcase`, `examples/website`,
+> `examples/ssr` and `examples/ssg`.
 > TeaVM 0.16.0 with Java 25
 > has been validated; see [`COMPILER.md`](COMPILER.md). The
 > authoritative implemented-versus-planned list is
@@ -1451,11 +1455,11 @@ em [ADR-0014](ADR/0014-component-model-and-ownership.md) e
 - [x] Server renderer. (Sprint 17 — `ServerRenderer` já entregue no Sprint 16 e reutilizado por `dejaview-ssr`; ver ADR-0023)
 - [x] HTML serialization. (Sprint 17 — `HtmlSerializer`/`HtmlPage` em `dejaview-ssr`: escape de texto e atributos, elementos void, fragmentos sem wrapper, documento completo com head; ver ADR-0024)
 - [x] SSR integration. (Sprint 17 — `SsrRenderer.renderPage`/`renderFragment`/`writePage`/`writeFragment`, `PageMeta` por requisição, `ServerErrorBoundary` com fallback e `BoundaryError`, exemplo `examples/ssr` servido por `com.sun.net.httpserver` e validado em Chromium com JavaScript desabilitado; ver ADR-0024)
+- [x] Static Site Generation. (Sprint 18 — `dejaview-ssg`: rotas declaradas explicitamente — `SsgRoute.page`/`SsgRoute.parametrized` com placeholder `{name}` de segmento inteiro — `SsgGenerator.generate` executa plan → render → plan-assets → prepare-output → copy-assets → write-pages → sitemap → link-check; páginas renderizadas antes de escrever; caminhos e parâmetros validados (traversal, absoluto, percent-encoded); colisões de caminho/arquivo falham o build; diretório de saída limpo por padrão com recusa a raiz de filesystem e diretórios com `pom.xml`; referências locais `href`/`src` verificadas na árvore escrita; `sitemap.xml` exclui a página 404; exemplo `examples/ssg` gerado no `package` via `exec-maven-plugin` e validado em Chromium com JavaScript desabilitado; ver ADR-0025)
+- [x] Route pre-rendering. (Sprint 18 — rotas parametrizadas são expandidas e pré-renderizadas em tempo de build a partir dos conjuntos de parâmetros declarados pela aplicação; não há descoberta automática — rotas são sempre explícitas; ver ADR-0025)
 - [ ] State serialization.
 - [ ] Hydration.
 - [ ] Hydration mismatch detection.
-- [ ] Static Site Generation.
-- [ ] Route pre-rendering.
 
 **Objetivo:** oferecer diferentes estratégias de renderização.
 
@@ -1516,6 +1520,7 @@ ADRs aceitos:
 | [0022](ADR/0022-production-compiler-pipeline.md) | Pipeline de compilação de produção: boundary Maven sobre TeaVM, configuração centralizada, validação e fingerprint de assets, saída reprodutível | Accepted |
 | [0023](ADR/0023-server-platform-abstraction.md) | Abstração de plataforma servidor: `dejaview-server` com `ServerContext` por requisição, registry de compatibilidade por contexto, `ServerRenderer` para uma árvore `ServerNode` selada, boundary de serialização estrito | Accepted |
 | [0024](ADR/0024-server-side-rendering.md) | Renderização no servidor: `dejaview-ssr` serializa a árvore `ServerNode` em HTML validado e escapado, com `ServerErrorBoundary`, `PageMeta` por requisição e página 500 genérica; alpha sem hydration, serialização de estado ou streaming | Accepted |
+| [0025](ADR/0025-static-site-generation.md) | Geração de site estático: `dejaview-ssg` expande rotas declaradas explicitamente em tempo de build pelo pipeline de SSR, escrevendo uma árvore HTML implantável com assets copiados, referências locais validadas, `sitemap.xml` e diretório de saída limpo por padrão | Accepted |
 
 Decisões futuras (Hydration, streaming, etc.) ainda não possuem ADR e
 permanecem propostas até serem registradas.

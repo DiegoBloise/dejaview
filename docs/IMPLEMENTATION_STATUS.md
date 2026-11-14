@@ -2,7 +2,7 @@
 
 **Version:** 0.1.0-SNAPSHOT  
 **Milestone:** Phase 6 — Server Rendering and Static Generation (in progress)  
-**Last updated:** 2026-11-13
+**Last updated:** 2026-11-14
 
 This document separates what is implemented and tested from what is designed
 or planned. If a capability is not listed as implemented here, it should not be
@@ -169,6 +169,9 @@ treated as available.
 | Failure model — unhandled render/validation failure → `500` with a fixed generic document, exception attached to the result and never leaked; `isSuccess()` means `error == null` (host-chosen 404 pages are successful renders) | `dejaview-ssr` | JUnit tests (`SsrRendererTest`) |
 | Module purity — no DOM adapter and no TeaVM on the `dejaview-ssr` classpath; `dejaview-ssr` module built and tested with the reactor (43 tests) | `dejaview-ssr` | JUnit test (`ModulePurityTest`) |
 | Server-rendered example application — plain components, request-scoped `PageMeta`/`ServerContext`, GET search form, contained failing widget, 404 page, served by the JDK `HttpServer` on a loopback port | `examples/ssr` | JUnit tests (`SsrApplicationTest`, 10); Playwright E2E with JavaScript disabled (`SsrBrowserIT`, 4) |
+| `dejaview-ssg` — static site generation over the SSR pipeline: `SsgSite`/`SsgRoute` (explicit `page`/`parametrized` declarations, eager path and parameter validation, duplicate-path and output-file collision detection), `SsgGenerator.generate` (plan → render → plan-assets → prepare-output → copy-assets → write-pages → sitemap → link-check), `SsgAsset` copy, `SsgPageContext`, `SsgResult`/`SsgPage`/`SsgWarning`, `sitemap.xml` excluding the 404 document | `dejaview-ssg` | JUnit tests (`SsgGeneratorTest`, `SsgRouteTest`, `SsgSiteTest`, `SsgPathsTest`, 45 total) |
+| Output safety and deployability — pages rendered before anything is written (failures name the route); local `href`/`src` references validated against the written tree (percent-decoded; external URLs and fragments ignored); output cleaned by default, refusing filesystem roots and directories containing `pom.xml` | `dejaview-ssg` | JUnit tests (`SsgGeneratorTest`, 21; `ModulePurityTest` asserts purity) |
+| Statically generated example website — component-based site (home, about, catalogue, one route per catalogue entry, stylesheet, 404 document) generated at `package` via `exec-maven-plugin` into `examples/ssg/target/site` | `examples/ssg` | JUnit-free JVM example; Playwright E2E with JavaScript disabled against a JDK static `HttpServer` on an ephemeral loopback port (`SsgBrowserIT`, 3) |
 | CLI end-to-end workflow: generate → wrapper build → serve → Chromium render → source edit → rebuild → reload | `dejaview-cli` | Playwright E2E (`CliWorkflowIT`) |
 
 ### End-to-end proof
@@ -216,7 +219,7 @@ reconciles the component and updates the existing text node and the counter's
 | Reactive forms | Implemented (Sprint 12) | See implemented table; `dejaview-forms` with controls, groups, arrays, sync/async validators, stable error keys, DOM bindings and E2E coverage (ADR-0019) |
 | State management | Implemented (Sprint 13) | See implemented table; `dejaview-state` with `StateStore`, named selectors, cross-store `Stores.combine`, `AsyncStore` with exactly-once completions, `PersistedStore`/`StateCodec` persistence and E2E coverage (ADR-0020) |
 | SSR | Implemented (Sprint 17) | See implemented table; `dejaview-ssr` renders validated, escaped HTML documents and fragments with `ServerErrorBoundary` containment and per-request `PageMeta` (ADR-0024). Alpha scope: no state serialization, no hydration, no progressive streaming |
-| SSG | Planned (Sprint 18) | |
+| SSG | Implemented (Sprint 18) | See implemented table; `dejaview-ssg` expands explicitly declared routes at build time through the SSR pipeline and writes a deployable HTML tree with copied assets, validated local references, `sitemap.xml` and clean-by-default output (ADR-0025). Alpha scope: no hydration, no state serialization, no incremental output; CLI integration deferred |
 | Hydration | Planned (Sprint 19) | |
 | CLI | Implemented (Sprint 14) | See implemented table; `dejaview-cli` with `new`/`build`/`run`/`doctor`, the development server with live reload and Chromium E2E coverage (`CliWorkflowIT`) (ADR-0021) | |
 | DevTools | Planned | |
@@ -337,7 +340,29 @@ the sprint rule.
 
 ## Next milestone recommendation
 
-**Sprint 18 — Static Site Generation (SSG)** (see `docs/ROADMAP.md`).
+**Sprint 19 — Hydration** (see `docs/ROADMAP.md`).
+
+Sprint 18 is implemented and tested: `dejaview-ssg`, a pure Java 25 module
+(no browser APIs, no TeaVM; asserted by `ModulePurityTest`) that turns the
+SSR pipeline into a build step (ADR-0025). Routes are declared explicitly in
+Java — `SsgRoute.page` and `SsgRoute.parametrized` with whole-segment
+`{name}` placeholders — because the framework has no reflection and no
+annotation scanning. `SsgGenerator.generate` runs plan → render → plan-assets
+→ prepare-output → copy-assets → write-pages → sitemap → link-check: pages
+are rendered before anything is written (a failure names the route),
+everything path- or asset-like is validated eagerly, duplicate paths and
+page/asset collisions fail the build, the output directory is cleaned by
+default (refusing filesystem roots and directories containing `pom.xml`), and
+every local `href`/`src` in the written HTML is validated against the written
+tree. `sitemap.xml` is emitted when `baseUrl` is set and excludes the 404
+document. `examples/ssg` is a working static site generated at `package` via
+`exec-maven-plugin` (7 pages + 1 asset) and validated in Chromium with
+JavaScript disabled by `SsgBrowserIT`. 45 JVM tests cover `dejaview-ssg` and
+3 browser tests cover the example. The bilingual website ships a sixteenth
+feature card and a new guide section 21 (both languages). Not delivered in
+this sprint: hydration and state serialization (Sprint 19), incremental or
+parallel output, a `dejaview` CLI static command, and the full DOM property
+set — the alpha limits are recorded in ADR-0025.
 
 Sprint 17 is implemented and tested: `dejaview-ssr`, a pure Java 25 module
 (no browser APIs, no TeaVM; asserted by `ModulePurityTest`) that renders the
@@ -394,8 +419,8 @@ not wired to any HTTP server. The bilingual website shipped a fourteenth
 feature card and guide section 19 (both languages) when the sprint was
 delivered. 80 JVM tests cover the module today, including the Sprint 17
 boundary support; HTML serialization arrived in Sprint 17 (ADR-0024). SSG
-(Sprint 18), hydration (Sprint 19) and a deployable server adapter (Sprint 21)
-remain open.
+arrived in Sprint 18 (ADR-0025). Hydration (Sprint 19) and a deployable
+server adapter (Sprint 21) remain open.
 
 Sprint 14 is implemented and tested: `dejaview-cli` with
 `dejaview new` (embedded `basic-app` template: generated project with the

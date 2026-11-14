@@ -1027,37 +1027,41 @@ ADR-0024.
 
 **Objective:** Generate static HTML pages during the build process.
 
+**Status (2026-11-14):** Completed. `dejaview-ssg` depends only on `dejaview-ssr` (and transitively on core, DI, server, state and HTTP): pure Java 25, no browser or TeaVM imports, guarded by `ModulePurityTest`. Routes are declared explicitly — `SsgRoute.page(path, lang, view)` for static pages and `SsgRoute.parametrized(pattern, lang, parameterSets, view)` expanding one whole-segment `{name}` placeholder per parameter set — because the framework has no reflection and no annotation scanning. `SsgGenerator.generate(site)` runs plan → render → plan-assets → prepare-output → copy-assets → write-pages → sitemap → link-check; pages are rendered before anything is written (failures name the route), everything path- or asset-like is validated eagerly (absolute paths, drive letters, backslash and percent-encoded traversal, control characters), duplicate paths and page/asset target collisions fail the build, and the output directory is cleaned by default — refusing filesystem roots and any directory containing `pom.xml`. Local `href`/`src` references in the written HTML are validated against the files the build wrote (percent-decoded; external URLs and fragments ignored). `sitemap.xml` is emitted when `baseUrl` is set and excludes the `/404.html` error document. `SsgResult` reports pages, assets, warnings and the sitemap; a failure names the route or asset. `examples/ssg` is a working static site (home, about, catalogue, one route per catalogue entry, stylesheet, 404 document) bound to the `package` phase via `exec-maven-plugin`, covered by a Chromium Playwright test with JavaScript disabled. See ADR-0025. Not delivered: hydration, state serialization, incremental/parallel output, a first-class `dejaview` CLI command, and `./mvnw -pl examples/ssg` covers the exec path rather than a dedicated CLI subcommand.
+
 ### Implementation
 
-- [ ] Implement SSG build pipeline.
-- [ ] Implement static route discovery.
-- [ ] Implement route parameter generation.
-- [ ] Implement static page rendering.
-- [ ] Implement asset copying.
-- [ ] Implement HTML output organization.
-- [ ] Implement metadata generation.
-- [ ] Implement static resource validation.
-- [ ] Implement configurable output directories.
-- [ ] Integrate SSG with the CLI.
+- [x] Implement SSG build pipeline. (`SsgGenerator.generate` — plan → render → assets → write → sitemap → link-check; all-or-nothing: planning and rendering finish before the file system is touched; failures name the route or asset)
+- [x] Implement static route discovery. (No discovery by design: routes are declared explicitly in Java — `SsgRoute.page` / `SsgRoute.parametrized` — because the framework is reflection-free; ADR-0025)
+- [x] Implement route parameter generation. (`SsgRoute.parametrized` expands each parameter set supplied at build time, one whole-segment `{name}` placeholder per set; validation rejects `..`, `/`, whitespace and percent-encoded traversal)
+- [x] Implement static page rendering. (Every page is rendered through `SsrRenderer.renderPage` with its own root injector, `ServerContext` and `PageMeta`; SSR semantics, escaping and boundary containment are inherited unchanged)
+- [x] Implement asset copying. (`SsgAsset` — files or directories copied recursively; targets validated as safe relative paths; duplicates and page/asset collisions fail the build)
+- [x] Implement HTML output organization. (`/about` → `about/index.html`; explicit `/404.html` pages write `404.html`; writing is per-page with parent-directory creation)
+- [x] Implement metadata generation. (Components write `PageMeta` while rendering — `lang`, `title`, `description`, `canonical`, `meta`/Open Graph; `baseUrl` enables the canonical link and `sitemap.xml`)
+- [x] Implement static resource validation. (Local `href`/`src` references in the written HTML are checked against the written tree — percent-decoded; external URLs and fragments ignored; a broken reference fails the build naming the page, attribute and reference)
+- [x] Implement configurable output directories. (`SsgSite.builder(outputDir)`, `SsgSite.clean(boolean)` — clean by default, refusing filesystem roots and directories containing `pom.xml`)
+- [ ] Integrate SSG with the CLI. (Deferred: `examples/ssg` drives the generator from `package` via `exec-maven-plugin`; a dedicated `dejaview` static command is not part of this sprint — see ADR-0025)
 
 ### Deliverables
 
 - `dejaview-ssg`.
 - Static generation pipeline.
-- CLI static build command.
+- CLI static build command. (Deferred — see note above)
 
 ### Tests
 
-- [ ] Static routes generate HTML.
-- [ ] Dynamic routes generate configured paths.
-- [ ] Generated assets resolve correctly.
-- [ ] Output can be served by a static web server.
-- [ ] Build failures identify problematic routes.
-- [ ] Generated pages preserve metadata.
+- [x] Static routes generate HTML. (`SsgGeneratorTest` — `/`, `/about`, explicit 404 writes; `SsgBrowserIT` asserts complete documents in Chromium)
+- [x] Dynamic routes generate configured paths. (`SsgGeneratorTest` — one route per catalogue parameter set; duplicate paths and same-file collisions rejected)
+- [x] Generated assets resolve correctly. (`SsgGeneratorTest` — copied files and directories, byte content asserted; `SsgBrowserIT` asserts the stylesheet loads)
+- [x] Output can be served by a static web server. (`examples/ssg` `SsgBrowserIT` — pages served from a JDK `HttpServer` for the generated tree; all generated pages, links and the 404 document render with JavaScript disabled)
+- [x] Build failures identify problematic routes. (`SsgGeneratorTest` — duplicate routes, bad paths, bad parameter values, missing assets, broken local references; the failing route/asset is named in the exception)
+- [x] Generated pages preserve metadata. (`SsgGeneratorTest` / `SsrRendererTest` — observed metadata is serialized into the document; `examples/ssg` pages carry title, description and canonical)
 
 ### Acceptance Criteria
 
 Developers must be able to generate deployable static websites using DejaView.
+
+**✅ Met (2026-11-14).** `./mvnw -pl examples/ssg -am package` generates a deployable static site at `examples/ssg/target/site` — 7 HTML pages plus the copied stylesheet and a `sitemap.xml` — with no server and no JavaScript; 45 JVM tests cover `dejaview-ssg`, 3 browser ITs cover the example, and the output deploys to any static host by directory upload. See ADR-0025.
 
 ---
 
@@ -1541,7 +1545,7 @@ Expected result: an application demonstrating the different rendering strategies
 
 Use the following checklist to track sprint completion.
 
-**Current status (2026-11-13):** Sprints 00 through 17 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Phase VI (Server Rendering and Static Generation) is open: Sprint 16 (Server Platform Abstraction) and Sprint 17 (Server-Side Rendering) are delivered. Sprint 18 (Static Site Generation) is next. The authoritative implemented-versus-planned list is
+**Current status (2026-11-14):** Sprints 00 through 18 are complete. Phase IV (Sprints 09–13, application framework) is closed. Phase V (Developer Tooling and Compiler) is delivered: Sprint 14 (CLI and Development Server) and Sprint 15 (Production Compiler). Phase VI (Server Rendering and Static Generation) is under way: Sprint 16 (Server Platform Abstraction), Sprint 17 (Server-Side Rendering) and Sprint 18 (Static Site Generation) are delivered. Sprint 19 (Hydration) is next. The authoritative implemented-versus-planned list is
 [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Sprint | Feature | Status |
@@ -1564,7 +1568,7 @@ Use the following checklist to track sprint completion.
 | 15 | Production Compiler and Optimization | Completed |
 | 16 | Server Platform Abstraction | Completed |
 | 17 | Server-Side Rendering | Completed |
-| 18 | Static Site Generation | Not Started |
+| 18 | Static Site Generation | Completed |
 | 19 | Hydration | Not Started |
 | 20 | Testing Framework and DevTools | Not Started |
 | 21 | Spring Boot Integration | Not Started |

@@ -28,7 +28,7 @@ Java applications are compiled into JavaScript, allowing them to run directly in
 
 ## Project Status
 
-**Phase 6 in progress — Sprint 16 (server platform) and Sprint 17 (server-side rendering) implemented.**
+**Phase 6 in progress — Sprint 16 (server platform), Sprint 17 (server-side rendering) and Sprint 18 (static site generation) implemented.**
 
 The repository now contains a working vertical slice through the component model:
 
@@ -48,8 +48,11 @@ Java source
 
 This chain is covered by automated JVM unit tests and a Chromium end-to-end
 test. The CLI and the production pipeline (Sprints 14–15) are available now,
-and Sprint 17 added server-side rendering: the same components produce complete
-HTML on the JVM, with no JavaScript required in the browser.
+Sprint 17 added server-side rendering — the same components produce complete
+HTML on the JVM, with no JavaScript required in the browser — and Sprint 18
+built the static site generation step on top of it: declared routes rendered
+into a deployable HTML tree with copied assets, validated references and a
+sitemap.
 
 | Capability | Status |
 |---|---|
@@ -77,8 +80,9 @@ HTML on the JVM, with no JavaScript required in the browser.
 | Production compiler pipeline (`dejaview-compiler`): centralized TeaVM configuration, `development`/`production` profiles, webapp validation and SHA-256 asset manifest on every build, reproducible output, `-Pproduction` optimized bundles | Implemented and tested (Chromium E2E on optimized bundles) |
 | Server platform abstraction (`dejaview-server`): platform contracts (`PlatformKind`/`Platform`/`ServerPlatform`), request-scoped `ServerContext` (isolated state, reverse-order disposal), per-context platform compatibility registry with `BrowserOnlyComponent` marker, `ServerRenderer` producing a sealed `ServerNode` tree, strict JSON serialization boundary | Implemented and tested |
 | Server-side rendering (`dejaview-ssr`): validated and escaped HTML documents and fragments from the server tree, per-request `PageMeta` metadata, `ServerErrorBoundary` containment, generic 500 failure page, JDK-hosted example that works with JavaScript disabled | Implemented and tested (alpha; no hydration or streaming) |
+| Static site generation (`dejaview-ssg`): explicitly declared routes rendered at build time through the SSR pipeline into a deployable HTML tree, copied assets, validated local `href`/`src` references, `sitemap.xml`, clean-by-default output; generated example site verified in Chromium with JavaScript disabled | Implemented and tested (alpha; no hydration) |
 | DevTools | Planned |
-| SSG, hydration | Planned (Sprints 18–19) |
+| Hydration | Planned (Sprint 19) |
 
 The authoritative implemented-versus-planned breakdown is
 [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md).
@@ -137,6 +141,20 @@ python3 -m http.server 4280 -d examples/counter/target/webapp
 ```
 
 Then open <http://localhost:4280>. Clicking **Increment** updates the counter.
+
+### Generate the static example site
+
+`examples/ssg` renders the same component model at build time and writes a
+deployable static site — plain HTML, one stylesheet, a `sitemap.xml` — with no
+server and no JavaScript:
+
+```bash
+./mvnw -pl examples/ssg -am package
+```
+
+The site is written to `examples/ssg/target/site/`; upload that directory to
+any static host (GitHub Pages, S3, Netlify or nginx). The build fails on a
+broken route, asset or link instead of shipping a broken page.
 
 ### Run the server-rendered example
 
@@ -203,10 +221,12 @@ created as empty placeholders.
 | `dejaview-compiler` | Build-time-only production compiler pipeline (no runtime dependencies, no browser API): `WebAppValidator`/`VerifyWebApp` webapp validation, deterministic `dejaview-assets.json` SHA-256 manifest, `CompilerProfile` development/production mapping, reproducibility verification. TeaVM configuration itself lives in the parent POM (`pluginManagement`); browser modules declare only `mainClass`. | Implemented |
 | `dejaview-server` | Platform-independent server execution: platform contracts (`PlatformKind`, `Platform`, `ServerPlatform`), request-scoped `ServerContext` (child injector, isolated `StateStorage`, reverse-order disposal), `PlatformCompatibilityRegistry` + `BrowserOnlyComponent` marker, `ServerRenderer` (sealed `ServerNode` tree; component compatibility enforced), server error boundaries (`ServerErrorBoundary`/`BoundaryError`), strict `SerializationBoundary`, transport-neutral `ServerRequest`/`ServerResponse`. Depends on `dejaview-core`, `dejaview-di`, `dejaview-state`, `dejaview-http`; no browser or TeaVM imports. | Implemented |
 | `dejaview-ssr` | Server-side HTML rendering: `SsrRenderer` (page and fragment rendering through `ServerRenderer`), `SsrValidator` (tag/attribute names, void elements, duplicates, depth 512), `HtmlSerializer`/`HtmlPage` (escaped text and attributes, complete document), per-request `PageMeta`, `SsrResult` with status/HTML/warnings/attached error, generic 500 failure page. Depends on `dejaview-server`; no browser or TeaVM imports. | Implemented (alpha) |
+| `dejaview-ssg` | Static site generation: `SsgRoute` (explicit `page`/`parametrized` declarations with eager path and parameter validation), `SsgSite` description (routes, assets, `baseUrl`, `clean` — output cleaned by default), `SsgGenerator` (plan → render → assets → write → sitemap → link-check; pages rendered before anything is written; local references validated against the written tree), `sitemap.xml` (excluding the 404 page). Depends on `dejaview-ssr`; no browser or TeaVM imports. | Implemented (alpha) |
 | `examples/counter` | Starter example compiled to JavaScript and tested in Chromium. | Implemented |
 | `examples/showcase` | Pre-compiled showcase bundle: the code samples the website and playground embed. | Implemented |
 | `examples/website` | Official website, documentation and interactive playground — rendered by DejaView itself, in English and Portuguese. | Implemented |
 | `examples/ssr` | Server-rendered application served by the JDK HTTP server; pages, search, error boundary and 404 work with JavaScript disabled. | Implemented |
+| `examples/ssg` | Statically generated site: declared routes rendered at build time into `target/site` (7 pages, 1 stylesheet, sitemap); pages, links and 404 work with JavaScript disabled. | Implemented |
 
 Dependency direction:
 
@@ -223,7 +243,9 @@ dejaview-cli → (no runtime dependencies)
 dejaview-compiler → (no runtime dependencies; build-time only)
 dejaview-server → dejaview-core, dejaview-di, dejaview-state, dejaview-http
 dejaview-ssr → dejaview-server
+dejaview-ssg → dejaview-ssr
 examples/ssr → dejaview-ssr
+examples/ssg → dejaview-ssg
 ```
 
 `dejaview-reactivity` and `dejaview-di` are independent of the view model and
@@ -232,9 +254,10 @@ and to reconcile the mounted tree; application code no longer performs direct
 DOM updates.
 
 The target architecture keeps the core independent of browser APIs and places
-platform-specific code in dedicated modules. `dejaview-server` and
-`dejaview-ssr` are the server-side modules; the remaining long-term module map
-(`dejaview-ssg`, `dejaview-hydration`, ...) is still a design proposal; see
+platform-specific code in dedicated modules. `dejaview-server`,
+`dejaview-ssr` and `dejaview-ssg` are the server-side modules; the remaining
+long-term module map (`dejaview-hydration`, ...) is still a design proposal;
+see
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ### Repository layout
@@ -253,11 +276,13 @@ dejaview/
 ├── dejaview-compiler/      # Build-time production compiler pipeline (zero dependencies)
 ├── dejaview-server/        # Server platform abstraction (pure Java)
 ├── dejaview-ssr/           # Server-side HTML rendering (pure Java)
+├── dejaview-ssg/           # Static site generation (pure Java)
 ├── examples/
 │   ├── counter/            # Java → JavaScript browser example
 │   ├── showcase/           # Pre-compiled showcase bundle embedded by the site
 │   ├── website/            # Website, documentation and playground, rendered by DejaView
-│   └── ssr/                # Server-rendered example (JVM only, no TeaVM build)
+│   ├── ssr/                # Server-rendered example (JVM only, no TeaVM build)
+│   └── ssg/                # Statically generated site (build-time output)
 ├── website/                # Static shells, styles and assets served from this directory
 ├── docs/
 │   ├── ARCHITECTURE.md     # Long-term architecture specification
@@ -310,6 +335,10 @@ The implemented flow is deliberately small:
    per-request `PageMeta` while rendering and a `ServerErrorBoundary` can
    contain a failing subtree. `examples/ssr` serves this over the JDK HTTP
    server and works with JavaScript disabled.
+8. At build time, `dejaview-ssg` expands the same route declarations and
+   renders every page through the SSR pipeline into a deployable static tree —
+   assets copied, local references checked, sitemap emitted. `examples/ssg`
+   produces a working static site with JavaScript disabled.
 
 The renderer owns the reactive binding: application code no longer looks up DOM
 nodes. The flow is recorded in
@@ -368,11 +397,32 @@ API — see
 | 3 | Component System | Implemented — Sprints 07–08 (component model, inputs, outputs, slots, lifecycle, keyed lists) |
 | 4 | Application Framework | Completed — Sprints 09–13 implemented (dependency injection, router, HTTP client, reactive forms, state management) |
 | 5 | Compiler and Tooling | Completed — Sprints 14 (CLI and development server) and 15 (production compiler) delivered |
-| 6 | SSR and SSG | In progress — Sprint 16 (Server Platform Abstraction) and Sprint 17 (Server-Side Rendering) delivered; Sprints 18–19 planned |
+| 6 | SSR and SSG | In progress — Sprint 16 (Server Platform Abstraction), Sprint 17 (Server-Side Rendering) and Sprint 18 (Static Site Generation) delivered; Sprint 19 planned |
 | 7 | Advanced Features | Planned |
 | 8 | Ecosystem | Planned |
 
-### Next milestone: Sprint 18 — Static Site Generation (SSG)
+### Next milestone: Sprint 19 — Hydration
+
+Sprint 18 delivered static site generation (`dejaview-ssg`, pure Java 25, zero
+browser/TeaVM imports; see
+[ADR-0025](docs/ADR/0025-static-site-generation.md)): routes are declared
+explicitly in Java — `SsgRoute.page` and `SsgRoute.parametrized` with
+whole-segment `{name}` placeholders, because the framework has no reflection —
+and `SsgGenerator.generate` runs plan → render → plan-assets → prepare-output
+→ copy-assets → write-pages → sitemap → link-check. Pages are rendered before
+anything is written, so a failure names the route and leaves no partial site;
+every path- or asset-like value is validated eagerly; duplicate paths and
+page/asset collisions fail the build; the output directory is cleaned by
+default (refusing filesystem roots and directories containing `pom.xml`);
+local `href`/`src` references are validated against the written tree; and
+`sitemap.xml` is emitted when `baseUrl` is set, excluding the 404 document.
+`examples/ssg` is a working static site generated at `package` into
+`examples/ssg/target/site` (7 pages, 1 asset, sitemap) and verified in
+Chromium with JavaScript disabled by `SsgBrowserIT`. 45 JVM tests cover
+`dejaview-ssg`, 3 browser tests cover the example. Not delivered: hydration
+and state serialization (Sprint 19), incremental or parallel output, a
+`dejaview` CLI static command and the full DOM property set — SSG is alpha
+(ADR-0025).
 
 Sprint 17 delivered server-side rendering (`dejaview-ssr`, pure Java 25, zero
 browser/TeaVM imports; see
@@ -392,8 +442,8 @@ stays in the host's logs. `examples/ssr` is a working application served by the
 JDK `HttpServer`, with a GET search form, a contained widget failure and a 404
 page, and its Chromium test runs with JavaScript disabled. 43 JVM tests cover
 `dejaview-ssr`, 10 cover the example, and the server module grew to 80. Not
-delivered: SSG (Sprint 18), hydration and state serialization (Sprint 19),
-progressive streaming (Phase 7), a deployable server adapter (Sprint 21) and
+delivered: hydration and state serialization (Sprint 19), progressive streaming
+(Phase 7), a deployable server adapter (Sprint 21) and
 the full DOM property set — SSR is alpha (ADR-0024).
 
 Sprint 16 delivered the server platform abstraction
@@ -417,8 +467,9 @@ success and failure alike. Everything crossing the boundary leaves through
 `SerializationBoundary` (strict `toJson`/`write`; `not-serializable` otherwise;
 depth cap 512). `ServerRequest`/`ServerResponse` are transport-neutral values,
 not yet wired to an HTTP server. 80 JVM tests cover the module today. HTML
-serialization arrived in Sprint 17 (ADR-0024); SSG, hydration and a deployable
-server adapter remain open.
+serialization arrived in Sprint 17 (ADR-0024); static site generation arrived
+in Sprint 18 (ADR-0025). Hydration and a deployable server adapter remain
+open.
 
 Sprint 15 delivered the production compilation pipeline (`dejaview-compiler`,
 build-time only, zero runtime dependencies; see
@@ -563,7 +614,7 @@ Details are in [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md),
 ./mvnw clean package -DskipTests
 
 # Opt-in browser end-to-end tests (unit + examples)
-./mvnw -Pe2e -pl dejaview-compiler,dejaview-cli,examples/counter,examples/showcase,examples/website -am verify
+./mvnw -Pe2e -pl dejaview-compiler,dejaview-cli,examples/counter,examples/showcase,examples/website,examples/ssr,examples/ssg -am verify
 ```
 
 The root `pom.xml` declares the modules, centralizes dependency and plugin
@@ -612,6 +663,12 @@ Significant decisions are recorded as ADRs rather than changed silently.
 - Styling is plain HTML plus `class`/`style` attributes; there is no CSS
   pipeline or CSS-in-JS runtime. Bootstrap, Tailwind CSS and daisyUI are not yet
   covered by automated compatibility tests.
+- SSR and SSG are alpha: both produce complete pages, not hydrated
+  applications — there is no state serialization, no hydration markers and no
+  progressive streaming, and only the `value` and boolean DOM property subset
+  is serialized. SSG additionally has no incremental or parallel generation and
+  no first-class `dejaview` CLI command yet (it is driven by the application's
+  build, as `examples/ssg` demonstrates). Sprint 19 owns hydration.
 - The website playground runs pre-compiled TeaVM bundles only; there is no in-browser compiler yet, so editing the Java source is a read-only preview until the development server is built.
 - Browser E2E coverage is Chromium only.
 - Only the JDK/TeaVM APIs exercised by the current code are validated.
