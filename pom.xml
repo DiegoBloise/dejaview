@@ -24,12 +24,14 @@
         <module>dejaview-state</module>
         <module>dejaview-server</module>
         <module>dejaview-ssr</module>
+        <module>dejaview-ssg</module>
         <module>dejaview-compiler</module>
         <module>dejaview-cli</module>
         <module>examples/counter</module>
         <module>examples/showcase</module>
         <module>examples/website</module>
         <module>examples/ssr</module>
+        <module>examples/ssg</module>
     </modules>
 
     <properties>
@@ -129,6 +131,11 @@
             <dependency>
                 <groupId>io.dejaview</groupId>
                 <artifactId>dejaview-ssr</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dejaview</groupId>
+                <artifactId>dejaview-ssg</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
